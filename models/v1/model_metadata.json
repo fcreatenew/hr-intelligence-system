@@ -1,0 +1,59 @@
+{
+  "dibuat_pada": "2026-09-29T19:44:05",
+  "tujuan": "Prediksi turnover karyawan (1 = keluar)",
+  "sumber_data": "hr_turnover.csv",
+  "jumlah_baris": 1000,
+  "rasio_positif": 0.356,
+  "model": "Logistic Regression",
+  "hyperparameter": {
+    "C": 0.006026889128682512
+  },
+  "threshold": 0.33,
+  "refit_seluruh_data": true,
+  "fitur_numerik": [
+    "usia",
+    "masa_kerja_bulan",
+    "jam_lembur_bulanan",
+    "log_gaji",
+    "usia_saat_masuk",
+    "ada_promosi",
+    "bulan_sejak_promosi",
+    "bulan_hingga_promosi"
+  ],
+  "fitur_kategorik": [
+    "departemen",
+    "status_kerja",
+    "pendidikan"
+  ],
+  "kolom_mentah_dibutuhkan": [
+    "usia",
+    "masa_kerja_bulan",
+    "jam_lembur_bulanan",
+    "gaji_bulanan",
+    "tanggal_masuk",
+    "tanggal_promosi",
+    "departemen",
+    "status_kerja",
+    "pendidikan"
+  ],
+  "tanggal_acuan": "2025-01-01",
+  "metrik_holdout_test": {
+    "roc_auc": 0.6929,
+    "pr_auc": 0.6235,
+    "accuracy": 0.605,
+    "precision": 0.46,
+    "recall": 0.6479,
+    "f1": 0.538,
+    "roc_auc_95ci": [
+      0.6136,
+      0.7724
+    ]
+  },
+  "roc_auc_cv_tuned": 0.6971,
+  "versi": {
+    "python_sklearn": "1.9.1",
+    "pandas": "3.0.6",
+    "numpy": "2.5.3"
+  },
+  "catatan": "Gunakan fungsi buat_fitur() yang sama untuk mengubah data mentah menjadi fitur sebelum predict."
+}
