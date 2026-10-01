@@ -1,3 +1,9 @@
 .DS_Store
 roadmap.md
 srs.md
+# Output training CatBoost
+catboost_info/
+
+# Python test/agent artifacts
+.pytest_cache/
+.agent_tmp/

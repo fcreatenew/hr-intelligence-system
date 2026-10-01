@@ -9,8 +9,18 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 
 load_dotenv(BASE_DIR / ".env")
 
-MODELS_DIR = BASE_DIR / "models"
-DATA_DIR = BASE_DIR / "data"
+# Artifact model berada di root repository (models/), bukan di dalam folder API.
+REPO_ROOT = BASE_DIR.parent
+
+MODELS_DIR = REPO_ROOT / "models"
+DATA_DIR = REPO_ROOT / "data"
+
+# Versi model aktif. Artifact disimpan per versi di models/<MODEL_VERSION>/.
+# Ganti lewat env MODEL_VERSION untuk rollback/promosi model (mis. "v1").
+MODEL_VERSION = os.getenv(
+    "MODEL_VERSION",
+    "v2",
+)
 
 
 APP_TITLE = "HR Intelligence API"
@@ -21,17 +31,21 @@ APP_DESCRIPTION = (
 )
 
 
+DEFAULT_MODEL_PATH = MODELS_DIR / MODEL_VERSION / "turnover_model.joblib"
+DEFAULT_METADATA_PATH = MODELS_DIR / MODEL_VERSION / "model_metadata.json"
+
+
 MODEL_PATH = Path(
     os.getenv(
         "MODEL_PATH",
-        MODELS_DIR / "turnover_model.joblib",
+        DEFAULT_MODEL_PATH,
     )
 )
 
 METADATA_PATH = Path(
     os.getenv(
         "METADATA_PATH",
-        MODELS_DIR / "model_metadata.json",
+        DEFAULT_METADATA_PATH,
     )
 )
 

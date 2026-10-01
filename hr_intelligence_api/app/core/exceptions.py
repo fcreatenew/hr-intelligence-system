@@ -5,6 +5,27 @@ from fastapi.responses import JSONResponse
 from app.services.model_service import ModelNotLoadedError
 
 
+def _jsonable_errors(exc: RequestValidationError) -> list[dict]:
+    """Bersihkan errors() agar selalu JSON-serializable.
+
+    Pydantic menyertakan objek asli (mis. ValueError dari field_validator) di
+    dalam kunci "ctx"; objek itu tidak bisa di-serialize dan akan membuat
+    handler ini sendiri gagal (500). Kita ubah nilai non-primitif jadi string.
+    """
+    hasil = []
+    for err in exc.errors():
+        err = dict(err)
+        ctx = err.get("ctx")
+        if isinstance(ctx, dict):
+            err["ctx"] = {k: str(v) for k, v in ctx.items()}
+        if "input" in err and not isinstance(
+            err["input"], (str, int, float, bool, type(None))
+        ):
+            err["input"] = str(err["input"])
+        hasil.append(err)
+    return hasil
+
+
 async def validation_exception_handler(
     request: Request,
     exc: RequestValidationError,
@@ -13,7 +34,7 @@ async def validation_exception_handler(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "detail": "Input tidak valid.",
-            "errors": exc.errors(),
+            "errors": _jsonable_errors(exc),
         },
     )
 
