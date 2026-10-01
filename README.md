@@ -231,20 +231,37 @@ hr-intelligence-system/
 ├── README.md
 ├── ROADMAP.md
 ├── CONTRIBUTE.md
+├── USE_CASES.md
+├── MODEL_RESULTS.md
 │
 ├── data/
-│   └── raw/
-│       └── hr_turnover.csv
+│   ├── README.md
+│   ├── hr_turnover.csv
+│   └── hr_absenteeism.csv          # sintetis
+│
+├── scripts/
+│   └── generate_absenteeism_data.py
 │
 ├── notebooks/
-│   └── train_model.ipynb
+│   ├── README.md
+│   ├── train_model.ipynb
+│   ├── train_model_alternatives.ipynb
+│   ├── 02_absenteeism.ipynb
+│   └── 05_fairness_audit_turnover.ipynb
 │
 ├── models/
 │   ├── README.md
-│   └── turnover/
-│       └── v1/
-│           ├── turnover_model.joblib
-│           └── model_metadata.json
+│   ├── v1/
+│   │   ├── turnover_model.joblib
+│   │   └── model_metadata.json
+│   ├── v2/
+│   │   ├── turnover_model.joblib
+│   │   └── model_metadata.json
+│   ├── absenteeism/
+│   │   └── v1/
+│   │       ├── absenteeism_model.joblib
+│   │       └── model_metadata.json
+│   └── fairness_report.json
 │
 ├── hr_intelligence_api/
 │   ├── README.md
@@ -295,7 +312,10 @@ hr-intelligence-system/
 
 # Model Saat Ini
 
-Model pertama yang dikembangkan adalah **Employee Turnover Prediction**.
+Model yang sudah dikembangkan adalah **Employee Turnover Prediction**, tersedia
+dalam dua versi dengan metode berbeda.
+
+## v1 — Logistic Regression
 
 ```text
 Model     : Logistic Regression
@@ -305,25 +325,57 @@ ROC-AUC   : 0.6929
 PR-AUC    : 0.6235
 ```
 
+## v2 — Perbandingan Metode Alternatif
+
+```text
+Model     : Soft Voting (ensemble Logistic Regression + Random Forest)
+Target    : Employee Turnover
+Threshold : 0.33
+ROC-AUC   : 0.6993
+PR-AUC    : 0.6223
+```
+
+Model v2 dihasilkan dari notebook yang membandingkan 7 metode (Logistic
+Regression, Random Forest, Hist Gradient Boosting, XGBoost, LightGBM, CatBoost,
+SVM) plus ensemble soft-voting. Selisih dengan v1 kecil dan **belum tentu
+signifikan** — lihat `models/README.md` untuk analisisnya.
+
 Model artifact:
 
 ```text
 models/
-└── turnover/
-    └── v1/
-        ├── turnover_model.joblib
-        └── model_metadata.json
+├── v1/
+│   ├── turnover_model.joblib
+│   └── model_metadata.json
+└── v2/
+    ├── turnover_model.joblib
+    └── model_metadata.json
 ```
 
 Training dilakukan melalui:
 
 ```text
-notebooks/train_model.ipynb
+notebooks/train_model.ipynb                 # v1
+notebooks/train_model_alternatives.ipynb    # v2
 ```
 
 Detail model, feature engineering, evaluasi, dan metadata tersedia di:
 
 [`models/README.md`](./models/README.md)
+
+---
+
+# Use Case ML Lain untuk HR
+
+Turnover bukan satu-satunya masalah HR yang bisa didekati dengan Machine Learning.
+Katalog use case lain (absensi, kinerja, anomaly payroll, forecasting, rekrutmen,
+NLP, survival analysis, dan audit bias) beserta data & referensinya ada di:
+
+[`USE_CASES.md`](./USE_CASES.md)
+
+Hasil lengkap perbandingan model (v1 vs v2, absensi, audit fairness) ada di:
+
+[`MODEL_RESULTS.md`](./MODEL_RESULTS.md)
 
 ---
 

@@ -5,10 +5,10 @@ os.environ.setdefault("HR_API_KEY", "test-key")
 import pytest
 from fastapi.testclient import TestClient
 
+from app.core.auth import _request_log
 from app.core.config import API_KEY
 from app.main import app
 
-client = TestClient(app)
 HEADERS = {"X-API-Key": API_KEY}
 
 VALID_EMPLOYEE = {
@@ -25,7 +25,15 @@ VALID_EMPLOYEE = {
 }
 
 
-def test_health_check_no_auth_needed():
+@pytest.fixture()
+def client():
+    """TestClient sebagai context manager agar lifespan (load model) dijalankan."""
+    _request_log.clear()
+    with TestClient(app) as c:
+        yield c
+
+
+def test_health_check_no_auth_needed(client):
     resp = client.get("/health")
     assert resp.status_code == 200
     body = resp.json()
@@ -33,17 +41,17 @@ def test_health_check_no_auth_needed():
     assert body["model_loaded"] is True
 
 
-def test_predict_requires_api_key():
+def test_predict_requires_api_key(client):
     resp = client.post("/predict", json=VALID_EMPLOYEE)
     assert resp.status_code == 422  # header X-API-Key wajib, hilang -> validation error
 
 
-def test_predict_rejects_wrong_api_key():
+def test_predict_rejects_wrong_api_key(client):
     resp = client.post("/predict", json=VALID_EMPLOYEE, headers={"X-API-Key": "salah"})
     assert resp.status_code == 401
 
 
-def test_predict_single_employee_success():
+def test_predict_single_employee_success(client):
     resp = client.post("/predict", json=VALID_EMPLOYEE, headers=HEADERS)
     assert resp.status_code == 200
     body = resp.json()
@@ -53,37 +61,37 @@ def test_predict_single_employee_success():
     assert body["level_risiko"] in ("Rendah", "Sedang", "Tinggi")
 
 
-def test_predict_without_promosi_is_valid():
+def test_predict_without_promosi_is_valid(client):
     payload = {**VALID_EMPLOYEE, "tanggal_promosi": None}
     resp = client.post("/predict", json=payload, headers=HEADERS)
     assert resp.status_code == 200
 
 
-def test_predict_rejects_promosi_before_masuk():
+def test_predict_rejects_promosi_before_masuk(client):
     payload = {**VALID_EMPLOYEE, "tanggal_masuk": "2020-01-01", "tanggal_promosi": "2019-01-01"}
     resp = client.post("/predict", json=payload, headers=HEADERS)
     assert resp.status_code == 422
 
 
-def test_predict_rejects_invalid_departemen():
+def test_predict_rejects_invalid_departemen(client):
     payload = {**VALID_EMPLOYEE, "departemen": "Tidak Ada Departemen Ini"}
     resp = client.post("/predict", json=payload, headers=HEADERS)
     assert resp.status_code == 422
 
 
-def test_predict_rejects_negative_age():
+def test_predict_rejects_negative_age(client):
     payload = {**VALID_EMPLOYEE, "usia": -5}
     resp = client.post("/predict", json=payload, headers=HEADERS)
     assert resp.status_code == 422
 
 
-def test_predict_rejects_missing_required_field():
+def test_predict_rejects_missing_required_field(client):
     payload = {k: v for k, v in VALID_EMPLOYEE.items() if k != "gaji_bulanan"}
     resp = client.post("/predict", json=payload, headers=HEADERS)
     assert resp.status_code == 422
 
 
-def test_predict_batch_success():
+def test_predict_batch_success(client):
     payload = {"employees": [VALID_EMPLOYEE, {**VALID_EMPLOYEE, "employee_id": "EMP0002"}]}
     resp = client.post("/predict/batch", json=payload, headers=HEADERS)
     assert resp.status_code == 200
@@ -92,12 +100,12 @@ def test_predict_batch_success():
     assert len(body["hasil"]) == 2
 
 
-def test_predict_batch_rejects_empty_list():
+def test_predict_batch_rejects_empty_list(client):
     resp = client.post("/predict/batch", json={"employees": []}, headers=HEADERS)
     assert resp.status_code == 422
 
 
-def test_model_info_returns_metrics():
+def test_model_info_returns_metrics(client):
     resp = client.get("/model/info", headers=HEADERS)
     assert resp.status_code == 200
     body = resp.json()
@@ -105,10 +113,16 @@ def test_model_info_returns_metrics():
     assert "threshold" in body
 
 
-def test_rate_limit_eventually_blocks(monkeypatch):
-    monkeypatch.setattr("app.auth.RATE_LIMIT_PER_MINUTE", 3)
-    # reset counter supaya tidak kena sisa request dari test lain
-    from app.core.auth import _request_log
+def test_batch_response_reports_model_version(client):
+    payload = {"employees": [VALID_EMPLOYEE]}
+    resp = client.post("/predict/batch", json=payload, headers=HEADERS)
+    assert resp.status_code == 200
+    # model_version harus berupa versi artifact (mis. "v2"), bukan nama algoritma.
+    assert resp.json()["model_version"].startswith("v")
+
+
+def test_rate_limit_eventually_blocks(client, monkeypatch):
+    monkeypatch.setattr("app.core.auth.RATE_LIMIT_PER_MINUTE", 3)
     _request_log.clear()
 
     responses = [

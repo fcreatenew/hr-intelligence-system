@@ -58,9 +58,6 @@ async def predict_batch(
     return BatchPredictResponse(
         hasil=hasil,
         jumlah_diproses=len(hasil),
-        model_version=model_service.metadata.get(
-            "model",
-            "unknown",
-        ),
+        model_version=model_service.model_version,
         threshold=model_service.threshold,
     )

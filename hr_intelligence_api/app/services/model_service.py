@@ -120,4 +120,15 @@ class ModelService:
             )
         )
 
+    @property
+    def model_version(self) -> str:
+        """Versi model aktif (mis. "v2"). Bukan nama algoritma."""
+        return str(
+            self._metadata.get(
+                "versi_model",
+                "unknown",
+            )
+        )
+
+
 model_service = ModelService()

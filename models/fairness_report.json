@@ -1,0 +1,72 @@
+{
+  "in_sample": true,
+  "atribut_diuji": [
+    "kelompok_usia",
+    "departemen",
+    "status_kerja",
+    "pendidikan"
+  ],
+  "catatan": "Dataset tanpa gender/etnis; model refit pada seluruh data.",
+  "hasil": {
+    "v1": {
+      "model": "Logistic Regression",
+      "threshold": 0.33,
+      "fairness": {
+        "kelompok_usia": {
+          "demographic_parity_diff": 0.1376,
+          "impact_ratio": 0.757,
+          "equal_opportunity_diff": 0.0815,
+          "equalized_odds_diff": 0.2142
+        },
+        "departemen": {
+          "demographic_parity_diff": 0.0896,
+          "impact_ratio": 0.8376,
+          "equal_opportunity_diff": 0.2388,
+          "equalized_odds_diff": 0.2388
+        },
+        "status_kerja": {
+          "demographic_parity_diff": 0.2604,
+          "impact_ratio": 0.6155,
+          "equal_opportunity_diff": 0.1853,
+          "equalized_odds_diff": 0.2411
+        },
+        "pendidikan": {
+          "demographic_parity_diff": 0.2731,
+          "impact_ratio": 0.5786,
+          "equal_opportunity_diff": 0.2622,
+          "equalized_odds_diff": 0.2622
+        }
+      }
+    },
+    "v2": {
+      "model": "Soft Voting (ensemble)",
+      "threshold": 0.33,
+      "fairness": {
+        "kelompok_usia": {
+          "demographic_parity_diff": 0.1458,
+          "impact_ratio": 0.7486,
+          "equal_opportunity_diff": 0.1569,
+          "equalized_odds_diff": 0.1933
+        },
+        "departemen": {
+          "demographic_parity_diff": 0.1473,
+          "impact_ratio": 0.7309,
+          "equal_opportunity_diff": 0.2553,
+          "equalized_odds_diff": 0.2553
+        },
+        "status_kerja": {
+          "demographic_parity_diff": 0.41,
+          "impact_ratio": 0.4519,
+          "equal_opportunity_diff": 0.3058,
+          "equalized_odds_diff": 0.391
+        },
+        "pendidikan": {
+          "demographic_parity_diff": 0.3531,
+          "impact_ratio": 0.4793,
+          "equal_opportunity_diff": 0.2816,
+          "equalized_odds_diff": 0.3348
+        }
+      }
+    }
+  }
+}
