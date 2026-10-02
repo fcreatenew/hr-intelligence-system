@@ -246,4 +246,4 @@ MODEL_VERSION=v1 python -m uvicorn app.main:app   # rollback ke v1
 - Mitigasi bias sudah dicoba → masih 2/4 atribut lolos; lanjutkan ke
   kalibrasi/threshold sadar-keadilan.
 - Semua data tambahan masih **sintetis**; validasi ulang pada data nyata.
-- Model absensi/kinerja/payroll/survival belum diekspos API.
+- Model absensi/kinerja/payroll/survival sudah diekspos API (v1).

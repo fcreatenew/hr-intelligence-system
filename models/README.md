@@ -46,8 +46,9 @@ models/
 └── README.md
 ```
 
-Model turnover (v1/v2/v2_mitigated) dilayani oleh `hr_intelligence_api`. Model
-lain saat ini hanya artifact hasil notebook (belum diekspos API).
+Semua artifact di atas **dilayani oleh `hr_intelligence_api`**: turnover
+(v1/v2/v2_mitigated), absensi, kinerja, anomali payroll, dan survival. Pilih versi
+turnover lewat env `MODEL_VERSION` (default `v2`).
 
 ---
 
@@ -209,7 +210,7 @@ dapat dilayani API tanpa perubahan kode.
 # Model Lain
 
 Selain turnover, repo ini punya empat artifact model dari notebook lain
-(semuanya data **sintetis**, belum diekspos API):
+(semuanya data **sintetis**). Keempatnya **sudah diekspos API**:
 
 | Artifact | Use case | Model | Metrik utama |
 |---|---|---|---|
