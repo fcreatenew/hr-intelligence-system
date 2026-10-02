@@ -8,6 +8,7 @@ use App\Models\PayrollItem;
 use App\Models\PayrollPeriod;
 use App\Models\User;
 use App\Services\PayrollCalculationService;
+use App\Services\PayrollService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -85,8 +86,8 @@ class PayrollManagementTest extends TestCase
             'potongan' => 0,
         ]);
 
-        Attendance::factory()->for($employee)->onDate('2026-05-04')->present()->create(['overtime_minutes' => 300]);
-        Attendance::factory()->for($employee)->onDate('2026-05-05')->present()->create(['overtime_minutes' => 90]);
+        Attendance::factory()->for($employee)->onDate('2026-05-04')->hadir()->create(['overtime_minutes' => 300]);
+        Attendance::factory()->for($employee)->onDate('2026-05-05')->hadir()->create(['overtime_minutes' => 90]);
 
         $this->actingAs($this->admin())->post(route('payroll-periods.calculate', $period));
 
@@ -134,8 +135,8 @@ class PayrollManagementTest extends TestCase
             'tarif_lembur' => 50_000,
         ]);
 
-        Attendance::factory()->for($employee)->onDate('2026-04-30')->present()->create(['overtime_minutes' => 600]);
-        Attendance::factory()->for($employee)->onDate('2026-05-02')->present()->create(['overtime_minutes' => 60]);
+        Attendance::factory()->for($employee)->onDate('2026-04-30')->hadir()->create(['overtime_minutes' => 600]);
+        Attendance::factory()->for($employee)->onDate('2026-05-02')->hadir()->create(['overtime_minutes' => 60]);
 
         $this->actingAs($this->admin())->post(route('payroll-periods.calculate', $period));
 
@@ -149,7 +150,7 @@ class PayrollManagementTest extends TestCase
 
         $this->actingAs($this->admin())->post(route('payroll-periods.calculate', $period));
 
-        $summary = app(\App\Services\PayrollService::class)->summary($period->refresh());
+        $summary = app(PayrollService::class)->summary($period->refresh());
 
         $this->assertSame(
             (float) $period->items()->sum('total_gaji'),
@@ -239,7 +240,7 @@ class PayrollManagementTest extends TestCase
             'potongan' => 250_000,
         ]);
 
-        Attendance::factory()->for($employee)->onDate('2026-05-10')->present()->create(['overtime_minutes' => 120]);
+        Attendance::factory()->for($employee)->onDate('2026-05-10')->hadir()->create(['overtime_minutes' => 120]);
 
         $components = app(PayrollCalculationService::class)->calculateFor($employee, '2026-05');
 

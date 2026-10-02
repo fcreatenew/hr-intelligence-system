@@ -9,6 +9,10 @@ pekerjaan yang dibatalkan.
 > pekerjaan. Dokumen ini dibuat untuk menutup celah itu. Status di sini
 > mencerminkan kondisi kode yang benar-benar ada, bukan rencana.
 
+Selisih antara status di dokumen ini dan kode di `main` dirinci di
+[`GAP_AUDIT.md`](GAP_AUDIT.md) — termasuk pekerjaan yang masih menunggu PR dan
+celah yang belum dimulai.
+
 Legenda status:
 
 | Simbol | Arti |
@@ -213,8 +217,8 @@ gaji identik dengan `payroll_intelligence` dan fitur model anomali payroll.
 
 - ⬜ Laporan headcount, turnover, biaya per departemen
 - ⬜ Ekspor (CSV/PDF)
-- ⬜ Manajemen pengguna & peran dari UI
-- ⬜ Halaman hasil prediksi ML di UI (saat ini hanya JSON)
+- ✅ Manajemen pengguna & peran dari UI
+- ✅ Halaman hasil prediksi ML di UI (bukan JSON lagi)
 
 ---
 
