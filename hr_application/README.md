@@ -93,6 +93,41 @@ persetujuan ditolak dan tidak ada yang tersimpan separuh jalan.
 Hanya cuti `tahunan` yang memotong saldo. Cuti melahirkan/menikah/duka tidak,
 karena jatahnya terpisah dari jatah 12 hari.
 
+### Payroll
+
+Penggajian bulanan berbasis periode. Setiap periode (YYYY-MM) menyimpan hasil
+perhitungan per karyawan sehingga dapat ditelusuri dan dihitung ulang — angka
+payroll tidak lagi ditulis langsung ke tabel `employees`.
+
+| Route | Fungsi |
+|---|---|
+| `GET /payroll-periods` | Daftar periode + form buka periode baru |
+| `POST /payroll-periods` | Buka periode (draft) |
+| `GET /payroll-periods/{id}` | Detail: ringkasan komponen + baris per karyawan |
+| `POST /payroll-periods/{id}/calculate` | Hitung ulang seluruh baris |
+| `POST /payroll-periods/{id}/finalize` | Finalisasi (khusus `admin`, membekukan angka) |
+| `GET /payroll-periods/{id}/export` | Ekspor komponen payroll ke CSV |
+| `DELETE /payroll-periods/{id}` | Hapus periode (khusus `admin`, bukan periode final) |
+
+Rumus perhitungan (`App\Services\PayrollCalculationService`):
+
+```
+lembur_jam  = total menit lembur absensi periode ÷ 60 (dibulatkan ke bawah)
+biaya_lembur = lembur_jam × tarif_lembur
+potongan    = (hari alpha × gaji_pokok ÷ 22) + potongan tetap karyawan
+total_gaji  = gaji_pokok + tunjangan + biaya_lembur − potongan
+```
+
+Rumus `total_gaji` sengaja identik dengan `payroll_intelligence` dan fitur model
+anomali payroll di HR Intelligence API, sehingga angka HRIS dan model memakai
+definisi yang sama. Cuti disetujui tidak dipotong; hanya `alpha` yang dipotong.
+
+Setelah dihitung, baris payroll dapat diberi skor anomali oleh **Payroll
+Intelligence** (opsional). Isi `PAYROLL_INTELLIGENCE_BASE_URL` (mis.
+`http://localhost:8300`) untuk mengaktifkan. Bila kosong atau layanan mati,
+perhitungan tetap berjalan tanpa skor — payroll tidak boleh gagal karena
+layanan analitik.
+
 ### Fitur ML dihitung dari data, bukan diisi manual
 
 `riwayat_absen_90hari` dan `hari_absen_setahun` sebelumnya adalah kolom yang
