@@ -101,6 +101,39 @@ class ReportTest extends TestCase
         $this->assertStringContainsString('Total,1,1,0', $csv);
     }
 
+    public function test_turnover_counts_only_terminations_inside_period(): void
+    {
+        // Keluar di dalam periode.
+        Employee::factory()->create([
+            'department' => 'IT',
+            'status' => false,
+            'termination_date' => '2026-05-15',
+        ]);
+        // Sudah keluar, tetapi di luar periode.
+        Employee::factory()->create([
+            'department' => 'IT',
+            'status' => false,
+            'termination_date' => '2025-01-10',
+        ]);
+        // Masih aktif.
+        Employee::factory()->create([
+            'department' => 'IT',
+            'status' => true,
+            'termination_date' => null,
+        ]);
+
+        $response = $this->actingAs($this->admin())->get(route('reports.index', [
+            'from' => '2026-05-01',
+            'to' => '2026-05-31',
+        ]));
+
+        $departments = $response->viewData('departments')->keyBy('department');
+
+        $this->assertSame(3, $departments['IT']['total']);
+        $this->assertSame(1, $departments['IT']['keluar']);
+        $this->assertSame(33.3, $departments['IT']['turnover_rate']);
+    }
+
     public function test_hr_manager_can_view_report(): void
     {
         Employee::factory()->create(['department' => 'IT']);
