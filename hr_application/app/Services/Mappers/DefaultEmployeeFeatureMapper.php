@@ -3,11 +3,16 @@
 namespace App\Services\Mappers;
 
 use App\Contracts\EmployeeFeatureMapper;
+use App\Models\Employee;
+use App\Services\AttendanceMetricsService;
+use App\Support\HrCategories;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 class DefaultEmployeeFeatureMapper implements EmployeeFeatureMapper
 {
+    public function __construct(private AttendanceMetricsService $attendanceMetrics) {}
+
     /**
      * Nilai default bila record karyawan tidak punya atribut yang dibutuhkan
      * use case non-turnover. Tipe nilai default menentukan cast:
@@ -93,7 +98,7 @@ class DefaultEmployeeFeatureMapper implements EmployeeFeatureMapper
             'beban_kerja' => $this->number($employee, 'beban_kerja'),
             'lembur_jam_bulanan' => $this->number($employee, 'jam_lembur_bulanan'),
             'kepuasan_kerja' => $this->number($employee, 'kepuasan_kerja'),
-            'riwayat_absen_90hari' => $this->number($employee, 'riwayat_absen_90hari'),
+            'riwayat_absen_90hari' => $this->absenceCount($employee, 'riwayat_absen_90hari', AttendanceMetricsService::ABSENCE_WINDOW_DAYS),
             'departemen' => $this->departemen($employee),
             'status_kerja' => $this->statusKerja($employee),
             'pendidikan' => $this->pendidikan($employee),
@@ -110,7 +115,7 @@ class DefaultEmployeeFeatureMapper implements EmployeeFeatureMapper
             'jumlah_training_setahun' => $this->number($employee, 'jumlah_training_setahun'),
             'proyek_selesai' => $this->number($employee, 'proyek_selesai'),
             'skor_umpan_balik_360' => $this->number($employee, 'skor_umpan_balik_360'),
-            'hari_absen_setahun' => $this->number($employee, 'hari_absen_setahun'),
+            'hari_absen_setahun' => $this->absenceCount($employee, 'hari_absen_setahun', AttendanceMetricsService::YEAR_WINDOW_MONTHS * 30),
             'departemen' => $this->departemen($employee),
             'pendidikan' => $this->pendidikan($employee),
         ];
@@ -174,6 +179,21 @@ class DefaultEmployeeFeatureMapper implements EmployeeFeatureMapper
         return is_int($default) ? (int) $raw : (float) $raw;
     }
 
+    /**
+     * Jumlah hari tidak hadir. Untuk model Employee, angka ini selalu dihitung
+     * dari tabel `attendances` agar tidak bisa diisi manual dan tidak bisa
+     * basi. Untuk input array (mis. dari command/payload mentah), nilai eksplisit
+     * tetap dipakai, dan default dipakai bila tidak ada.
+     */
+    private function absenceCount(mixed $employee, string $key, int $windowDays): int
+    {
+        if ($employee instanceof Employee) {
+            return $this->attendanceMetrics->absencesInLastDays($employee, $windowDays);
+        }
+
+        return (int) $this->number($employee, $key);
+    }
+
     private function bulanSejakPromosi(mixed $employee): float
     {
         $explicit = $this->value($employee, 'bulan_sejak_promosi');
@@ -191,14 +211,6 @@ class DefaultEmployeeFeatureMapper implements EmployeeFeatureMapper
         return 0.0;
     }
 
-    private const DEPARTEMEN_DIIZINKAN = [
-        'Sales', 'Marketing', 'HR', 'Operations', 'IT', 'Finance', 'Legal',
-    ];
-
-    private const PENDIDIKAN_DIIZINKAN = ['SMA', 'Diploma', 'S1', 'S2'];
-
-    private const STATUS_KERJA_DIIZINKAN = ['Tetap', 'Kontrak', 'Freelance'];
-
     private function employeeId(mixed $employee): string
     {
         $id = $this->value($employee, 'employee_id')
@@ -213,27 +225,33 @@ class DefaultEmployeeFeatureMapper implements EmployeeFeatureMapper
         $nilai = $this->value($employee, 'departemen')
             ?? $this->value($employee, 'department');
 
-        return in_array($nilai, self::DEPARTEMEN_DIIZINKAN, true)
-            ? (string) $nilai
-            : 'Operations';
+        return $this->categorical($nilai, HrCategories::DEPARTEMEN, HrCategories::departemenFallback());
     }
 
     private function statusKerja(mixed $employee): string
     {
-        $nilai = $this->value($employee, 'status_kerja');
-
-        return in_array($nilai, self::STATUS_KERJA_DIIZINKAN, true)
-            ? (string) $nilai
-            : 'Tetap';
+        return $this->categorical(
+            $this->value($employee, 'status_kerja'),
+            HrCategories::STATUS_KERJA,
+            HrCategories::statusKerjaFallback(),
+        );
     }
 
     private function pendidikan(mixed $employee): string
     {
-        $nilai = $this->value($employee, 'pendidikan');
+        return $this->categorical(
+            $this->value($employee, 'pendidikan'),
+            HrCategories::PENDIDIKAN,
+            HrCategories::pendidikanFallback(),
+        );
+    }
 
-        return in_array($nilai, self::PENDIDIKAN_DIIZINKAN, true)
-            ? (string) $nilai
-            : 'S1';
+    /**
+     * @param  list<string>  $allowed
+     */
+    private function categorical(mixed $value, array $allowed, string $fallback): string
+    {
+        return in_array($value, $allowed, true) ? (string) $value : $fallback;
     }
 
     private function date(mixed $value): string
