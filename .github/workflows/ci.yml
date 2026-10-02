@@ -19,8 +19,12 @@ jobs:
           python-version: "3.13"
           cache: pip
           cache-dependency-path: hr_intelligence_api/requirements.txt
-      - run: pip install -r requirements.txt
-      - run: python -m pytest tests/ -q
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install "pytest>=8.0"
+      - name: Run tests
+        run: python -m pytest tests/ -q
 
   python-modules:
     name: ${{ matrix.module }} (pytest)
@@ -74,7 +78,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.3"
+          php-version: "8.4"
           extensions: mbstring, pdo_sqlite, sqlite3, bcmath
           coverage: none
       - name: Copy environment file
@@ -96,7 +100,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: npm
           cache-dependency-path: hr_dashboard/package-lock.json
       - run: npm ci
