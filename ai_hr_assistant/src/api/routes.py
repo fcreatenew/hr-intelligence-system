@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends
 
+from src.api.auth import rate_limiter
 from src.schemas.chat import AssistantRequest, AssistantResponse
 from src.services.container import get_container
 
@@ -29,14 +30,14 @@ async def health() -> dict:
     }
 
 
-@router.get("/tools", tags=["assistant"])
+@router.get("/tools", tags=["assistant"], dependencies=[Depends(rate_limiter)])
 async def list_tools() -> dict:
     container = get_container()
 
     return {"tools": container.tools.describe()}
 
 
-@router.get("/knowledge", tags=["assistant"])
+@router.get("/knowledge", tags=["assistant"], dependencies=[Depends(rate_limiter)])
 async def list_knowledge() -> dict:
     container = get_container()
 
@@ -55,7 +56,7 @@ async def list_knowledge() -> dict:
     }
 
 
-@router.get("/models", tags=["assistant"])
+@router.get("/models", tags=["assistant"], dependencies=[Depends(rate_limiter)])
 async def list_models() -> dict:
     container = get_container()
 
@@ -68,7 +69,12 @@ async def list_models() -> dict:
         ) from exc
 
 
-@router.post("/chat", response_model=AssistantResponse, tags=["assistant"])
+@router.post(
+    "/chat",
+    response_model=AssistantResponse,
+    tags=["assistant"],
+    dependencies=[Depends(rate_limiter)],
+)
 async def chat(request: AssistantRequest) -> AssistantResponse:
     container = get_container()
 
