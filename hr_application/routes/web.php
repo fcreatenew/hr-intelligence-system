@@ -29,6 +29,7 @@ Route::post('/logout', [LoginController::class, 'destroy'])
     ->name('logout');
 
 Route::middleware('auth')->group(function () {
+    Route::post('employees/{employee}/terminate', [EmployeeController::class, 'terminate'])->name('employees.terminate');
     Route::resource('employees', EmployeeController::class);
 
     Route::get('attendances/recap', [AttendanceController::class, 'recap'])->name('attendances.recap');
