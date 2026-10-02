@@ -87,7 +87,8 @@ class PredictionService:
                         probability >= threshold
                     ),
                     level_risiko=get_risk_level(
-                        probability
+                        probability,
+                        threshold,
                     ),
                 )
             )
@@ -138,7 +139,7 @@ class AbsensiPredictionService(_UseCasePredictionService):
                 employee_id=employee.employee_id,
                 probabilitas_absen_tinggi=round(float(probability), 4),
                 prediksi_absen_tinggi=int(probability >= threshold),
-                level_risiko=get_risk_level(float(probability)),
+                level_risiko=get_risk_level(float(probability), threshold),
                 threshold=round(threshold, 4),
             )
             for employee, probability in zip(employees, probabilities)

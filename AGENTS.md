@@ -37,9 +37,11 @@ cd ai_hr_assistant && uvicorn src.main:app --port 8100   # butuh HR Intelligence
 - **`payroll_intelligence/`** — analitik payroll, deteksi anomali (IsolationForest),
   forecasting (statsmodels). `cd payroll_intelligence && python -m pytest tests/ -q`;
   API di port 8300.
-- **`mlops/`** — registry, validasi model (gate deploy), drift PSI, metrics.
+- **`mlops/`** — registry, validasi model (gate deploy), drift PSI, metrics,
+  dan training reproducible (`python -m src.train`).
   `cd mlops && python -m src.cli` memvalidasi kelima model dan **exit 1 bila ada
-  yang gagal** (dipakai di CI). Model registry membaca `models/<dir>/model_metadata.json`;
+  yang gagal** (dipakai di CI). `python -m src.train --version vN` melatih
+  turnover dari `data/` lalu langsung menjalankan gate yang sama. Model registry membaca `models/<dir>/model_metadata.json`;
   metrik diambil dari `metrik_holdout_test`/`metrik_evaluasi`/`metrik`, atau root
   metadata untuk survival (`c_index`).
 - **`deep_learning/`** — MLP murni NumPy (tanpa PyTorch/TensorFlow) untuk turnover,
@@ -48,7 +50,9 @@ cd ai_hr_assistant && uvicorn src.main:app --port 8100   # butuh HR Intelligence
 - **`hr_dashboard/`** — React + Vite. Default `VITE_DATA_MODE=demo` (fixtures lokal);
   set `live` untuk memakai API. Proxy dev: `/api` → 8000, `/payroll-api` → 8300
   (prefix `/payroll-api` agar tidak bentrok dengan route SPA `/payroll`).
-  `cd hr_dashboard && npm install && npm run dev`.
+  `cd hr_dashboard && npm install && npm run dev`. Lint memakai ESLint 9 **flat
+  config** (`eslint.config.js`, bukan `.eslintrc`); test memakai Vitest + Testing
+  Library (`npm run lint`, `npm test`). Keduanya dijalankan di CI.
 
 ## Perintah penting
 
@@ -68,7 +72,8 @@ python scripts/generate_attrition_survival_data.py
 Dependensi ML lengkap: `numpy pandas scikit-learn scipy joblib matplotlib seaborn
 xgboost lightgbm catboost shap lifelines nbformat nbclient`.
 
-Versi model yang dilayani API diatur lewat env `MODEL_VERSION` (default `v2`):
+Versi model yang dilayani API diatur lewat env `MODEL_VERSION` (default
+`v2_mitigated`, versi turnover paling adil):
 
 ```bash
 cd hr_intelligence_api && MODEL_VERSION=v1 python -m uvicorn app.main:app
@@ -95,8 +100,9 @@ cd hr_intelligence_api && MODEL_VERSION=v1 python -m uvicorn app.main:app
 ## Konvensi
 
 - **Bahasa dokumentasi:** Indonesia.
-- **Kontrak fitur turnover** harus identik di tiga tempat: `notebooks/train_model*.ipynb`,
-  `hr_intelligence_api/app/features/features.py`, dan notebook analisis. `tanggal_acuan` = `2025-01-01`.
+- **Kontrak fitur turnover** harus identik di empat tempat: `notebooks/train_model*.ipynb`,
+  `hr_intelligence_api/app/features/features.py`, `mlops/src/train/pipeline.py`, dan
+  notebook analisis. `tanggal_acuan` = `2025-01-01`.
 - **Jangan** menaruh data pribadi asli di repo. Dataset harus anonim/sintetis.
 - Model baru → buat versi baru (`models/<nama>/vN/`), jangan timpa versi lama (mendukung rollback).
 - Perubahan pada nama fitur/rumus/reference date = perubahan breaking → training ulang + versi baru.
@@ -104,7 +110,7 @@ cd hr_intelligence_api && MODEL_VERSION=v1 python -m uvicorn app.main:app
 
 ## Titik penting (jangan diubah tanpa alasan)
 
-- `hr_intelligence_api/app/core/config.py` — `MODEL_VERSION` (default v2) & path artifact.
+- `hr_intelligence_api/app/core/config.py` — `MODEL_VERSION` (default `v2_mitigated`) & path artifact.
   Artifact berada di **root** repo (`models/`), bukan di dalam folder API.
 - `hr_intelligence_api/app/services/model_service.py` — `model_version` properti (bukan nama algoritma).
 - `hr_intelligence_api/app/core/exceptions.py` — handler 422 harus tetap JSON-serializable.

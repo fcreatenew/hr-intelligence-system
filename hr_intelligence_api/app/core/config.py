@@ -16,10 +16,12 @@ MODELS_DIR = REPO_ROOT / "models"
 DATA_DIR = REPO_ROOT / "data"
 
 # Versi model turnover aktif. Artifact disimpan per versi di models/<MODEL_VERSION>/.
-# Ganti lewat env MODEL_VERSION untuk rollback/promosi model (mis. "v1").
+# Default `v2_mitigated` adalah versi paling adil (bias termitigasi) dan
+# performanya setara v2; ganti lewat env MODEL_VERSION untuk rollback/promosi
+# (mis. "v1" atau "v2").
 MODEL_VERSION = os.getenv(
     "MODEL_VERSION",
-    "v2",
+    "v2_mitigated",
 )
 
 

@@ -213,22 +213,28 @@ gaji identik dengan `payroll_intelligence` dan fitur model anomali payroll.
 
 ---
 
-# 9. Fase 5 — Pelaporan & Administrasi ⬜
+# 9. Fase 5 — Pelaporan & Administrasi 🔶
 
-- ⬜ Laporan headcount, turnover, biaya per departemen
-- ⬜ Ekspor (CSV/PDF)
+- ✅ Laporan headcount, turnover, biaya per departemen (`ReportController`)
+- ✅ Ekspor CSV (PDF belum)
 - ✅ Manajemen pengguna & peran dari UI
 - ✅ Halaman hasil prediksi ML di UI (bukan JSON lagi)
 
+Catatan: rasio turnover memakai status karyawan saat ini karena tanggal keluar
+belum tersimpan di tabel `employees`; periode hanya membatasi kolom
+ketidakhadiran.
+
 ---
 
-# 10. Fase 6 — Hardening Produksi ⬜
+# 10. Fase 6 — Hardening Produksi 🔶
 
+- ✅ `v2_mitigated` jadi default model turnover API (`MODEL_VERSION`)
 - ✅ CI root (`.github/workflows/ci.yml`) mencakup kelima modul + gate validasi model
-- ⬜ Halaman login + rate limiting
-- ⬜ Audit trail menyeluruh
+- ✅ Halaman login
+- ✅ Rate limiting login (5/menit per email+IP) & endpoint admin HR Intelligence (30/menit per pengguna)
+- ✅ Audit trail menyeluruh (karyawan, absensi, cuti, payroll)
 - ⬜ Backup & retensi data
-- ⬜ Dockerfile untuk `hr_application` & `hr_dashboard`
+- ✅ Dockerfile + `docker-compose.yml` untuk `hr_application` & `hr_dashboard`
 - ⬜ Model monitoring & drift alert otomatis (memanfaatkan `mlops`)
 - ⬜ Retraining terjadwal + rollback model
 - ⬜ Validasi ulang pada data nyata (saat ini data tambahan masih sintetis)
@@ -243,11 +249,11 @@ Daftar ini jujur menyebut hal yang belum beres, agar tidak hilang dari pandangan
 |---|---|---|---|
 | 1 | ~~Belum ada halaman login~~ | Sudah selesai di Fase 2.2 | Selesai |
 | 2 | Data absensi/kinerja/payroll/survival sintetis | Metrik terlalu optimistis | Fase 6 |
-| 3 | `v2_mitigated` belum jadi default | Model produksi masih kurang setara | Fase 6 |
+| 3 | ~~`v2_mitigated` belum jadi default~~ | Sudah jadi default `MODEL_VERSION` | Selesai |
 | 4 | Audit fairness masih in-sample | Belum dapat dijadikan dasar keputusan | Fase 6 |
-| 5 | Belum ada Dockerfile/CI `hr_application` | Deploy belum terstandar | Fase 6 |
+| 5 | ~~Belum ada Dockerfile/CI `hr_application`~~ | Sudah ada CI + Dockerfile + `docker-compose.yml` | Selesai |
 | 6 | Halaman prediksi ML masih JSON | Belum ramah pengguna non-teknis | Fase 5 |
-| 7 | Tidak ada audit trail karyawan | Perubahan data tidak tertelusur | Fase 2.1 |
+| 7 | ~~Tidak ada audit trail karyawan~~ | Jejak audit otomatis untuk karyawan, absensi, cuti, payroll | Selesai |
 | 8 | `deep_learning` MLP belum dipakai produksi | Eksperimen saja | Tidak diprioritaskan |
 | 9 | Belum ada impor mesin absensi | Absensi masih diisi manual | Fase 5 |
 | 10 | ~~Lembur belum dihitung dari jam masuk/keluar~~ | Sudah dihitung dari `overtime_minutes` absensi per periode | Selesai |
