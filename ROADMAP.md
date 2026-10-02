@@ -230,7 +230,8 @@ ketidakhadiran.
 
 - ✅ `v2_mitigated` jadi default model turnover API (`MODEL_VERSION`)
 - ✅ CI root (`.github/workflows/ci.yml`) mencakup kelima modul + gate validasi model
-- ✅ Halaman login (rate limiting belum)
+- ✅ Halaman login
+- ✅ Rate limiting login (5/menit per email+IP) & endpoint admin HR Intelligence (30/menit per pengguna)
 - ✅ Audit trail menyeluruh (karyawan, absensi, cuti, payroll)
 - ⬜ Backup & retensi data
 - ✅ Dockerfile + `docker-compose.yml` untuk `hr_application` & `hr_dashboard`
