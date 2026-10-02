@@ -230,4 +230,83 @@ class LeaveManagementTest extends TestCase
             ->assertSee('Budi Santoso')
             ->assertSee('8');
     }
+
+    public function test_calendar_shows_approved_leave_for_its_month(): void
+    {
+        $employee = $this->employee(['name' => 'Sari Wijaya']);
+        LeaveRequest::factory()->approved()->create([
+            'employee_id' => $employee->id,
+            'type' => 'tahunan',
+            'start_date' => '2026-11-03',
+            'end_date' => '2026-11-05',
+            'days' => 3,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->get(route('leave-requests.calendar', ['month' => '2026-11']))
+            ->assertOk()
+            ->assertSee('Sari Wijaya')
+            ->assertSee('November 2026');
+    }
+
+    public function test_calendar_hides_pending_leave(): void
+    {
+        $employee = $this->employee(['name' => 'Rudi Pending']);
+        LeaveRequest::factory()->create([
+            'employee_id' => $employee->id,
+            'status' => LeaveRequest::STATUS_PENDING,
+            'start_date' => '2026-11-03',
+            'end_date' => '2026-11-05',
+            'days' => 3,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->get(route('leave-requests.calendar', ['month' => '2026-11']))
+            ->assertOk()
+            ->assertDontSee('Rudi Pending');
+    }
+
+    public function test_calendar_excludes_leave_outside_selected_month(): void
+    {
+        $employee = $this->employee(['name' => 'Tono Desember']);
+        LeaveRequest::factory()->approved()->create([
+            'employee_id' => $employee->id,
+            'start_date' => '2026-12-10',
+            'end_date' => '2026-12-12',
+            'days' => 3,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->get(route('leave-requests.calendar', ['month' => '2026-11']))
+            ->assertOk()
+            ->assertDontSee('Tono Desember');
+    }
+
+    public function test_calendar_includes_leave_spanning_month_boundary(): void
+    {
+        $employee = $this->employee(['name' => 'Lintas Bulan']);
+        LeaveRequest::factory()->approved()->create([
+            'employee_id' => $employee->id,
+            'start_date' => '2026-10-30',
+            'end_date' => '2026-11-02',
+            'days' => 4,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->get(route('leave-requests.calendar', ['month' => '2026-11']))
+            ->assertOk()
+            ->assertSee('Lintas Bulan');
+    }
+
+    public function test_calendar_falls_back_to_current_month_for_invalid_input(): void
+    {
+        $this->actingAs($this->admin())
+            ->get(route('leave-requests.calendar', ['month' => 'bukan-bulan']))
+            ->assertOk();
+    }
+
+    public function test_calendar_requires_authentication(): void
+    {
+        $this->get(route('leave-requests.calendar'))->assertRedirect(route('login'));
+    }
 }

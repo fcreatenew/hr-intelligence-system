@@ -20,7 +20,7 @@ Legenda: ✅ ada & teruji · 🟡 ada di PR terbuka (hijau, belum merge) · ⬜ 
 | Fase 0 — Fondasi ML + API | ✅ | — | — |
 | Fase 1 — Integrasi HRIS ↔ ML | ✅ | — | — |
 | Fase 2 — Employee Management | ✅ | — | Fase 2.3 (riwayat) |
-| Fase 3 — Attendance & Leave | ✅ | — | kalender cuti, impor absensi |
+| Fase 3 — Attendance & Leave | ✅ | — | impor absensi |
 | Fase 4 — Payroll Run | ⬜ | 🟡 PR #12 | integrasi `payroll_intelligence` |
 | Fase 5 — Pelaporan & Administrasi | ⬜ | 🟡 PR #15 (laporan + CSV), #19 (UI prediksi ML), #20 (manajemen pengguna) | — |
 | Fase 6 — Hardening Produksi | ⬜ | 🟡 PR #10, #13, #14, #18 | monitoring drift, retraining |
@@ -103,7 +103,7 @@ reproducible sebagai fondasi, tetapi bukan penjadwalan/alert.
 
 - Manajemen pengguna & peran dari UI — ✅ dikerjakan di PR #20.
 - Halaman hasil prediksi ML di UI — ✅ dikerjakan di PR #19 (utang #6).
-- Kalender cuti tim — utang #11.
+- Kalender cuti tim — ✅ dikerjakan (grid bulanan cuti disetujui, utang #11).
 - Impor mesin absensi/fingerprint — utang #9.
 - Kuota cuti per jenis selain tahunan.
 
