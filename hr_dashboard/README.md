@@ -150,6 +150,11 @@ Struktur di dalam `src/` dapat berkembang mengikuti kebutuhan aplikasi dashboard
 | `/payroll` | Biaya payroll, per departemen, anomali, proyeksi |
 | `/models` | HR KPI dan status serta metrik lima model ML |
 
+Semua halaman di balik **gerbang API key**: bila belum ada key tersimpan,
+dashboard menampilkan halaman masuk dan tidak memuat data apa pun. Key dikirim
+sebagai header `X-API-Key` pada setiap request ke API (lihat
+`src/services/auth.js`).
+
 ---
 
 # Integrasi
@@ -264,8 +269,8 @@ npm run preview
 Lint dan test:
 
 ```bash
-npm run lint   # ESLint 9 (flat config, eslint.config.js)
-npm test       # Vitest + Testing Library (jsdom)
+npm run lint
+npm test
 ```
 
 ---
