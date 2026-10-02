@@ -213,17 +213,22 @@ gaji identik dengan `payroll_intelligence` dan fitur model anomali payroll.
 
 ---
 
-# 9. Fase 5 — Pelaporan & Administrasi ⬜
+# 9. Fase 5 — Pelaporan & Administrasi 🔶
 
-- ⬜ Laporan headcount, turnover, biaya per departemen
-- ⬜ Ekspor (CSV/PDF)
+- ✅ Laporan headcount, turnover, biaya per departemen (`ReportController`)
+- ✅ Ekspor CSV (PDF belum)
 - ✅ Manajemen pengguna & peran dari UI
 - ✅ Halaman hasil prediksi ML di UI (bukan JSON lagi)
 
+Catatan: rasio turnover memakai status karyawan saat ini karena tanggal keluar
+belum tersimpan di tabel `employees`; periode hanya membatasi kolom
+ketidakhadiran.
+
 ---
 
-# 10. Fase 6 — Hardening Produksi ⬜
+# 10. Fase 6 — Hardening Produksi 🔶
 
+- ✅ `v2_mitigated` jadi default model turnover API (`MODEL_VERSION`)
 - ✅ CI root (`.github/workflows/ci.yml`) mencakup kelima modul + gate validasi model
 - ✅ Halaman login (rate limiting belum)
 - ✅ Audit trail menyeluruh (karyawan, absensi, cuti, payroll)
@@ -243,7 +248,7 @@ Daftar ini jujur menyebut hal yang belum beres, agar tidak hilang dari pandangan
 |---|---|---|---|
 | 1 | ~~Belum ada halaman login~~ | Sudah selesai di Fase 2.2 | Selesai |
 | 2 | Data absensi/kinerja/payroll/survival sintetis | Metrik terlalu optimistis | Fase 6 |
-| 3 | `v2_mitigated` belum jadi default | Model produksi masih kurang setara | Fase 6 |
+| 3 | ~~`v2_mitigated` belum jadi default~~ | Sudah jadi default `MODEL_VERSION` | Selesai |
 | 4 | Audit fairness masih in-sample | Belum dapat dijadikan dasar keputusan | Fase 6 |
 | 5 | ~~Belum ada Dockerfile/CI `hr_application`~~ | Sudah ada CI + Dockerfile + `docker-compose.yml` | Selesai |
 | 6 | Halaman prediksi ML masih JSON | Belum ramah pengguna non-teknis | Fase 5 |
