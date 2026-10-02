@@ -18,6 +18,11 @@ Project ini menjadi tempat untuk menggabungkan:
 
 Detail tahapan pengembangan tersedia di [`ROADMAP.md`](./ROADMAP.md).
 
+Panduan fitur dan cara menjalankan seluruh komponen tersedia di:
+
+* [`PANDUAN_PENGGUNAAN.md`](./PANDUAN_PENGGUNAAN.md) — versi Markdown
+* [`PANDUAN_PENGGUNAAN.pdf`](./PANDUAN_PENGGUNAAN.pdf) — versi PDF (15 halaman)
+
 ---
 
 # Arsitektur
@@ -258,7 +263,9 @@ hr-intelligence-system/
 │   ├── generate_absenteeism_data.py
 │   ├── generate_performance_data.py
 │   ├── generate_payroll_data.py
-│   └── generate_attrition_survival_data.py
+│   ├── generate_attrition_survival_data.py
+│   ├── generate_panduan_pdf.py      # PANDUAN_PENGGUNAAN.md -> PDF
+│   └── verify_panduan_examples.py   # uji contoh curl di panduan
 │
 ├── notebooks/
 │   ├── README.md
