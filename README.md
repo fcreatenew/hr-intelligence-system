@@ -432,6 +432,26 @@ ai_hr_assistant/README.md
 mlops/README.md
 ```
 
+## Menjalankan dengan Docker
+
+Seluruh stack inti dapat dijalankan sekaligus dengan Docker Compose:
+
+```bash
+HR_API_KEY=<secret> docker compose up --build
+```
+
+| Layanan | URL | Isi |
+|---|---|---|
+| `hr-api` | http://localhost:8000 | HR Intelligence API (prediksi model) |
+| `payroll-api` | http://localhost:8300 | Payroll Intelligence (analitik & skor anomali) |
+| `hr-app` | http://localhost:8080 | Laravel HRIS (attendance/leave/payroll) |
+| `dashboard` | http://localhost:8081 | React dashboard |
+| `assistant` | http://localhost:8100 | AI HR Assistant |
+
+`hr-app` otomatis diarahkan ke `hr-api` dan `payroll-api` di dalam jaringan
+Compose, sehingga prediksi dan skor anomali berjalan tanpa konfigurasi manual.
+`APP_KEY` untuk Laravel diisi lewat environment (`APP_KEY=base64:...`).
+
 Untuk kontribusi, baca:
 
 [`CONTRIBUTE.md`](./CONTRIBUTE.md)

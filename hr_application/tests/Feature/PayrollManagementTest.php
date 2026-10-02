@@ -135,8 +135,8 @@ class PayrollManagementTest extends TestCase
             'tarif_lembur' => 50_000,
         ]);
 
-        Attendance::factory()->for($employee)->onDate('2026-04-30')->create(['overtime_minutes' => 600]);
-        Attendance::factory()->for($employee)->onDate('2026-05-02')->create(['overtime_minutes' => 60]);
+        Attendance::factory()->for($employee)->onDate('2026-04-30')->hadir()->create(['overtime_minutes' => 600]);
+        Attendance::factory()->for($employee)->onDate('2026-05-02')->hadir()->create(['overtime_minutes' => 60]);
 
         $this->actingAs($this->admin())->post(route('payroll-periods.calculate', $period));
 
@@ -240,7 +240,7 @@ class PayrollManagementTest extends TestCase
             'potongan' => 250_000,
         ]);
 
-        Attendance::factory()->for($employee)->onDate('2026-05-10')->create(['overtime_minutes' => 120]);
+        Attendance::factory()->for($employee)->onDate('2026-05-10')->hadir()->create(['overtime_minutes' => 120]);
 
         $components = app(PayrollCalculationService::class)->calculateFor($employee, '2026-05');
 
