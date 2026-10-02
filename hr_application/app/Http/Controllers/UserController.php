@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Support\UserRoles;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Password;
 use Illuminate\View\View;
 
 class UserController extends Controller
@@ -51,7 +52,20 @@ class UserController extends Controller
     public function store(StoreUserRequest $request): RedirectResponse
     {
         $data = $request->safe()->only(['name', 'email', 'password', 'role']);
+
+        if (($data['password'] ?? null) === null) {
+            unset($data['password']);
+        }
+
         $user = User::create($data);
+
+        if (! isset($data['password'])) {
+            Password::sendResetLink(['email' => $user->email]);
+
+            return redirect()
+                ->route('users.index')
+                ->with('status', "Pengguna \"{$user->name}\" dibuat; tautan untuk menetapkan kata sandi telah dikirim ke {$user->email}.");
+        }
 
         return redirect()
             ->route('users.index')

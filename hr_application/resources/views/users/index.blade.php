@@ -62,6 +62,12 @@
                         @can('update', $user)
                             <a href="{{ route('users.edit', $user) }}" class="btn link">Ubah</a>
                         @endcan
+                        @can('update', $user)
+                            <form method="POST" action="{{ route('users.send-reset', $user) }}">
+                                @csrf
+                                <button type="submit" class="btn link">Kirim tautan reset</button>
+                            </form>
+                        @endcan
                         @can('delete', $user)
                             <form method="POST" action="{{ route('users.destroy', $user) }}"
                                   onsubmit="return confirm('Hapus akun {{ $user->name }}? Tindakan ini tidak dapat dibatalkan.')">
