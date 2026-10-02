@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Attendance;
 use App\Models\Employee;
+use App\Models\Holiday;
 use App\Models\LeaveRequest;
 use App\Models\User;
 use App\Services\AttendanceMetricsService;
@@ -57,6 +58,63 @@ class LeaveManagementTest extends TestCase
         $leaveRequest = LeaveRequest::first();
         $this->assertSame(3, $leaveRequest->days, 'days harus dihitung server, bukan dari input');
         $this->assertSame(LeaveRequest::STATUS_PENDING, $leaveRequest->status);
+    }
+
+    public function test_days_exclude_weekends(): void
+    {
+        $employee = $this->employee();
+
+        // Jumat 2026-11-06 s/d Senin 2026-11-09: hanya 2 hari kerja.
+        $this->actingAs($this->admin())
+            ->post(route('leave-requests.store'), $this->payload($employee, [
+                'start_date' => '2026-11-06',
+                'end_date' => '2026-11-09',
+            ]));
+
+        $this->assertSame(2, LeaveRequest::first()->days);
+    }
+
+    public function test_days_exclude_national_holidays(): void
+    {
+        $employee = $this->employee();
+        Holiday::create(['date' => '2026-11-03', 'name' => 'Cuti bersama', 'is_national' => true]);
+
+        $this->actingAs($this->admin())
+            ->post(route('leave-requests.store'), $this->payload($employee, [
+                'start_date' => '2026-11-02',
+                'end_date' => '2026-11-04',
+            ]));
+
+        $this->assertSame(2, LeaveRequest::first()->days);
+    }
+
+    public function test_approval_writes_attendance_only_on_working_days(): void
+    {
+        $employee = $this->employee();
+        Holiday::create(['date' => '2026-11-03', 'name' => 'Cuti bersama', 'is_national' => true]);
+
+        $leaveRequest = LeaveRequest::factory()->for($employee)->annual()->create([
+            'start_date' => '2026-11-02',
+            'end_date' => '2026-11-04',
+            'days' => LeaveRequest::countDays('2026-11-02', '2026-11-04'),
+            'status' => LeaveRequest::STATUS_PENDING,
+        ]);
+
+        $this->actingAs($this->hrManager())
+            ->post(route('leave-requests.approve', $leaveRequest));
+
+        $this->assertSame(2, Attendance::where('employee_id', $employee->id)
+            ->where('status', Attendance::STATUS_CUTI)->count());
+    }
+
+    public function test_calendar_marks_national_holiday(): void
+    {
+        Holiday::create(['date' => '2026-11-03', 'name' => 'Cuti bersama', 'is_national' => true]);
+
+        $this->actingAs($this->admin())
+            ->get(route('leave-requests.calendar', ['month' => '2026-11']))
+            ->assertOk()
+            ->assertSee('Cuti bersama');
     }
 
     public function test_single_day_request_counts_as_one_day(): void
