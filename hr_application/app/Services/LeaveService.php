@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Attendance;
+use App\Models\Holiday;
 use App\Models\LeaveRequest;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -79,15 +80,27 @@ class LeaveService
     }
 
     /**
-     * Tulis catatan absensi bertipe `cuti` untuk setiap hari dalam rentang.
-     * Catatan tidak hadir yang lebih spesifik (sakit/izin/alpha) tidak ditimpa,
-     * karena itu data nyata yang tidak boleh hilang hanya karena cuti disetujui.
+     * Tulis catatan absensi bertipe `cuti` untuk setiap **hari kerja** dalam
+     * rentang. Akhir pekan dan hari libur dilewati karena tidak dihitung
+     * sebagai cuti. Catatan tidak hadir yang lebih spesifik (sakit/izin/alpha)
+     * tidak ditimpa, karena itu data nyata yang tidak boleh hilang hanya karena
+     * cuti disetujui.
      */
     private function writeAttendance(LeaveRequest $leaveRequest): void
     {
         $date = $leaveRequest->start_date->copy();
+        $holidays = Holiday::between(
+            $leaveRequest->start_date->toImmutable(),
+            $leaveRequest->end_date->toImmutable(),
+        );
 
         while ($date->lte($leaveRequest->end_date)) {
+            if ($date->isWeekend() || in_array($date->toDateString(), $holidays, true)) {
+                $date->addDay();
+
+                continue;
+            }
+
             $existing = Attendance::query()
                 ->where('employee_id', $leaveRequest->employee_id)
                 ->where('date', $date->toDateString())
