@@ -14,6 +14,24 @@ Panduan kerja untuk agen/AI di repository ini.
 | `scripts/` | Generator data & utilitas |
 | `ai_hr_assistant/`, `payroll_intelligence/`, `deep_learning/`, `mlops/`, `hr_dashboard/` | Modul per domain |
 
+## AI HR Assistant (`ai_hr_assistant/`)
+
+Asisten HR berbasis LLM + RAG + AI tools (FastAPI, Python).
+
+- **Knowledge base** (markdown) ada di `ai_hr_assistant/knowledge/{policies,procedures,regulations,faq}`;
+  prompt terstruktur di `ai_hr_assistant/prompts/`.
+- **AI tools** memanggil kelima model ML lewat HR Intelligence API
+  (`predict_turnover`, `predict_absensi`, `predict_kinerja`, `predict_payroll`,
+  `predict_survival`) plus `model_info`, `list_models`, `health`.
+- **Provider LLM** diatur env `LLM_PROVIDER` (`mock` default, `openai` opsional).
+  `mock` menyusun jawaban deterministik dari retrieval + tool (tanpa jaringan).
+- Konfigurasi memakai env `HR_INTELLIGENCE_BASE_URL` dan `HR_INTELLIGENCE_API_KEY`.
+
+```bash
+cd ai_hr_assistant && python -m pytest tests/ -q
+cd ai_hr_assistant && uvicorn src.main:app --port 8100   # butuh HR Intelligence API di port 8000
+```
+
 ## Perintah penting
 
 Semua perintah notebook dijalankan dari **root repo** (notebook mencari `data/` relatif ke cwd).
