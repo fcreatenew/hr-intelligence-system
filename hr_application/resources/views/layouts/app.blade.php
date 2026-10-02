@@ -63,7 +63,7 @@
                     <a href="{{ route('leave-requests.index') }}">Cuti</a>
                     <a href="{{ route('payroll-periods.index') }}">Payroll</a>
                     <a href="{{ route('reports.index') }}">Laporan</a>
-                    <a href="{{ route('hr-intelligence.use-cases') }}">Prediksi ML</a>
+                    <a href="{{ route('hr-intelligence.dashboard') }}">Prediksi ML</a>
                     @if (auth()->user()->role === 'admin')
                         <a href="{{ route('audit-logs.index') }}">Jejak Audit</a>
                     @endif
