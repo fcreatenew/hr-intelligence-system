@@ -5,5 +5,12 @@ httpx>=0.27
 python-dotenv>=1.0
 pytest>=8.0
 
+# Embedding semantik LSA (TF-IDF + SVD) — default.
+scikit-learn>=1.4
+numpy>=1.26
+
 # Opsional: aktifkan bila LLM_PROVIDER=openai
 # openai>=1.30
+
+# Opsional: aktifkan bila EMBEDDING_BACKEND=neural
+# sentence-transformers>=2.7

@@ -42,6 +42,11 @@ class VectorStore:
     def chunks(self) -> list[Chunk]:
         return list(self._chunks)
 
+    @property
+    def vectors(self) -> list[list[float]]:
+        """Vektor chunk sejajar dengan `chunks` (dipakai MMR untuk diversitas)."""
+        return self._vectors
+
     def semantic_scores(self, query: str) -> list[float]:
         query_vector = self._embedder.embed(query)
 
