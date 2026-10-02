@@ -64,6 +64,9 @@ jobs:
       - name: Validate registered models
         working-directory: mlops
         run: python -m src.cli
+      - name: Train turnover (reproducible) and validate
+        working-directory: mlops
+        run: python -m src.train --version v_ci --seed 42
 
   hr-application:
     name: hr_application (php artisan test)
