@@ -62,10 +62,12 @@
             @error('reason') <div class="error">{{ $message }}</div> @enderror
         </div>
 
-        @if ($balance)
+        @if ($balances)
             <p class="hint">
-                Saldo {{ $balance->year }}: tersisa <strong>{{ $balance->remaining_days }}</strong> dari
-                {{ $balance->entitled_days }} hari.
+                Kuota {{ $balances['tahunan']->year }} —
+                @foreach ($balances as $type => $balance)
+                    {{ $type }}: <strong>{{ $balance->remaining_days }}</strong>/{{ $balance->entitled_days }}@if (! $loop->last) · @endif
+                @endforeach
             </p>
         @endif
 

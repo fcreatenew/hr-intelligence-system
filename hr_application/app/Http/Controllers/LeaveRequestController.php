@@ -49,7 +49,7 @@ class LeaveRequestController extends Controller
             'leaveRequest' => new LeaveRequest(['type' => 'tahunan', 'employee_id' => $employeeId]),
             'employees' => Employee::query()->orderBy('name')->get(['id', 'name', 'nik']),
             'types' => LeaveRequest::TYPES,
-            'balance' => $employeeId ? Employee::find($employeeId)?->leaveBalanceFor() : null,
+            'balances' => $employeeId ? Employee::find($employeeId)?->leaveBalancesFor() : [],
         ]);
     }
 
@@ -72,7 +72,10 @@ class LeaveRequestController extends Controller
 
         return view('leave-requests.show', [
             'leaveRequest' => $leaveRequest->load(['employee', 'decidedBy']),
-            'balance' => $leaveRequest->employee->leaveBalanceFor((int) $leaveRequest->start_date->year),
+            'balance' => $leaveRequest->employee->leaveBalanceFor(
+                (int) $leaveRequest->start_date->year,
+                $leaveRequest->type,
+            ),
         ]);
     }
 
@@ -134,11 +137,9 @@ class LeaveRequestController extends Controller
             ->orderBy('name')
             ->get()
             ->map(function (Employee $employee) use ($year) {
-                $balance = $employee->leaveBalanceFor($year);
-
                 return [
                     'employee' => $employee,
-                    'balance' => $balance,
+                    'balances' => $employee->leaveBalancesFor($year),
                     'pending_days' => (int) LeaveRequest::query()
                         ->where('employee_id', $employee->id)
                         ->pending()
@@ -150,6 +151,7 @@ class LeaveRequestController extends Controller
         return view('leave-requests.balances', [
             'rows' => $rows,
             'year' => $year,
+            'types' => LeaveRequest::TYPES,
         ]);
     }
 }
