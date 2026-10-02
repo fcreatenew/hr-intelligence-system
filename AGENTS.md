@@ -74,6 +74,24 @@ Versi model yang dilayani API diatur lewat env `MODEL_VERSION` (default `v2`):
 cd hr_intelligence_api && MODEL_VERSION=v1 python -m uvicorn app.main:app
 ```
 
+## Toolchain CI (jangan diturunkan tanpa alasan)
+
+- **PHP CI = 8.4.** `composer.lock` mengunci `symfony/* v8.1.x` yang butuh
+  PHP >= 8.4.1. Menjalankan `composer install` di 8.3 gagal ("lock file does
+  not contain a compatible set of packages"). Jangan menurunkan versi symfony
+  untuk memaksa 8.3 — `laravel/framework ^13` mensyaratkan Symfony 8.
+- **Node CI = 24.** `jsdom` 30 menarik `undici` 8.x yang memakai
+  `worker_threads.markAsUncloneable` (Node >= 22.19). Di Node 20, Vitest crash
+  dengan `webidl.util.markAsUncloneable is not a function`.
+- **`pandas` di `hr_intelligence_api/requirements.txt` harus `<3.0`** (dipakai
+  2.3.3). `lifelines==0.30.3` (model survival CoxPH) mensyaratkan
+  `pandas<3.0`; menaikkan pandas ke 3.x membuat `pip install` mustahil.
+- **`requirements.txt` = hasil freeze, tanpa pytest.** Job CI memasang pytest
+  terpisah. Jangan tambah pin baru sembarangan; kalau memang perlu, verifikasi
+  dengan `pip install --dry-run -r requirements.txt` di venv bersih.
+- **`hr_dashboard` lint** memakai ESLint 9 flat config (`eslint.config.js`).
+  ESLint 9 tidak membaca `.eslintrc`, dan flag `--ext` sudah dihapus.
+
 ## Konvensi
 
 - **Bahasa dokumentasi:** Indonesia.
