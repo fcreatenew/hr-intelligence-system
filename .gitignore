@@ -7,3 +7,7 @@ catboost_info/
 # Python test/agent artifacts
 .pytest_cache/
 .agent_tmp/
+__pycache__/
+*.py[cod]
+.venv/
+venv/

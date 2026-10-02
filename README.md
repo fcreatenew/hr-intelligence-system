@@ -121,18 +121,18 @@ Dokumentasi:
 
 ## `hr_dashboard/`
 
-Aplikasi untuk **visualisasi dan analisis data HR**.
+Aplikasi **React + Vite** untuk visualisasi dan analisis data HR.
 
-Contoh:
+Halaman: Ringkasan, Workforce, Turnover, Attendance, Payroll, HR KPI & Model.
+Membaca dari HR Intelligence API dan Payroll Intelligence API. Default berjalan
+dalam **mode demo** (data contoh lokal) agar tidak pernah kosong; set
+`VITE_DATA_MODE=live` untuk memakai API sungguhan.
 
-* Workforce Analytics
-* Turnover Analytics
-* Employee Risk
-* Attendance Analytics
-* Payroll Analytics
-* HR KPI
+**Teknologi:** React / Vite / Recharts
 
-**Teknologi:** Frontend / Dashboard
+```bash
+cd hr_dashboard && npm install && npm run dev
+```
 
 Dokumentasi:
 
@@ -144,15 +144,19 @@ Dokumentasi:
 
 Project untuk **analitik dan intelligence terkait payroll**.
 
-Contoh:
+* Ingestion & transformasi data payroll
+* Perhitungan komponen gaji
+* Payroll Analytics (ringkasan, per departemen, per periode, lembur)
+* Payroll Anomaly Detection (IsolationForest)
+* Payroll Forecasting (Holt / seasonal)
+* REST API + CLI
 
-* Payroll Analytics
-* Payroll Anomaly Detection
-* Salary Analysis
-* Overtime Analysis
-* Payroll Forecasting
+**Teknologi:** Python / FastAPI / scikit-learn / statsmodels
 
-**Teknologi:** Python / Data Analytics / Machine Learning
+```bash
+cd payroll_intelligence && python -m pytest tests/ -q
+cd payroll_intelligence && uvicorn src.api:app --port 8300
+```
 
 Dokumentasi:
 
@@ -162,17 +166,20 @@ Dokumentasi:
 
 ## `deep_learning/`
 
-Project untuk eksperimen dan pengembangan **Deep Learning**.
+Eksperimen **neural network** (MLP murni NumPy) untuk kasus HR, dibandingkan
+dengan baseline klasik.
 
-Fokus:
+* MLP + backpropagation + early stopping (tanpa PyTorch/TensorFlow)
+* Kontrak fitur turnover identik dengan `hr_intelligence_api`
+* Baseline Logistic Regression & majority class sebagai pembanding
+* Pencatatan eksperimen (JSON) + CLI + API
 
-* Neural Network
-* Computer Vision
-* OCR
-* Document Understanding
-* Text / Image Classification
+**Teknologi:** Python / NumPy / FastAPI
 
-**Teknologi:** Python / Deep Learning Framework
+```bash
+cd deep_learning && python -m pytest tests/ -q
+cd deep_learning && python -m src.cli compare
+```
 
 Dokumentasi:
 
@@ -209,17 +216,18 @@ Dokumentasi:
 
 Project untuk mengelola **Machine Learning lifecycle**.
 
-Fokus:
+* Model Registry (metadata `models/` sebagai sumber kebenaran)
+* Model Validation (gate kelayakan deploy)
+* Drift Detection (PSI) & Metrics Collector (format Prometheus)
+* REST API + CLI validasi
+* Docker Compose, workflow CI GitHub Actions, aturan alert, checklist monitoring
 
-* Model Versioning
-* Training Pipeline
-* CI/CD
-* Deployment
-* Monitoring
-* Model / Data Drift
-* Retraining
+**Teknologi:** Python / FastAPI / Docker / CI/CD
 
-**Teknologi:** Docker / CI/CD / MLOps Tools
+```bash
+cd mlops && python -m pytest tests/ -q
+cd mlops && python -m src.cli          # validasi semua model (gate CI)
+```
 
 Dokumentasi:
 
