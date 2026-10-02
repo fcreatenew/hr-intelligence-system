@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -105,3 +107,61 @@ def test_metrics_labels():
     collector.inc_counter("pred_total", use_case="turnover")
 
     assert 'pred_total{use_case="turnover"}' in collector.to_prometheus()
+
+
+# ---------------------------------------------------------------------------
+# Pipeline training reproducible
+# ---------------------------------------------------------------------------
+def test_training_pipeline_is_reproducible(tmp_path):
+    from src.train.pipeline import TrainingConfig, train
+
+    config = TrainingConfig(seed=42, version="test_repro")
+    hasil_a = train(config, models_dir=tmp_path)
+    hasil_b = train(config, models_dir=tmp_path)
+
+    assert hasil_a["champion"] == hasil_b["champion"]
+    assert hasil_a["threshold"] == hasil_b["threshold"]
+    assert hasil_a["metrics"]["roc_auc"] == pytest.approx(hasil_b["metrics"]["roc_auc"])
+    assert hasil_a["metrics"]["pr_auc"] == pytest.approx(hasil_b["metrics"]["pr_auc"])
+
+
+def test_training_pipeline_writes_verifiable_metadata(tmp_path):
+    from src.train.pipeline import TrainingConfig, train
+
+    hasil = train(TrainingConfig(seed=42, version="test_meta"), models_dir=tmp_path)
+
+    artifact_dir = tmp_path / "test_meta"
+    model_path = artifact_dir / "turnover_model.joblib"
+    meta_path = artifact_dir / "model_metadata.json"
+
+    assert model_path.exists()
+    meta = json.loads(meta_path.read_text(encoding="utf-8"))
+
+    # Metadata harus bisa langsung divalidasi gate CI.
+    assert meta["versi_model"] == "test_meta"
+    assert meta["model"] == hasil["champion"]
+    assert meta["metrik_holdout_test"]["roc_auc"] >= 0.6
+    assert meta["fitur_numerik"] and meta["fitur_kategorik"]
+    assert meta["random_state"] == 42
+
+
+def test_training_metadata_passes_validation_gate(tmp_path):
+    from src.train.pipeline import TrainingConfig, train
+
+    hasil = train(TrainingConfig(seed=42, version="test_gate"), models_dir=tmp_path)
+
+    record = ModelRegistry(tmp_path).get("turnover", "test_gate")
+    validasi = validate_record(record)
+
+    assert validasi["lulus"], validasi
+    assert record.model_type == hasil["champion"]
+
+
+def test_training_rejects_missing_columns(tmp_path):
+    from src.train.pipeline import TrainingConfig, load_data
+
+    bad = tmp_path / "bad.csv"
+    bad.write_text("usia,target_turnover\n30,1\n", encoding="utf-8")
+
+    with pytest.raises(ValueError):
+        load_data(bad, TrainingConfig().ref_timestamp)
