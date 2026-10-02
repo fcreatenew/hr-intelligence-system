@@ -134,6 +134,8 @@ Tool harus memiliki batas akses dan validasi yang jelas.
 ai_hr_assistant/
 │
 ├── README.md
+├── requirements.txt
+├── .env.example
 │
 ├── knowledge/
 │   ├── policies/
@@ -147,16 +149,21 @@ ai_hr_assistant/
 │   ├── payroll/
 │   └── recruitment/
 │
-└── src/
-    ├── agents/
-    ├── llm/
-    ├── rag/
-    ├── embeddings/
-    ├── retrieval/
-    ├── tools/
-    ├── memory/
-    ├── schemas/
-    └── services/
+├── src/
+│   ├── main.py
+│   ├── config.py
+│   ├── api/
+│   ├── agents/
+│   ├── llm/
+│   ├── rag/
+│   ├── embeddings/
+│   ├── retrieval/
+│   ├── tools/
+│   ├── memory/
+│   ├── schemas/
+│   └── services/
+│
+└── tests/
 ```
 
 ---
@@ -245,6 +252,110 @@ Model dan provider LLM dapat diganti sesuai kebutuhan arsitektur.
 * Explainable retrieval
 * Controlled tool access
 * Separation antara knowledge dan application logic
+
+---
+
+# Implementasi
+
+Modul berikut sudah diimplementasikan pada folder `src/`.
+
+| Modul | Tanggung jawab |
+| ----- | -------------- |
+| `config.py` | Konfigurasi (env): API HR, LLM, embeddings, retrieval |
+| `schemas/chat.py` | Kontrak request/response (`AssistantRequest`, `AssistantResponse`) |
+| `embeddings/embedder.py` | Antarmuka `Embedder` + `HashingEmbedder` lokal deterministik |
+| `llm/provider.py` | Antarmuka `LLMProvider` + `MockLLM` (offline) & `OpenAILLM` (opsional) |
+| `llm/prompts.py` | Pemuat prompt terstruktur dari `prompts/` |
+| `rag/loader.py` | Pembaca markdown, chunker per heading, tag dokumen |
+| `rag/service.py` | `RagService`: knowledge base + retriever |
+| `retrieval/vector_store.py` | Vector store in-memory (cosine similarity) |
+| `retrieval/retriever.py` | Retriever hybrid: BM25 ringan + skor semantik |
+| `tools/hr_intelligence_client.py` | Klien HTTP ke HR Intelligence API (retry, auth, error mapping) |
+| `tools/prediction_tools.py` | AI tools untuk 5 model + `model_info`, `list_models`, `health` |
+| `tools/registry.py` | Registry tool dengan batas akses (hanya tool terdaftar) |
+| `agents/router.py` | Deteksi intent, use case, dan employee id dari pesan |
+| `agents/hr_assistant.py` | Agent: retrieval + tool -> jawaban + sitasi |
+| `memory/session.py` | Riwayat percakapan per sesi (in-memory, terbatas) |
+| `services/container.py` | Perakitan dependensi |
+| `api/routes.py`, `main.py` | REST API FastAPI |
+
+## Alur Agent
+
+```text
+Pesan pengguna
+   │
+   ▼
+Router (intent: knowledge / employee_insight / hybrid)
+   │
+   ├── RAG  -> ambil chunk knowledge base (sitasi)
+   └── Tools -> panggil model ML lewat HR Intelligence API
+   │
+   ▼
+Komposisi jawaban (LLM bila aktif, jika tidak deterministik)
+   │
+   ▼
+AssistantResponse (answer, citations, tool_calls, suggestions)
+```
+
+## Integrasi dengan Model ML
+
+Assistant terhubung ke lima model yang sudah ada lewat `HR Intelligence API`:
+
+| Use case | Tool | Endpoint API |
+| -------- | ---- | ------------ |
+| turnover | `predict_turnover` | `POST /predict` |
+| absensi | `predict_absensi` | `POST /predict/absensi` |
+| kinerja | `predict_kinerja` | `POST /predict/kinerja` |
+| payroll | `predict_payroll` | `POST /predict/payroll` |
+| survival | `predict_survival` | `POST /predict/survival` |
+
+Selain itu tersedia tool `model_info`, `list_models`, dan `health`.
+
+Karena assistant belum memiliki akses ke database HR, tiap tool memakai
+**payload default** karyawan tipikal yang dapat ditimpa lewat parameter
+`attributes`. Tujuannya agar model dapat dipanggil end-to-end; integrasi ke data
+karyawan sebenarnya dapat ditambahkan tanpa mengubah agent maupun registry.
+
+## Endpoint REST
+
+| Method | Path | Keterangan |
+| ------ | ---- | ---------- |
+| `GET` | `/health` | Status assistant, knowledge base, dan koneksi API HR |
+| `GET` | `/tools` | Daftar tool yang tersedia |
+| `GET` | `/knowledge` | Daftar dokumen knowledge base |
+| `GET` | `/models` | Daftar model dari HR Intelligence API |
+| `POST` | `/chat` | Tanya jawab assistant |
+
+Contoh:
+
+```bash
+curl -X POST http://127.0.0.1:8100/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"Berapa risiko turnover karyawan EMP0001?","employee_id":"EMP0001"}'
+```
+
+## Menjalankan
+
+```bash
+# 1. Jalankan HR Intelligence API (terminal terpisah)
+cd ../hr_intelligence_api
+HR_API_KEY=dev-secret uvicorn app.main:app --port 8000
+
+# 2. Jalankan AI HR Assistant
+cd ai_hr_assistant
+cp .env.example .env          # isi HR_INTELLIGENCE_API_KEY
+uvicorn src.main:app --port 8100
+```
+
+## Testing
+
+```bash
+cd ai_hr_assistant
+python -m pytest tests/ -q
+```
+
+Test memakai `MockLLM` dan `httpx.MockTransport`, sehingga tidak membutuhkan
+API HR yang berjalan maupun kunci API sungguhan.
 
 ---
 
