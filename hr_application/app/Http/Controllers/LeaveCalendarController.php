@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Holiday;
 use App\Models\LeaveRequest;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -27,7 +28,13 @@ class LeaveCalendarController extends Controller
             ->orderBy('start_date')
             ->get();
 
-        $days = $this->buildDays($start, $end, $requests);
+        $holidays = Holiday::query()
+            ->whereDate('date', '>=', $start->toDateString())
+            ->whereDate('date', '<=', $end->toDateString())
+            ->get()
+            ->keyBy(fn (Holiday $holiday) => $holiday->date->toDateString());
+
+        $days = $this->buildDays($start, $end, $requests, $holidays);
 
         return view('leave-requests.calendar', [
             'month' => $month,
@@ -54,9 +61,10 @@ class LeaveCalendarController extends Controller
      * dengan tiap hari, agar tumpang tindih cuti terlihat langsung.
      *
      * @param  Collection<int, LeaveRequest>  $requests
-     * @return array<int, array{date: CarbonImmutable, inMonth: bool, isToday: bool, leaves: array<int, array<string, mixed>>}>
+     * @param  Collection<string, Holiday>  $holidays
+     * @return array<int, array{date: CarbonImmutable, inMonth: bool, isToday: bool, isWeekend: bool, holiday: ?string, leaves: array<int, array<string, mixed>>}>
      */
-    private function buildDays(CarbonImmutable $start, CarbonImmutable $end, $requests): array
+    private function buildDays(CarbonImmutable $start, CarbonImmutable $end, $requests, $holidays): array
     {
         $cursor = $start->startOfWeek(CarbonImmutable::MONDAY);
         $gridEnd = $end->endOfWeek(CarbonImmutable::SUNDAY);
@@ -82,6 +90,8 @@ class LeaveCalendarController extends Controller
                 'date' => $cursor,
                 'inMonth' => $cursor->month === $start->month && $cursor->year === $start->year,
                 'isToday' => $cursor->equalTo($today),
+                'isWeekend' => $cursor->isWeekend(),
+                'holiday' => $holidays->get($cursor->toDateString())?->name,
                 'leaves' => $leaves,
             ];
 

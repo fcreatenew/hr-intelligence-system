@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsAudit;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Models\Concerns\RecordsAudit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -69,15 +69,34 @@ class LeaveRequest extends Model
     }
 
     /**
-     * Jumlah hari kalender, inklusif. Dihitung di server agar tidak bergantung
-     * pada input pengguna dan tetap konsisten meski form diubah.
+     * Jumlah hari **kerja** (inklusif), yaitu hari kalender dikurangi Sabtu,
+     * Minggu, dan hari libur nasional/cuti bersama. Dihitung di server agar
+     * tidak bergantung pada input pengguna dan tidak memotong saldo untuk
+     * akhir pekan atau tanggal merah.
      */
     public static function countDays(string $start, string $end): int
     {
         $start = CarbonImmutable::parse($start)->startOfDay();
         $end = CarbonImmutable::parse($end)->startOfDay();
 
-        return $end->lessThan($start) ? 0 : (int) $start->diffInDays($end) + 1;
+        if ($end->lessThan($start)) {
+            return 0;
+        }
+
+        $holidays = Holiday::between($start, $end);
+
+        $days = 0;
+        $cursor = $start;
+
+        while ($cursor->lessThanOrEqualTo($end)) {
+            if (! $cursor->isWeekend() && ! in_array($cursor->toDateString(), $holidays, true)) {
+                $days++;
+            }
+
+            $cursor = $cursor->addDay();
+        }
+
+        return $days;
     }
 
     public function consumesBalance(): bool

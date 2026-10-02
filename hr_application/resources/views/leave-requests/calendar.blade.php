@@ -39,10 +39,19 @@
             @foreach (array_chunk($days, 7) as $week)
                 <tr>
                     @foreach ($week as $day)
-                        <td style="vertical-align:top;height:110px;background:{{ $day['inMonth'] ? '#fff' : '#f7f7f8' }}">
+                        @php
+                            $cellBg = ! $day['inMonth'] ? '#f7f7f8' : ($day['isWeekend'] || $day['holiday'] ? '#fff6f6' : '#fff');
+                        @endphp
+                        <td style="vertical-align:top;height:110px;background:{{ $cellBg }}">
                             <div class="muted" style="font-size:12px;font-weight:{{ $day['isToday'] ? '700' : '400' }}">
                                 {{ $day['date']->day }}
+                                @if ($day['holiday'])
+                                    <span title="{{ $day['holiday'] }}" style="color:#b91c1c">•</span>
+                                @endif
                             </div>
+                            @if ($day['holiday'])
+                                <div style="font-size:11px;color:#b91c1c;line-height:1.2">{{ $day['holiday'] }}</div>
+                            @endif
                             @foreach ($day['leaves'] as $leave)
                                 <div style="margin-top:4px;font-size:12px;line-height:1.3">
                                     <a href="{{ route('leave-requests.show', $leave['id']) }}">{{ $leave['name'] }}</a>
