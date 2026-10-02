@@ -11,6 +11,7 @@ use App\Policies\AttendancePolicy;
 use App\Policies\EmployeePolicy;
 use App\Policies\LeaveRequestPolicy;
 use App\Policies\PayrollPeriodPolicy;
+use App\Policies\UserPolicy;
 use App\Services\PayrollCalculationService;
 use App\Services\PayrollIntelligenceService;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -53,6 +54,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Attendance::class, AttendancePolicy::class);
         Gate::policy(LeaveRequest::class, LeaveRequestPolicy::class);
         Gate::policy(PayrollPeriod::class, PayrollPeriodPolicy::class);
+        Gate::policy(User::class, UserPolicy::class);
 
         Gate::define('manage-hr-intelligence', function (User $user) {
             return in_array($user->role, ['admin', 'hr-manager']);

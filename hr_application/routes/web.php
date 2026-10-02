@@ -7,6 +7,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\PayrollPeriodController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 require __DIR__.'/hr_intelligence.php';
@@ -46,4 +47,6 @@ Route::middleware('auth')->group(function () {
     Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
 
     Route::get('admin/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+
+    Route::resource('users', UserController::class)->except(['show']);
 });
