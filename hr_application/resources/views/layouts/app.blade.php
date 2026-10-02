@@ -75,7 +75,11 @@
             @endauth
             <span class="spacer"></span>
             @auth
-                <span class="muted">{{ auth()->user()->name }} ({{ auth()->user()->role }})</span>
+                <span class="muted">
+                    <a href="{{ route('profile.edit') }}" style="text-decoration:none">
+                        {{ auth()->user()->name }} ({{ auth()->user()->role }})
+                    </a>
+                </span>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" class="btn link">Keluar</button>
