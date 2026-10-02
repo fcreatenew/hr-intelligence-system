@@ -193,7 +193,11 @@ Fokus:
 * Vector Search
 * AI Tools
 
-**Teknologi:** Python / LLM / RAG
+Assistant dapat menjawab pertanyaan kebijakan/prosedur dari knowledge base
+(retrieval + sitasi) dan memanggil kelima model ML yang sudah ada (turnover,
+absensi, kinerja, payroll, survival) lewat HR Intelligence API.
+
+**Teknologi:** Python / FastAPI / LLM / RAG
 
 Dokumentasi:
 
