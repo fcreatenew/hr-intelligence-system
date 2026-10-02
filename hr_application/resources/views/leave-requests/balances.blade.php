@@ -5,9 +5,9 @@
 @section('content')
     <div class="row">
         <div>
-            <h1>Saldo cuti {{ $year }}</h1>
+            <h1>Kuota cuti {{ $year }}</h1>
             <p class="sub" style="margin-bottom:0">
-                Cuti tahunan memotong saldo; cuti sakit/melahirkan/duka tidak.
+                Setiap jenis cuti memotong kuota jenisnya sendiri. Angka di tiap kolom adalah sisa/jatah hari.
             </p>
         </div>
         <span style="flex:1"></span>
@@ -30,9 +30,9 @@
         <thead>
             <tr>
                 <th>Karyawan</th>
-                <th>Jatah</th>
-                <th>Terpakai</th>
-                <th>Tersisa</th>
+                @foreach ($types as $type)
+                    <th>{{ ucfirst($type) }}</th>
+                @endforeach
                 <th>Menunggu</th>
                 <th></th>
             </tr>
@@ -44,16 +44,19 @@
                         <a href="{{ route('employees.show', $row['employee']) }}">{{ $row['employee']->name }}</a>
                         <div class="muted" style="font-size:12px">{{ $row['employee']->nik }}</div>
                     </td>
-                    <td>{{ $row['balance']->entitled_days }}</td>
-                    <td>{{ $row['balance']->used_days }}</td>
-                    <td><strong>{{ $row['balance']->remaining_days }}</strong></td>
+                    @foreach ($types as $type)
+                        @php($balance = $row['balances'][$type])
+                        <td>
+                            <strong>{{ $balance->remaining_days }}</strong><span class="muted">/{{ $balance->entitled_days }}</span>
+                        </td>
+                    @endforeach
                     <td>{{ $row['pending_days'] ?: '—' }}</td>
                     <td class="actions">
                         <a href="{{ route('leave-requests.create', ['employee_id' => $row['employee']->id]) }}" class="btn link">Ajukan</a>
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="6" class="muted" style="padding:24px;text-align:center">Belum ada karyawan.</td></tr>
+                <tr><td colspan="{{ count($types) + 3 }}" class="muted" style="padding:24px;text-align:center">Belum ada karyawan.</td></tr>
             @endforelse
         </tbody>
     </table>

@@ -147,7 +147,7 @@ class LeaveManagementTest extends TestCase
         $this->assertSame(0, $employee->leaveBalanceFor(2026)->used_days);
     }
 
-    public function test_non_balance_leave_type_does_not_deduct_balance(): void
+    public function test_each_leave_type_deducts_its_own_quota(): void
     {
         $employee = $this->employee();
         $leaveRequest = LeaveRequest::factory()->for($employee)->create([
@@ -161,7 +161,27 @@ class LeaveManagementTest extends TestCase
         $this->actingAs($this->admin())
             ->post(route('leave-requests.approve', $leaveRequest));
 
-        $this->assertSame(0, $employee->leaveBalanceFor(2026)->used_days);
+        $this->assertSame(0, $employee->leaveBalanceFor(2026)->used_days, 'cuti melahirkan tidak memotong jatah tahunan');
+        $this->assertSame(3, $employee->leaveBalanceFor(2026, 'melahirkan')->used_days);
+        $this->assertSame(87, $employee->leaveBalanceFor(2026, 'melahirkan')->remaining_days);
+    }
+
+    public function test_leave_type_without_default_quota_is_blocked(): void
+    {
+        $employee = $this->employee();
+        $leaveRequest = LeaveRequest::factory()->for($employee)->create([
+            'type' => 'lainnya',
+            'start_date' => '2026-11-02',
+            'end_date' => '2026-11-04',
+            'days' => 3,
+            'status' => LeaveRequest::STATUS_PENDING,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->post(route('leave-requests.approve', $leaveRequest))
+            ->assertSessionHasErrors('decision');
+
+        $this->assertSame(LeaveRequest::STATUS_PENDING, $leaveRequest->fresh()->status);
     }
 
     public function test_already_decided_request_cannot_be_decided_again(): void
