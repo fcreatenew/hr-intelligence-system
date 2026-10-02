@@ -38,6 +38,12 @@ HR_INTELLIGENCE_API_KEY = os.getenv("HR_INTELLIGENCE_API_KEY", "")
 HR_INTELLIGENCE_TIMEOUT = _float("HR_INTELLIGENCE_TIMEOUT", 10.0)
 HR_INTELLIGENCE_RETRY_TIMES = _int("HR_INTELLIGENCE_RETRY_TIMES", 2)
 
+# --- Auth API assistant ---
+# Kosong berarti API menolak semua request (fail closed). Set
+# ASSISTANT_API_KEY di .env sebelum menjalankan server.
+API_KEY = os.getenv("ASSISTANT_API_KEY", "")
+RATE_LIMIT_PER_MINUTE = _int("ASSISTANT_RATE_LIMIT_PER_MINUTE", 60)
+
 # --- LLM ---
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "mock").strip().lower()
 LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
