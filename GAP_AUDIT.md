@@ -5,9 +5,9 @@ Dokumen ini membandingkan **kondisi kode yang benar-benar ada** dengan
 menutup celah antara "sudah dikerjakan" dan "sudah ada di `main`", lalu
 menyebut hal yang benar-benar belum dimulai.
 
-> **Basis audit.** `main` pada commit `8cc45df`. Pekerjaan yang masih berupa
-> PR terbuka **tidak** dihitung sebagai selesai di `main`, tetapi dicatat
-> terpisah karena PR-nya sudah hijau dan menunggu merge.
+> **Basis audit.** `main` pada commit `0ffc8d1` (setelah PR #11 di-merge).
+> Pekerjaan yang masih berupa PR terbuka **tidak** dihitung sebagai selesai di
+> `main`, tetapi dicatat terpisah karena PR-nya sudah hijau dan menunggu merge.
 
 Legenda: ✅ ada & teruji · 🟡 ada di PR terbuka (hijau, belum merge) · ⬜ belum ada.
 
@@ -22,9 +22,9 @@ Legenda: ✅ ada & teruji · 🟡 ada di PR terbuka (hijau, belum merge) · ⬜ 
 | Fase 2 — Employee Management | ✅ | — | Fase 2.3 (riwayat) |
 | Fase 3 — Attendance & Leave | ✅ | — | kalender cuti, impor absensi |
 | Fase 4 — Payroll Run | ⬜ | 🟡 PR #12 | integrasi `payroll_intelligence` |
-| Fase 5 — Pelaporan & Administrasi | ⬜ | 🟡 PR #15 (laporan + CSV), #19 (UI prediksi ML) | manajemen user |
+| Fase 5 — Pelaporan & Administrasi | ⬜ | 🟡 PR #15 (laporan + CSV), #19 (UI prediksi ML), #20 (manajemen pengguna) | — |
 | Fase 6 — Hardening Produksi | ⬜ | 🟡 PR #10, #13, #14, #18 | monitoring drift, retraining |
-| CI semua modul | ⬜ | 🟡 PR #11, #16 | — |
+| CI semua modul | ✅ | — | — |
 
 ---
 
@@ -41,8 +41,8 @@ Legenda: ✅ ada & teruji · 🟡 ada di PR terbuka (hijau, belum merge) · ⬜ 
   di level DB), rekap periode + integrasi ML, `LeaveRequest`/`LeaveBalance`,
   alur persetujuan, saldo cuti per tahun.
 
-Catatan: test di `main` hijau secara lokal, tetapi **belum ada CI** untuk
-menjaganya (lihat §4).
+Catatan: sejak PR #11 di-merge, `main` kini memiliki CI (8 job) yang menjaga
+test tetap hijau.
 
 ---
 
@@ -52,8 +52,6 @@ Semua PR di bawah ini sudah melewati CI 8/8 job pada head terakhir.
 
 | PR | Branch | Isi | Menutup celah |
 |---|---|---|---|
-| #11 | `feat/ci-github-actions` | CI root `.github/workflows/ci.yml` (5 modul + gate model) | CI semua modul |
-| #16 | `fix/ci-foundation` | Perbaikan toolchain CI (PHP 8.4, Node 24, pandas 2.3.3, pytest) | *superseded oleh #11* |
 | #12 | `feat/payroll-run` | Fase 4 payroll run berbasis periode | Fase 4 |
 | #13 | `feat/audit-trail-docker` | Jejak audit otomatis + Dockerfile & docker-compose | audit trail, Docker HRIS/dashboard |
 | #14 | `feat/reproducible-training` | CLI training reproducible + gate validasi hasil training | retraining |
@@ -62,10 +60,11 @@ Semua PR di bawah ini sudah melewati CI 8/8 job pada head terakhir.
 | #17 | `docs/gap-audit` | Dokumen audit ini | — (dokumentasi) |
 | #18 | `feat/rate-limiting` | Rate limiting login & endpoint admin HR Intelligence | §4.1 rate limiting |
 | #19 | `feat/ml-prediction-ui` | Halaman HTML hasil prediksi ML | §4.5 UI prediksi ML |
+| #20 | `feat/user-role-management` | Manajemen pengguna & peran dari UI | §4.5 manajemen user |
 
-**Catatan stack.** #11 sudah memuat seluruh isi #16 (diverifikasi: `fix/ci-foundation`
-adalah ancestor dari `feat/ci-github-actions`). Karena itu #11 dapat di-merge ke
-`main` lebih dulu, lalu #16 ditutup sebagai *superseded*.
+**Sudah merge.** #11 (`feat/ci-github-actions`) sudah masuk `main` (`0ffc8d1`)
+dan membawa CI 8 job. #16 (`fix/ci-foundation`) juga sudah masuk `main` karena
+di-merge ke branch #11 dan karenanya ikut terbawa — isinya identik dengan #11.
 
 ---
 
@@ -102,7 +101,7 @@ reproducible sebagai fondasi, tetapi bukan penjadwalan/alert.
 
 ## 4.5 Fase 5 yang belum tersentuh ⬜
 
-- Manajemen pengguna & peran dari UI.
+- Manajemen pengguna & peran dari UI — ✅ dikerjakan di PR #20.
 - Halaman hasil prediksi ML di UI — ✅ dikerjakan di PR #19 (utang #6).
 - Kalender cuti tim — utang #11.
 - Impor mesin absensi/fingerprint — utang #9.
