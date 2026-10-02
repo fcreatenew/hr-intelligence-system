@@ -50,7 +50,9 @@ cd ai_hr_assistant && uvicorn src.main:app --port 8100   # butuh HR Intelligence
 - **`hr_dashboard/`** — React + Vite. Default `VITE_DATA_MODE=demo` (fixtures lokal);
   set `live` untuk memakai API. Proxy dev: `/api` → 8000, `/payroll-api` → 8300
   (prefix `/payroll-api` agar tidak bentrok dengan route SPA `/payroll`).
-  `cd hr_dashboard && npm install && npm run dev`.
+  `cd hr_dashboard && npm install && npm run dev`. Lint memakai ESLint 9 **flat
+  config** (`eslint.config.js`, bukan `.eslintrc`); test memakai Vitest + Testing
+  Library (`npm run lint`, `npm test`). Keduanya dijalankan di CI.
 
 ## Perintah penting
 
