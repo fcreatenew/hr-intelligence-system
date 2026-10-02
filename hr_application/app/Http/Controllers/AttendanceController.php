@@ -2,19 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ImportAttendanceRequest;
 use App\Http\Requests\StoreAttendanceRequest;
 use App\Http\Requests\UpdateAttendanceRequest;
 use App\Models\Attendance;
 use App\Models\Employee;
+use App\Services\AttendanceImportService;
 use App\Services\AttendanceMetricsService;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttendanceController extends Controller
 {
-    public function __construct(private AttendanceMetricsService $metrics) {}
+    public function __construct(
+        private AttendanceMetricsService $metrics,
+        private AttendanceImportService $importer,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -99,6 +105,44 @@ class AttendanceController extends Controller
         return redirect()
             ->route('attendances.index', ['employee_id' => $employeeId])
             ->with('status', 'Catatan absensi dihapus.');
+    }
+
+    /**
+     * Impor absensi dari CSV mesin absensi/fingerprint.
+     */
+    public function import(ImportAttendanceRequest $request): RedirectResponse
+    {
+        $result = $this->importer->import($request->file('file'));
+
+        $status = "Impor selesai: {$result['imported']} baris baru, {$result['updated']} baris diperbarui.";
+        $skipped = count($result['skipped']);
+
+        if ($skipped > 0) {
+            $status .= " {$skipped} baris dilewati.";
+        }
+
+        return redirect()
+            ->route('attendances.index')
+            ->with('status', $status)
+            ->with('import_skipped', array_slice($result['skipped'], 0, 25));
+    }
+
+    /**
+     * Unduh berkas contoh agar format impor jelas bagi operator.
+     */
+    public function importTemplate(): StreamedResponse
+    {
+        $this->authorize('create', Attendance::class);
+
+        return response()->streamDownload(function () {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, ['nik', 'date', 'in', 'out', 'status']);
+            fputcsv($handle, ['EMP0001', '2026-05-04', '08:55', '17:30', 'hadir']);
+            fputcsv($handle, ['EMP0002', '2026-05-04', '09:20', '17:00', 'terlambat']);
+
+            fclose($handle);
+        }, 'template-absensi.csv', ['Content-Type' => 'text/csv']);
     }
 
     /**
