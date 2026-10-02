@@ -64,6 +64,9 @@
                     <a href="{{ route('payroll-periods.index') }}">Payroll</a>
                     <a href="{{ route('reports.index') }}">Laporan</a>
                     <a href="{{ route('hr-intelligence.dashboard') }}">Prediksi ML</a>
+                    @can('viewAny', App\Models\User::class)
+                        <a href="{{ route('users.index') }}">Pengguna</a>
+                    @endcan
                     @if (auth()->user()->role === 'admin')
                         <a href="{{ route('audit-logs.index') }}">Jejak Audit</a>
                     @endif
