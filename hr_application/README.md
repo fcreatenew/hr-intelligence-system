@@ -7,7 +7,55 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
-## HR Intelligence Integration
+## Cara Menjalankan
+
+```bash
+cd hr_application
+composer install
+cp .env.example .env && php artisan key:generate
+php artisan migrate --seed      # membuat akun demo + 3 karyawan contoh
+php artisan serve --port=8080   # 8000 dipakai hr_intelligence_api
+```
+
+Akun demo dari seeder: `test@example.com` / `password` (peran `admin`).
+
+> Port default Laravel adalah 8000, sama dengan `hr_intelligence_api`. Jalankan
+> aplikasi ini di port lain (mis. `8080`) agar keduanya bisa hidup bersamaan.
+
+## Modul HRIS
+
+### Employee Management
+
+CRUD karyawan lengkap dengan halaman web (Blade):
+
+| Route | Fungsi |
+|---|---|
+| `GET /employees` | Daftar + pencarian (nama/NIK/email) + filter departemen & status + paginasi |
+| `GET /employees/create` | Form tambah karyawan |
+| `POST /employees` | Simpan karyawan baru |
+| `GET /employees/{id}` | Detail karyawan + riwayat prediksi ML |
+| `GET /employees/{id}/edit` | Form ubah |
+| `PUT /employees/{id}` | Simpan perubahan |
+| `DELETE /employees/{id}` | Hapus (khusus `admin`) |
+
+Hak akses diatur `App\Policies\EmployeePolicy`:
+
+* `admin` dan `hr-manager` — lihat, tambah, ubah
+* hanya `admin` — hapus (destruktif, memutus riwayat)
+
+Validasi memakai `StoreEmployeeRequest` / `UpdateEmployeeRequest`: NIK & email
+unik, rentang nilai atribut ML dijaga (mis. kepuasan kerja 1–5, periode `YYYY-MM`).
+
+Catatan penting: **kolom ML yang dikosongkan dibiarkan `null`**, bukan diisi 0.
+Nilai default ditentukan mapper saat prediksi dijalankan, sehingga angka nol
+tidak salah ditafsirkan sebagai data nyata.
+
+### Autentikasi
+
+Halaman login/logout sederhana (`Auth\LoginController`). Tamu yang membuka
+route terlindungi diarahkan ke `/login`.
+
+### Integrasi HR Intelligence
 
 Aplikasi ini adalah konsumen dari **HR Intelligence API** (FastAPI). Selain
 turnover, tersedia prediksi absensi, kinerja, anomali payroll, dan survival
@@ -39,7 +87,19 @@ php artisan hr-intelligence:predict payroll --sync
 ```
 
 Hasil prediksi disimpan di tabel `hr_intelligence_predictions` dan dapat diakses
-lewat route admin `admin/hr-intelligence/{useCase}/predictions`.
+lewat route admin `admin/hr-intelligence/{useCase}/predictions`, atau per
+karyawan di halaman detail karyawan.
+
+## Test
+
+```bash
+php artisan test
+```
+
+## Modul Berikutnya
+
+Urutan pengembangan modul HRIS selanjutnya ada di
+[`../ROADMAP.md`](../ROADMAP.md) (Attendance, Leave, Payroll, Reporting).
 
 ## About Laravel
 

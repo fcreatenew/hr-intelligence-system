@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Employee extends Model
 {
@@ -71,5 +72,14 @@ class Employee extends Model
         return $this->join_date
             ? (int) $this->join_date->diffInMonths(now())
             : null;
+    }
+
+    /**
+     * Hasil prediksi ML untuk karyawan ini. Relasi memakai `nik` karena tabel
+     * prediksi menyimpan `employee_id` berupa NIK, bukan primary key.
+     */
+    public function predictions(): HasMany
+    {
+        return $this->hasMany(HrIntelligencePrediction::class, 'employee_id', 'nik');
     }
 }
