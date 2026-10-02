@@ -2,7 +2,10 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from app.services.model_service import ModelNotLoadedError
+from app.services.model_service import (
+    ModelNotLoadedError,
+    UnknownUseCaseError,
+)
 
 
 def _jsonable_errors(exc: RequestValidationError) -> list[dict]:
@@ -51,6 +54,18 @@ async def model_not_loaded_handler(
     )
 
 
+async def unknown_use_case_handler(
+    request: Request,
+    exc: UnknownUseCaseError,
+):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={
+            "detail": str(exc),
+        },
+    )
+
+
 def register_exception_handlers(app: FastAPI):
     app.add_exception_handler(
         RequestValidationError,
@@ -60,4 +75,9 @@ def register_exception_handlers(app: FastAPI):
     app.add_exception_handler(
         ModelNotLoadedError,
         model_not_loaded_handler,
+    )
+
+    app.add_exception_handler(
+        UnknownUseCaseError,
+        unknown_use_case_handler,
     )

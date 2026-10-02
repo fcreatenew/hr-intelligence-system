@@ -109,8 +109,9 @@ def test_model_info_returns_metrics(client):
     resp = client.get("/model/info", headers=HEADERS)
     assert resp.status_code == 200
     body = resp.json()
-    assert "metrik_holdout_test" in body
+    assert "metrik" in body
     assert "threshold" in body
+    assert body["use_case"] == "turnover"
 
 
 def test_batch_response_reports_model_version(client):

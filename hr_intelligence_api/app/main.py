@@ -10,18 +10,20 @@ from app.core.config import APP_DESCRIPTION, APP_TITLE, APP_VERSION
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import setup_logging
 from app.core.middleware import register_middlewares
-from app.services.model_service import model_service
+from app.services.model_service import load_all_models
 
 logger = logging.getLogger("hr_intelligence.api")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    try:
-        model_service.load()
-        logger.info("Model berhasil dimuat saat startup.")
-    except Exception:
-        logger.exception("Gagal memuat model saat startup.")
+    status = load_all_models()
+
+    for use_case, result in status.items():
+        if result == "ok":
+            logger.info("Model '%s' siap.", use_case)
+        else:
+            logger.warning("Model '%s' tidak siap: %s", use_case, result)
 
     yield
 
