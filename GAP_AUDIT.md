@@ -23,7 +23,7 @@ Legenda: ✅ ada & teruji · 🟡 ada di PR terbuka (hijau, belum merge) · ⬜ 
 | Fase 3 — Attendance & Leave | ✅ | — | kalender cuti, impor absensi |
 | Fase 4 — Payroll Run | ⬜ | 🟡 PR #12 | integrasi `payroll_intelligence` |
 | Fase 5 — Pelaporan & Administrasi | ⬜ | 🟡 PR #15 (laporan + CSV) | manajemen user, UI prediksi ML |
-| Fase 6 — Hardening Produksi | ⬜ | 🟡 PR #10, #13, #14 | **rate limiting**, monitoring drift, retraining |
+| Fase 6 — Hardening Produksi | ⬜ | 🟡 PR #10, #13, #14, #18 | monitoring drift, retraining |
 | CI semua modul | ⬜ | 🟡 PR #11, #16 | — |
 
 ---
@@ -59,6 +59,8 @@ Semua PR di bawah ini sudah melewati CI 8/8 job pada head terakhir.
 | #14 | `feat/reproducible-training` | CLI training reproducible + gate validasi hasil training | retraining |
 | #15 | `feat/reporting-v2mitigated` | Laporan HR + ekspor CSV (Fase 5) & default `v2_mitigated` (Fase 6) | Fase 5 (sebagian), default model |
 | #10 | `feat/security-hardening-assistant-dashboard` | Auth API assistant & gerbang API key dashboard | hardening auth |
+| #17 | `docs/gap-audit` | Dokumen audit ini | — (dokumentasi) |
+| #18 | `feat/rate-limiting` | Rate limiting login & endpoint admin HR Intelligence | §4.1 rate limiting |
 
 **Catatan stack.** #11 sudah memuat seluruh isi #16 (diverifikasi: `fix/ci-foundation`
 adalah ancestor dari `feat/ci-github-actions`). Karena itu #11 dapat di-merge ke
@@ -70,7 +72,7 @@ adalah ancestor dari `feat/ci-github-actions`). Karena itu #11 dapat di-merge ke
 
 Diurutkan berdasarkan risiko.
 
-## 4.1 Rate limiting belum ada — risiko tertinggi ⬜
+## 4.1 Rate limiting belum ada — risiko tertinggi ⬜ → 🟡 (PR #18)
 
 Tidak ditemukan `throttle` maupun `RateLimiter` di `hr_application` (routes
 maupun `app/`). Akibatnya:
@@ -78,8 +80,8 @@ maupun `app/`). Akibatnya:
 - **Halaman login** dapat di-brute force tanpa pembatasan.
 - Endpoint admin JSON (di gate `manage-hr-intelligence`) tidak dibatasi laju.
 
-Perbaikan minimal: `throttle` pada route login + middleware `throttle` untuk
-grup route admin. Tidak ada PR yang menutup ini.
+Perbaikan: PR #18 menambah limiter `login` (5/menit per email+IP) dan
+`admin-api` (30/menit per pengguna). Setelah #18 merge, celah ini tertutup.
 
 ## 4.2 Audit trail ⬜ → 🟡
 
@@ -137,9 +139,9 @@ Riwayat jabatan/departemen/gaji, mutasi & promosi, linimasa per karyawan.
 2. **Rebase #12 di atas `main`** lalu merge (Fase 4, nilai tinggi).
 3. Merge **#13** (audit trail + Docker), **#15** (laporan + `v2_mitigated`),
    **#10** (security), **#14** (training).
-4. Kerjakan celah nyata: **rate limiting login/admin** (§4.1), lalu Fase 5
-   (UI prediksi ML, manajemen user, kalender cuti) dan Fase 6
-   (monitoring drift + retraining terjadwal).
+4. Kerjakan celah nyata: Fase 5 (UI prediksi ML, manajemen user, kalender
+   cuti) dan Fase 6 (monitoring drift + retraining terjadwal). Rate limiting
+   sudah ditangani di #18.
 
 ---
 
