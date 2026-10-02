@@ -22,7 +22,7 @@ Legenda: ✅ ada & teruji · 🟡 ada di PR terbuka (hijau, belum merge) · ⬜ 
 | Fase 2 — Employee Management | ✅ | — | Fase 2.3 (riwayat) |
 | Fase 3 — Attendance & Leave | ✅ | — | kalender cuti, impor absensi |
 | Fase 4 — Payroll Run | ⬜ | 🟡 PR #12 | integrasi `payroll_intelligence` |
-| Fase 5 — Pelaporan & Administrasi | ⬜ | 🟡 PR #15 (laporan + CSV) | manajemen user, UI prediksi ML |
+| Fase 5 — Pelaporan & Administrasi | ⬜ | 🟡 PR #15 (laporan + CSV), #19 (UI prediksi ML) | manajemen user |
 | Fase 6 — Hardening Produksi | ⬜ | 🟡 PR #10, #13, #14, #18 | monitoring drift, retraining |
 | CI semua modul | ⬜ | 🟡 PR #11, #16 | — |
 
@@ -61,6 +61,7 @@ Semua PR di bawah ini sudah melewati CI 8/8 job pada head terakhir.
 | #10 | `feat/security-hardening-assistant-dashboard` | Auth API assistant & gerbang API key dashboard | hardening auth |
 | #17 | `docs/gap-audit` | Dokumen audit ini | — (dokumentasi) |
 | #18 | `feat/rate-limiting` | Rate limiting login & endpoint admin HR Intelligence | §4.1 rate limiting |
+| #19 | `feat/ml-prediction-ui` | Halaman HTML hasil prediksi ML | §4.5 UI prediksi ML |
 
 **Catatan stack.** #11 sudah memuat seluruh isi #16 (diverifikasi: `fix/ci-foundation`
 adalah ancestor dari `feat/ci-github-actions`). Karena itu #11 dapat di-merge ke
@@ -102,7 +103,7 @@ reproducible sebagai fondasi, tetapi bukan penjadwalan/alert.
 ## 4.5 Fase 5 yang belum tersentuh ⬜
 
 - Manajemen pengguna & peran dari UI.
-- Halaman hasil prediksi ML di UI (saat ini masih JSON) — utang #6.
+- Halaman hasil prediksi ML di UI — ✅ dikerjakan di PR #19 (utang #6).
 - Kalender cuti tim — utang #11.
 - Impor mesin absensi/fingerprint — utang #9.
 - Kuota cuti per jenis selain tahunan.
