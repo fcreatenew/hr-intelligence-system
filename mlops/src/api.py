@@ -13,7 +13,7 @@ from src.config import (
     HR_INTELLIGENCE_BASE_URL,
     HR_INTELLIGENCE_TIMEOUT,
 )
-from src.monitoring.drift import detect_feature_drift
+from src.monitoring.drift_monitor import DriftMonitor
 from src.monitoring.metrics import MetricsCollector
 from src.registry.model_registry import ModelRegistry
 from src.validation.model_validator import validate_all
@@ -30,6 +30,11 @@ app = FastAPI(
 
 registry = ModelRegistry()
 metrics = MetricsCollector()
+drift_monitor = DriftMonitor(
+    collector=metrics,
+    warning=DRIFT_WARNING,
+    critical=DRIFT_CRITICAL,
+)
 
 
 def _api_client() -> httpx.Client:
@@ -129,6 +134,7 @@ async def check_api() -> dict:
 async def drift(
     reference: str,
     current: str,
+    use_case: str = "turnover",
     warning: float = DRIFT_WARNING,
     critical: float = DRIFT_CRITICAL,
 ) -> dict:
@@ -139,7 +145,29 @@ async def drift(
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=400, detail=f"Gagal membaca CSV: {exc}") from exc
 
-    hasil = detect_feature_drift(ref_df, cur_df, warning=warning, critical=critical)
-    metrics.set_gauge("drift_max_psi", hasil["fitur"][0]["psi"] if hasil["fitur"] else 0)
+    monitor = DriftMonitor(collector=metrics, warning=warning, critical=critical)
+    report = monitor.evaluate(use_case, ref_df, cur_df)
 
-    return hasil
+    return report.to_dict()
+
+
+@app.get("/monitoring/drift/history", tags=["monitoring"])
+async def drift_history(use_case: str | None = None) -> dict:
+    """Riwayat evaluasi drift, opsional disaring per use case."""
+    riwayat = drift_monitor.history(use_case)
+
+    return {
+        "jumlah": len(riwayat),
+        "riwayat": [report.to_dict() for report in riwayat],
+    }
+
+
+@app.get("/monitoring/drift/alerts", tags=["monitoring"])
+async def drift_alerts() -> dict:
+    """Evaluasi terbaru per use case yang melewati ambang drift."""
+    alerts = drift_monitor.alerts()
+
+    return {
+        "jumlah": len(alerts),
+        "alerts": [report.to_dict() for report in alerts],
+    }
