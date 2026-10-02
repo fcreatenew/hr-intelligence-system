@@ -62,6 +62,9 @@
                     <a href="{{ route('attendances.index') }}">Absensi</a>
                     <a href="{{ route('leave-requests.index') }}">Cuti</a>
                     <a href="{{ route('hr-intelligence.use-cases') }}">Prediksi ML</a>
+                    @can('viewAny', App\Models\User::class)
+                        <a href="{{ route('users.index') }}">Pengguna</a>
+                    @endcan
                 </nav>
             @endauth
             <span class="spacer"></span>

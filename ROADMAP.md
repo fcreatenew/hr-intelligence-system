@@ -213,7 +213,7 @@ sehingga Fase 4 lebih banyak soal alur kerja daripada pemodelan data.
 
 - ⬜ Laporan headcount, turnover, biaya per departemen
 - ⬜ Ekspor (CSV/PDF)
-- ⬜ Manajemen pengguna & peran dari UI
+- ✅ Manajemen pengguna & peran dari UI
 - ⬜ Halaman hasil prediksi ML di UI (saat ini hanya JSON)
 
 ---
