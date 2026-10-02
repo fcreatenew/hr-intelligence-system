@@ -4,6 +4,7 @@ from functools import lru_cache
 
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Query
+from pydantic import BaseModel, Field
 
 from src.analytics import anomaly, payroll_analytics
 from src.calculations import payroll as calc
@@ -26,6 +27,19 @@ app = FastAPI(
 @lru_cache(maxsize=1)
 def _dataset() -> pd.DataFrame:
     return clean(enrich(load_payroll()))
+
+
+@lru_cache(maxsize=1)
+def _reference_detector() -> anomaly.AnomalyDetector:
+    """Detektor acuan yang dilatih pada data historis.
+
+    Dipakai untuk menilai payroll baru terhadap distribusi historis, bukan
+    terhadap dirinya sendiri.
+    """
+    return anomaly.AnomalyDetector(
+        contamination=anomaly.DEFAULT_CONTAMINATION,
+        threshold=ANOMALY_THRESHOLD,
+    ).fit(_dataset())
 
 
 def _slice(periode: str | None = None, departemen: str | None = None) -> pd.DataFrame:
@@ -111,3 +125,43 @@ async def forecast_overtime(
     horizon: int = Query(FORECAST_HORIZON, ge=1, le=24)
 ) -> dict:
     return forecast_overtime_cost(_dataset(), horizon=horizon).to_dict()
+
+
+class PayrollScoreRow(BaseModel):
+    employee_id: str
+    periode: str
+    departemen: str
+    level: str
+    gaji_pokok: float = Field(..., ge=0)
+    tunjangan: float
+    lembur_jam: int = Field(..., ge=0)
+    tarif_lembur: float = Field(..., ge=0)
+    potongan: float
+    total_gaji: float
+
+
+class PayrollScoreRequest(BaseModel):
+    employees: list[PayrollScoreRow] = Field(..., min_length=1, max_length=20000)
+    threshold: float = Field(ANOMALY_THRESHOLD, ge=0.0, le=1.0)
+
+
+@app.post("/anomalies/score", tags=["anomaly"])
+async def score_anomalies(payload: PayrollScoreRequest) -> dict:
+    """Skor anomali untuk baris payroll yang dikirim klien.
+
+    Memakai detektor acuan yang dilatih pada data historis, sehingga payroll
+    yang baru dihitung dapat dinilai tanpa mengirim seluruh dataset.
+    """
+    rows = [row.model_dump() for row in payload.employees]
+    df = pd.DataFrame(rows)
+
+    hasil = anomaly.score_with(
+        _reference_detector(), df, threshold=payload.threshold
+    )
+
+    return {
+        "threshold": payload.threshold,
+        "jumlah_diproses": int(len(hasil)),
+        "jumlah_anomali": int(hasil["is_anomali"].sum()),
+        "hasil": hasil.to_dict(orient="records"),
+    }
