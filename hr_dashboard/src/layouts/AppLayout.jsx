@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 
 import { dataMode, hrApi } from '../services/api.js'
 import { useAsyncData } from '../hooks/useAsyncData.js'
+import { useAuth } from '../hooks/useAuth.js'
 
 const NAV = [
   { to: '/', label: 'Ringkasan', num: '00' },
@@ -37,6 +38,8 @@ function ModelStatus() {
 }
 
 export default function AppLayout() {
+  const { logout } = useAuth()
+
   return (
     <div className="shell">
       <aside className="masthead">
@@ -74,6 +77,9 @@ export default function AppLayout() {
           <div style={{ marginTop: '0.5rem' }}>
             sumber: hr_intelligence_api · payroll_intelligence
           </div>
+          <button type="button" className="nav__link" onClick={logout} style={{ marginTop: '0.5rem' }}>
+            Keluar
+          </button>
         </div>
       </aside>
 
