@@ -22,6 +22,13 @@ class HrIntelligenceServiceTest extends TestCase
             'retryTimes' => 2,
             'retryDelayMs' => 1,
             'batchChunkSize' => 500,
+            'useCases' => [
+                'turnover' => ['label' => 'Turnover', 'path' => '/predict', 'batch_path' => '/predict/batch'],
+                'absensi' => ['label' => 'Absensi', 'path' => '/predict/absensi', 'batch_path' => '/predict/absensi/batch'],
+                'kinerja' => ['label' => 'Kinerja', 'path' => '/predict/kinerja', 'batch_path' => '/predict/kinerja/batch'],
+                'payroll' => ['label' => 'Payroll', 'path' => '/predict/payroll', 'batch_path' => '/predict/payroll/batch'],
+                'survival' => ['label' => 'Survival', 'path' => '/predict/survival', 'batch_path' => '/predict/survival/batch'],
+            ],
         ], $overrides);
 
         return new HrIntelligenceService(...$config);
@@ -168,5 +175,71 @@ class HrIntelligenceServiceTest extends TestCase
         $this->makeService()->health();
 
         Http::assertSent(fn ($request) => ! $request->hasHeader('X-API-Key'));
+    }
+
+    public function test_predict_use_case_hits_correct_path(): void
+    {
+        Http::fake([
+            'hr-api.test/predict/absensi' => Http::response([
+                'employee_id' => 'EMP0001',
+                'probabilitas_absen_tinggi' => 0.4,
+                'prediksi_absen_tinggi' => 1,
+                'level_risiko' => 'Sedang',
+                'threshold' => 0.19,
+            ], 200),
+        ]);
+
+        $result = $this->makeService()->predictUseCase('absensi', ['employee_id' => 'EMP0001']);
+
+        $this->assertSame(0.4, $result['probabilitas_absen_tinggi']);
+        Http::assertSent(fn ($request) => $request->url() === 'http://hr-api.test/predict/absensi'
+            && $request->hasHeader('X-API-Key', 'test-key'));
+    }
+
+    public function test_predict_use_case_batch_wraps_payload(): void
+    {
+        Http::fake([
+            'hr-api.test/predict/payroll/batch' => Http::response([
+                'hasil' => [['employee_id' => 'EMP0001']],
+                'jumlah_diproses' => 1,
+                'model_version' => 'v1',
+                'threshold' => 0.5,
+            ], 200),
+        ]);
+
+        $result = $this->makeService()->predictUseCaseBatch('payroll', [['employee_id' => 'EMP0001']]);
+
+        $this->assertSame(1, $result['jumlah_diproses']);
+        Http::assertSent(fn ($request) => $request['employees'][0]['employee_id'] === 'EMP0001');
+    }
+
+    public function test_predict_use_case_batch_rejects_oversized_payload(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $service = $this->makeService(['batchChunkSize' => 1]);
+        $service->predictUseCaseBatch('kinerja', [['employee_id' => 'A'], ['employee_id' => 'B']]);
+    }
+
+    public function test_predict_use_case_rejects_unknown_use_case(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $this->makeService()->predictUseCase('tidak-ada', []);
+    }
+
+    public function test_use_case_info_hits_model_endpoint(): void
+    {
+        Http::fake([
+            'hr-api.test/model/survival/info' => Http::response([
+                'use_case' => 'survival',
+                'versi_model' => 'v1',
+                'model' => 'Cox Proportional Hazards (lifelines)',
+            ], 200),
+        ]);
+
+        $info = $this->makeService()->useCaseInfo('survival');
+
+        $this->assertSame('v1', $info['versi_model']);
     }
 }

@@ -29,6 +29,7 @@ class HrIntelligenceServiceProvider extends ServiceProvider
                 retryTimes: $config['retry_times'],
                 retryDelayMs: $config['retry_delay_ms'],
                 batchChunkSize: $config['batch_chunk_size'],
+                useCases: $config['use_cases'] ?? [],
             );
         });
 
@@ -42,6 +43,7 @@ class HrIntelligenceServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 \App\Console\Commands\PredictTurnoverCommand::class,
+                \App\Console\Commands\PredictUseCaseCommand::class,
             ]);
 
             $this->loadMigrationsFrom(__DIR__.'/../../database/migrations');

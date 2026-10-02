@@ -7,6 +7,40 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## HR Intelligence Integration
+
+Aplikasi ini adalah konsumen dari **HR Intelligence API** (FastAPI). Selain
+turnover, tersedia prediksi absensi, kinerja, anomali payroll, dan survival
+attrition.
+
+Konfigurasi (`.env`):
+
+```env
+HR_INTELLIGENCE_BASE_URL=http://localhost:8000
+HR_INTELLIGENCE_API_KEY=
+```
+
+Endpoint tiap use case diatur di `config/hr_intelligence.php` (`use_cases`).
+
+```php
+use App\Facades\HrIntelligence;
+
+HrIntelligence::predictUseCase('absensi', $employeeData);
+HrIntelligence::predictUseCaseBatch('payroll', $employeeList);
+HrIntelligence::useCaseInfo('survival');
+```
+
+Prediksi batch berjalan lewat `RunUseCaseBatchPredictionJob`, dijadwalkan di
+`routes/console.php`, dan bisa dijalankan manual:
+
+```bash
+php artisan hr-intelligence:predict absensi
+php artisan hr-intelligence:predict payroll --sync
+```
+
+Hasil prediksi disimpan di tabel `hr_intelligence_predictions` dan dapat diakses
+lewat route admin `admin/hr-intelligence/{useCase}/predictions`.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
