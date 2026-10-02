@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Services\AttendanceMetricsService;
 use App\Services\Mappers\DefaultEmployeeFeatureMapper;
 use PHPUnit\Framework\TestCase;
 
@@ -9,7 +10,7 @@ class DefaultEmployeeFeatureMapperTest extends TestCase
 {
     public function test_maps_array_input_with_promosi(): void
     {
-        $mapper = new DefaultEmployeeFeatureMapper();
+        $mapper = new DefaultEmployeeFeatureMapper(new AttendanceMetricsService);
 
         $result = $mapper->map([
             'employee_id' => 'EMP0001',
@@ -33,7 +34,7 @@ class DefaultEmployeeFeatureMapperTest extends TestCase
 
     public function test_maps_null_tanggal_promosi_correctly(): void
     {
-        $mapper = new DefaultEmployeeFeatureMapper();
+        $mapper = new DefaultEmployeeFeatureMapper(new AttendanceMetricsService);
 
         $result = $mapper->map([
             'employee_id' => 'EMP0002',
@@ -53,15 +54,15 @@ class DefaultEmployeeFeatureMapperTest extends TestCase
 
     public function test_maps_many_returns_indexed_array(): void
     {
-        $mapper = new DefaultEmployeeFeatureMapper();
+        $mapper = new DefaultEmployeeFeatureMapper(new AttendanceMetricsService);
 
         $employees = [
             ['employee_id' => 'A', 'usia' => 30, 'masa_kerja_bulan' => 12, 'jam_lembur_bulanan' => 5,
-             'gaji_bulanan' => 5000000, 'tanggal_masuk' => '2023-01-01', 'tanggal_promosi' => null,
-             'departemen' => 'IT', 'status_kerja' => 'Tetap', 'pendidikan' => 'S1'],
+                'gaji_bulanan' => 5000000, 'tanggal_masuk' => '2023-01-01', 'tanggal_promosi' => null,
+                'departemen' => 'IT', 'status_kerja' => 'Tetap', 'pendidikan' => 'S1'],
             ['employee_id' => 'B', 'usia' => 40, 'masa_kerja_bulan' => 24, 'jam_lembur_bulanan' => 10,
-             'gaji_bulanan' => 6000000, 'tanggal_masuk' => '2022-01-01', 'tanggal_promosi' => null,
-             'departemen' => 'HR', 'status_kerja' => 'Tetap', 'pendidikan' => 'S2'],
+                'gaji_bulanan' => 6000000, 'tanggal_masuk' => '2022-01-01', 'tanggal_promosi' => null,
+                'departemen' => 'HR', 'status_kerja' => 'Tetap', 'pendidikan' => 'S2'],
         ];
 
         $result = $mapper->mapMany($employees);
@@ -73,7 +74,7 @@ class DefaultEmployeeFeatureMapperTest extends TestCase
 
     public function test_maps_absensi_payload(): void
     {
-        $mapper = new DefaultEmployeeFeatureMapper();
+        $mapper = new DefaultEmployeeFeatureMapper(new AttendanceMetricsService);
 
         $result = $mapper->mapForUseCase('absensi', [
             'employee_id' => 'EMP0001',
@@ -96,7 +97,7 @@ class DefaultEmployeeFeatureMapperTest extends TestCase
 
     public function test_maps_kinerja_payload_with_defaults(): void
     {
-        $mapper = new DefaultEmployeeFeatureMapper();
+        $mapper = new DefaultEmployeeFeatureMapper(new AttendanceMetricsService);
 
         // Record minimal: atribut non-turnover harus terisi default, bukan null.
         $result = $mapper->mapForUseCase('kinerja', [
@@ -115,7 +116,7 @@ class DefaultEmployeeFeatureMapperTest extends TestCase
 
     public function test_maps_payroll_payload_falls_back_to_gaji_bulanan(): void
     {
-        $mapper = new DefaultEmployeeFeatureMapper();
+        $mapper = new DefaultEmployeeFeatureMapper(new AttendanceMetricsService);
 
         $result = $mapper->mapForUseCase('payroll', [
             'employee_id' => 'EMP0003',
@@ -131,7 +132,7 @@ class DefaultEmployeeFeatureMapperTest extends TestCase
 
     public function test_maps_survival_payload(): void
     {
-        $mapper = new DefaultEmployeeFeatureMapper();
+        $mapper = new DefaultEmployeeFeatureMapper(new AttendanceMetricsService);
 
         $result = $mapper->mapForUseCase('survival', [
             'employee_id' => 'EMP0004',
@@ -151,7 +152,7 @@ class DefaultEmployeeFeatureMapperTest extends TestCase
 
     public function test_map_for_use_case_turnover_matches_map(): void
     {
-        $mapper = new DefaultEmployeeFeatureMapper();
+        $mapper = new DefaultEmployeeFeatureMapper(new AttendanceMetricsService);
 
         $employee = [
             'employee_id' => 'EMP0001', 'usia' => 38, 'masa_kerja_bulan' => 172,
@@ -167,6 +168,6 @@ class DefaultEmployeeFeatureMapperTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
 
-        (new DefaultEmployeeFeatureMapper())->mapForUseCase('tidak-ada', []);
+        (new DefaultEmployeeFeatureMapper(new AttendanceMetricsService))->mapForUseCase('tidak-ada', []);
     }
 }
