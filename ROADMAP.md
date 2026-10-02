@@ -225,10 +225,11 @@ ketidakhadiran.
 # 10. Fase 6 — Hardening Produksi 🔶
 
 - ✅ `v2_mitigated` jadi default model turnover API (`MODEL_VERSION`)
+- ✅ CI root (`.github/workflows/ci.yml`) mencakup kelima modul + gate validasi model
 - ⬜ Halaman login + rate limiting
 - ⬜ Audit trail menyeluruh
 - ⬜ Backup & retensi data
-- ⬜ Dockerfile + CI untuk `hr_application`
+- ⬜ Dockerfile untuk `hr_application` & `hr_dashboard`
 - ⬜ Model monitoring & drift alert otomatis (memanfaatkan `mlops`)
 - ⬜ Retraining terjadwal + rollback model
 - ⬜ Validasi ulang pada data nyata (saat ini data tambahan masih sintetis)
