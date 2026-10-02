@@ -24,19 +24,19 @@ Rekrutmen → Onboarding → Kinerja → Pengembangan → Engagement
 | # | Use case | Jenis ML | Komponen di repo | Status |
 |---|----------|----------|------------------|--------|
 | 1 | Employee Turnover Prediction | Klasifikasi biner | `hr_intelligence_api` | ✅ v1 & v2 (+ v2_mitigated) |
-| 2 | Attrition Survival Analysis | Survival analysis | `hr_intelligence_api` (v3) | ✅ `06_survival_attrition.ipynb` |
+| 2 | Attrition Survival Analysis | Survival analysis | `hr_intelligence_api` | ✅ `survival_attrition/v1` + API |
 | 3 | Absenteeism Prediction | Klasifikasi / regresi | `hr_intelligence_api` | ✅ `02_absenteeism.ipynb` |
 | 4 | Performance Rating Prediction | Klasifikasi ordinal | `hr_intelligence_api` | ✅ `03_performance_prediction.ipynb` |
 | 5 | High-Potential (HiPo) / Promotion Readiness | Klasifikasi | `hr_intelligence_api` | rencana |
 | 6 | Payroll Anomaly Detection | Anomaly detection | `payroll_intelligence` | ✅ `04_payroll_anomaly_detection.ipynb` |
-| 7 | Payroll / Headcount Forecasting | Time series | `payroll_intelligence` | rencana |
-| 8 | Overtime & Cost Analytics | Regresi / clustering | `payroll_intelligence` | rencana |
+| 7 | Payroll / Headcount Forecasting | Time series | `payroll_intelligence` | ✅ `/forecast/*` (Holt) |
+| 8 | Overtime & Cost Analytics | Regresi / clustering | `payroll_intelligence` | sebagian (`/overtime`) |
 | 9 | Resume Screening & Person-Job Fit | NLP / ranking | `ai_hr_assistant` | rencana |
 | 10 | Job / Training Recommendation | Recommender system | `ai_hr_assistant` | rencana |
 | 11 | Employee Review Sentiment & Topic | NLP | `ai_hr_assistant` | rencana |
-| 12 | HR Knowledge Assistant (RAG) | LLM + retrieval | `ai_hr_assistant` | rencana |
+| 12 | HR Knowledge Assistant (RAG) | LLM + retrieval | `ai_hr_assistant` | ✅ hybrid lexical + semantik |
 | 13 | Document Understanding / OCR | Computer vision + NLP | `deep_learning` | rencana |
-| 14 | Attrition Driver Discovery | Explainability / causal | `mlops` + API | sebagian (SHAP di v2) |
+| 14 | Attrition Driver Discovery | Explainability / causal | `mlops` + API | sebagian (permutation importance) |
 | 15 | Workforce Segmentation | Clustering | `hr_dashboard` | rencana |
 | 16 | Fairness & Bias Audit | Model evaluation | `mlops` | ✅ audit + mitigasi |
 

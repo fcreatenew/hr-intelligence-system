@@ -83,18 +83,29 @@ Setiap komponen memiliki source code, dependency, testing, dan dokumentasi masin
 
 ## `hr_application/`
 
-Aplikasi utama untuk menjalankan **proses bisnis HR**.
+Aplikasi HRIS (Human Resource Information System) berbasis **Laravel / PHP**.
 
-Contoh fungsi:
+> **Status: sedang dibangun.** Saat ini yang sudah berjalan adalah **integrasi
+> Machine Learning** (pemetaan fitur karyawan, pemanggilan API prediksi, prediksi
+> batch terjadwal, penyimpanan hasil). Modul proses bisnis HR di bawah masih
+> dalam pengerjaan — lihat [`ROADMAP.md`](./ROADMAP.md) untuk urutannya.
 
-* Employee Management
+Sudah berjalan:
+
+* Integrasi dengan ML API (semua 5 use case)
+* Pemetaan record karyawan → input model (`EmployeeFeatureMapper`)
+* Prediksi batch terjadwal (bulanan/mingguan/kuartalan)
+* Penyimpanan & penelusuran hasil prediksi
+
+Rencana modul proses bisnis HR:
+
+* Employee Management *(dalam pengerjaan)*
 * Attendance
 * Leave
 * Payroll
 * Employee History
 * HR Administration
 * Reporting
-* Integrasi dengan ML API
 
 **Teknologi:** Laravel / PHP
 
@@ -250,6 +261,8 @@ hr-intelligence-system/
 ├── CONTRIBUTE.md
 ├── USE_CASES.md
 ├── MODEL_RESULTS.md
+├── PANDUAN_PENGGUNAAN.md
+├── PANDUAN_PENGGUNAAN.pdf
 │
 ├── data/
 │   ├── README.md
@@ -297,7 +310,6 @@ hr-intelligence-system/
 │   ├── app/
 │   ├── tests/
 │   ├── requirements.txt
-│   ├── Dockerfile
 │   └── .env.example
 │
 ├── hr_application/
@@ -322,7 +334,9 @@ hr-intelligence-system/
 │
 ├── deep_learning/
 │   ├── README.md
-│   └── notebooks/
+│   ├── src/
+│   ├── experiments/
+│   └── tests/
 │
 ├── ai_hr_assistant/
 │   ├── README.md
@@ -341,64 +355,50 @@ hr-intelligence-system/
 
 # Model Saat Ini
 
-Model yang sudah dikembangkan adalah **Employee Turnover Prediction**, tersedia
-dalam dua versi dengan metode berbeda.
+HR Intelligence API melayani **lima use case** Machine Learning. Semuanya sudah
+diekspos lewat API dan dapat dipanggil dari `hr_application` maupun
+`ai_hr_assistant`.
 
-## v1 — Logistic Regression
+| # | Use case | Endpoint | Model | Versi | Metrik utama |
+|---|----------|----------|-------|-------|--------------|
+| 1 | Turnover | `POST /predict` | Soft Voting (ensemble LR + RF) | v2 | ROC-AUC 0,6993 |
+| 2 | Absensi | `POST /predict/absensi` | Logistic Regression | v1 | ROC-AUC 0,8287 |
+| 3 | Kinerja | `POST /predict/kinerja` | Logistic Regression (ordinal) | v1 | macro-F1 0,6357 |
+| 4 | Payroll anomaly | `POST /predict/payroll` | Isolation Forest | v1 | PR-AUC 0,8709 |
+| 5 | Survival attrition | `POST /predict/survival` | Cox Proportional Hazards | v1 | C-index 0,8144 |
 
-```text
-Model     : Logistic Regression
-Target    : Employee Turnover
-Threshold : 0.33
-ROC-AUC   : 0.6929
-PR-AUC    : 0.6235
-```
+Turnover tersedia dalam tiga artifact: `v1`, `v2` (default API), dan
+`v2_mitigated` (reweighting, lebih setara — belum jadi default).
 
-## v2 — Perbandingan Metode Alternatif
-
-```text
-Model     : Soft Voting (ensemble Logistic Regression + Random Forest)
-Target    : Employee Turnover
-Threshold : 0.33
-ROC-AUC   : 0.6993
-PR-AUC    : 0.6223
-```
-
-Model v2 dihasilkan dari notebook yang membandingkan 7 metode (Logistic
-Regression, Random Forest, Hist Gradient Boosting, XGBoost, LightGBM, CatBoost,
-SVM) plus ensemble soft-voting. Selisih dengan v1 kecil dan **belum tentu
-signifikan** — lihat `models/README.md` untuk analisisnya.
+Model turnover juga tersedia dalam versi deep learning (MLP NumPy) sebagai
+pembanding di `deep_learning/`; pada dataset ini baseline klasik masih unggul.
 
 Model artifact:
 
 ```text
 models/
-├── v1/
-│   ├── turnover_model.joblib
-│   └── model_metadata.json
-└── v2/
-    ├── turnover_model.joblib
-    └── model_metadata.json
+├── v1/                        # turnover — Logistic Regression
+├── v2/                        # turnover — Soft Voting (default API)
+├── v2_mitigated/              # turnover — v2 + reweighting
+├── absenteeism/v1/            # absensi
+├── performance/v1/            # kinerja
+├── payroll_anomaly/v1/        # anomali payroll
+└── survival_attrition/v1/     # survival
 ```
 
-Training dilakukan melalui:
+Detail model, feature engineering, evaluasi, metadata, audit fairness, dan uji
+signifikansi tersedia di:
 
-```text
-notebooks/train_model.ipynb                 # v1
-notebooks/train_model_alternatives.ipynb    # v2
-```
-
-Detail model, feature engineering, evaluasi, dan metadata tersedia di:
-
-[`models/README.md`](./models/README.md)
+* [`models/README.md`](./models/README.md)
+* [`MODEL_RESULTS.md`](./MODEL_RESULTS.md)
 
 ---
 
 # Use Case ML Lain untuk HR
 
 Turnover bukan satu-satunya masalah HR yang bisa didekati dengan Machine Learning.
-Katalog use case lain (absensi, kinerja, anomaly payroll, forecasting, rekrutmen,
-NLP, survival analysis, dan audit bias) beserta data & referensinya ada di:
+Katalog use case lain (rekrutmen, NLP, HiPo, workforce segmentation) beserta data
+& referensinya ada di:
 
 [`USE_CASES.md`](./USE_CASES.md)
 
