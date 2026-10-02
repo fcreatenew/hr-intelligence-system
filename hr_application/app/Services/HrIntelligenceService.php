@@ -21,6 +21,7 @@ class HrIntelligenceService
         private readonly int $retryTimes,
         private readonly int $retryDelayMs,
         private readonly int $batchChunkSize,
+        private readonly array $useCases = [],
     ) {
     }
 
@@ -59,6 +60,61 @@ class HrIntelligenceService
         }
 
         return $this->request('post', '/predict/batch', ['employees' => $employees]);
+    }
+
+    /** @return array<string, array{label: string, path: string, batch_path: string}> */
+    public function useCases(): array
+    {
+        return $this->useCases;
+    }
+
+    /** @return array<string, mixed> prediksi satu karyawan untuk use case tertentu */
+    public function predictUseCase(string $useCase, array $employee): array
+    {
+        return $this->request('post', $this->useCasePath($useCase, 'path'), $employee);
+    }
+
+    /** @return array<string, mixed> prediksi batch untuk use case tertentu */
+    public function predictUseCaseBatch(string $useCase, array $employees): array
+    {
+        $this->guardBatchSize($employees);
+
+        return $this->request(
+            'post',
+            $this->useCasePath($useCase, 'batch_path'),
+            ['employees' => $employees],
+        );
+    }
+
+    /** @return array<string, mixed> metadata & metrik model untuk use case tertentu */
+    public function useCaseInfo(string $useCase): array
+    {
+        return $this->request('get', "/model/{$useCase}/info");
+    }
+
+    private function guardBatchSize(array $employees): void
+    {
+        if (count($employees) > $this->batchChunkSize) {
+            throw new \InvalidArgumentException(
+                sprintf(
+                    'Batch menerima %d karyawan, melebihi batas %d. '
+                    .'Pecah dulu jadi beberapa chunk (lihat maxBatchSize()).',
+                    count($employees),
+                    $this->batchChunkSize,
+                )
+            );
+        }
+    }
+
+    private function useCasePath(string $useCase, string $key): string
+    {
+        if (! isset($this->useCases[$useCase][$key])) {
+            throw new \InvalidArgumentException(
+                sprintf('Use case HR Intelligence tidak dikenal: %s', $useCase)
+            );
+        }
+
+        return $this->useCases[$useCase][$key];
     }
 
     private function request(string $method, string $path, array $payload = [], bool $requiresAuth = true): array

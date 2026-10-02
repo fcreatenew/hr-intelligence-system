@@ -776,6 +776,82 @@ Application
 
 ---
 
+## 25. Multi-Model Prediction API
+
+Selain turnover, HR Intelligence API melayani seluruh model HR yang sudah dilatih.
+Setiap use case punya endpoint prediksi tunggal dan batch dengan skema sendiri.
+
+| Use case | Endpoint tunggal | Endpoint batch | Algoritma |
+| -------- | ---------------- | -------------- | --------- |
+| `turnover` | `POST /predict` | `POST /predict/batch` | Soft Voting (ensemble) |
+| `absensi` | `POST /predict/absensi` | `POST /predict/absensi/batch` | Gradient Boosting |
+| `kinerja` | `POST /predict/kinerja` | `POST /predict/kinerja/batch` | XGBoost (ordinal) |
+| `payroll` | `POST /predict/payroll` | `POST /predict/payroll/batch` | IsolationForest |
+| `survival` | `POST /predict/survival` | `POST /predict/survival/batch` | Cox Proportional Hazards |
+
+Endpoint metadata & pemantauan:
+
+```text
+GET /health              -> status + daftar model yang termuat
+GET /model               -> daftar use case yang tersedia
+GET /model/{use_case}/info -> metadata, metrik, dan versi model per use case
+```
+
+Semua endpoint prediksi memerlukan header `X-API-Key`. Endpoint batch dibatasi
+`MAX_BATCH_SIZE` karyawan per request (lihat `app/core/config.py`).
+
+Contoh:
+
+```bash
+curl -X POST http://127.0.0.1:8000/predict/absensi \
+  -H "X-API-Key: $HR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "employee_id": "EMP0001",
+    "usia": 32,
+    "masa_kerja_bulan": 48,
+    "jarak_km": 12.5,
+    "beban_kerja": 78.0,
+    "lembur_jam_bulanan": 22.0,
+    "kepuasan_kerja": 3.2,
+    "riwayat_absen_90hari": 4,
+    "departemen": "IT",
+    "status_kerja": "Tetap",
+    "pendidikan": "S1"
+  }'
+```
+
+Bentuk hasil berbeda per use case:
+
+```text
+absensi   -> probabilitas_absen_tinggi, prediksi_absen_tinggi, level_risiko
+kinerja   -> kategori_prediksi, probabilitas{Rendah,Sedang,Tinggi}, skor_ordinal
+payroll   -> skor_anomali, is_anomali, level
+survival  -> risiko_relatif, level_risiko, median_survival_bulan
+```
+
+### Integrasi di `hr_application`
+
+`hr_application` memakai service `HrIntelligenceService` yang endpoint-nya
+diatur di `config/hr_intelligence.php` pada key `use_cases`. Tersedia:
+
+```text
+HrIntelligence::predictUseCase($useCase, $employee)
+HrIntelligence::predictUseCaseBatch($useCase, $employees)
+HrIntelligence::useCaseInfo($useCase)
+HrIntelligence::useCases()
+```
+
+Batch dijalankan lewat `RunUseCaseBatchPredictionJob` dan dijadwalkan di
+`routes/console.php`, atau manual:
+
+```bash
+php artisan hr-intelligence:predict absensi
+php artisan hr-intelligence:predict payroll --sync
+```
+
+---
+
 ## License
 
 Private / Proprietary.

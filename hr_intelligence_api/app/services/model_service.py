@@ -7,7 +7,7 @@ from pathlib import Path
 
 import joblib
 
-from app.core.config import METADATA_PATH, MODEL_PATH
+from app.core.config import MODEL_VERSION, use_case_paths
 from app.features.features import RAW_COLUMNS_REQUIRED
 
 
@@ -18,15 +18,35 @@ class ModelNotLoadedError(RuntimeError):
     ...
 
 
+class UnknownUseCaseError(KeyError):
+    ...
+
+
 class ModelService:
+    """Memuat satu artifact model + metadata untuk sebuah use case.
+
+    Turnover mempertahankan validasi skema fitur lama (kolom mentah harus sama
+    dengan features.py). Use case lain tidak punya kontrak kolom mentah yang
+    ketat, jadi validasi hanya dilakukan bila expected_raw_columns diberikan.
+    """
 
     def __init__(
         self,
-        model_path: Path = MODEL_PATH,
-        metadata_path: Path = METADATA_PATH,
+        use_case: str = "turnover",
+        model_path: Path | None = None,
+        metadata_path: Path | None = None,
+        expected_raw_columns: list[str] | None = None,
     ):
+        self.use_case = use_case
+
+        if model_path is None or metadata_path is None:
+            default_model, default_metadata = use_case_paths(use_case)
+            model_path = model_path or default_model
+            metadata_path = metadata_path or default_metadata
+
         self._model_path = model_path
         self._metadata_path = metadata_path
+        self._expected_raw_columns = expected_raw_columns
 
         self._model = None
         self._metadata: dict = {}
@@ -60,10 +80,12 @@ class ModelService:
             self._metadata = metadata
 
             logger.info(
-                "Model dimuat: %s "
+                "Model '%s' dimuat: %s "
                 "(dilatih %s, threshold=%s)",
+                self.use_case,
                 self._metadata.get("model"),
-                self._metadata.get("dibuat_pada"),
+                self._metadata.get("dibuat_pada")
+                or self._metadata.get("dilatih_pada"),
                 self._metadata.get("threshold"),
             )
 
@@ -71,6 +93,9 @@ class ModelService:
         self,
         metadata: dict,
     ) -> None:
+        if self._expected_raw_columns is None:
+            return
+
         expected = set(
             metadata.get(
                 "kolom_mentah_dibutuhkan",
@@ -78,7 +103,7 @@ class ModelService:
             )
         )
 
-        actual = set(RAW_COLUMNS_REQUIRED)
+        actual = set(self._expected_raw_columns)
 
         if expected and expected != actual:
             raise ValueError(
@@ -93,7 +118,7 @@ class ModelService:
     def require_loaded(self):
         if self._model is None:
             raise ModelNotLoadedError(
-                "Model belum dimuat. "
+                f"Model '{self.use_case}' belum dimuat. "
                 "Cek log startup aplikasi."
             )
 
@@ -112,6 +137,14 @@ class ModelService:
         return self._metadata
 
     @property
+    def label(self) -> str:
+        return str(
+            self._metadata.get("tujuan")
+            or self._metadata.get("target")
+            or self.use_case
+        )
+
+    @property
     def threshold(self) -> float:
         return float(
             self._metadata.get(
@@ -123,12 +156,64 @@ class ModelService:
     @property
     def model_version(self) -> str:
         """Versi model aktif (mis. "v2"). Bukan nama algoritma."""
+        version = self._metadata.get("versi_model")
+
+        if not version and self.use_case == "turnover":
+            version = MODEL_VERSION
+
+        return str(version or "unknown")
+
+    @property
+    def trained_at(self) -> str:
         return str(
-            self._metadata.get(
-                "versi_model",
-                "unknown",
-            )
+            self._metadata.get("dibuat_pada")
+            or self._metadata.get("dilatih_pada")
+            or "unknown"
         )
 
 
-model_service = ModelService()
+# Service turnover (default) — dipertahankan demi kompatibilitas kode lama.
+model_service = ModelService(
+    use_case="turnover",
+    expected_raw_columns=RAW_COLUMNS_REQUIRED,
+)
+
+
+_registry: dict[str, ModelService] = {
+    "turnover": model_service,
+}
+
+# Use case lain: skema fitur divalidasi lewat schema Pydantic, bukan kolom mentah.
+for _use_case in ("absensi", "kinerja", "payroll", "survival"):
+    _registry[_use_case] = ModelService(use_case=_use_case)
+
+
+def get_model_service(use_case: str) -> ModelService:
+    if use_case not in _registry:
+        raise UnknownUseCaseError(
+            f"Use case tidak dikenal: {use_case}"
+        )
+
+    return _registry[use_case]
+
+
+def model_services() -> dict[str, ModelService]:
+    return dict(_registry)
+
+
+def load_all_models() -> dict[str, str]:
+    """Muat semua model di registry. Mengembalikan status per use case."""
+    status: dict[str, str] = {}
+
+    for use_case, service in _registry.items():
+        try:
+            service.load()
+            status[use_case] = "ok"
+        except Exception as exc:  # noqa: BLE001 - startup harus tetap jalan
+            status[use_case] = f"gagal: {exc}"
+            logger.exception(
+                "Gagal memuat model use case '%s'.",
+                use_case,
+            )
+
+    return status

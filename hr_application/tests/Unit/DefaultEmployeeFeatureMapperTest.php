@@ -70,4 +70,103 @@ class DefaultEmployeeFeatureMapperTest extends TestCase
         $this->assertSame('A', $result[0]['employee_id']);
         $this->assertSame('B', $result[1]['employee_id']);
     }
+
+    public function test_maps_absensi_payload(): void
+    {
+        $mapper = new DefaultEmployeeFeatureMapper();
+
+        $result = $mapper->mapForUseCase('absensi', [
+            'employee_id' => 'EMP0001',
+            'usia' => 30,
+            'masa_kerja_bulan' => 24,
+            'jarak_km' => 15.5,
+            'beban_kerja' => 80.0,
+            'jam_lembur_bulanan' => 20.0,
+            'kepuasan_kerja' => 3.1,
+            'riwayat_absen_90hari' => 5,
+            'departemen' => 'IT',
+            'status_kerja' => 'Tetap',
+            'pendidikan' => 'S1',
+        ]);
+
+        $this->assertSame(15.5, $result['jarak_km']);
+        $this->assertSame(5, $result['riwayat_absen_90hari']);
+        $this->assertSame('IT', $result['departemen']);
+    }
+
+    public function test_maps_kinerja_payload_with_defaults(): void
+    {
+        $mapper = new DefaultEmployeeFeatureMapper();
+
+        // Record minimal: atribut non-turnover harus terisi default, bukan null.
+        $result = $mapper->mapForUseCase('kinerja', [
+            'employee_id' => 'EMP0002',
+            'usia' => 40,
+            'masa_kerja_bulan' => 60,
+            'departemen' => 'Finance',
+            'pendidikan' => 'S2',
+        ]);
+
+        $this->assertSame(2, $result['jumlah_training_setahun']);
+        $this->assertSame(5, $result['proyek_selesai']);
+        $this->assertIsFloat($result['skor_umpan_balik_360']);
+        $this->assertSame(3, $result['hari_absen_setahun']);
+    }
+
+    public function test_maps_payroll_payload_falls_back_to_gaji_bulanan(): void
+    {
+        $mapper = new DefaultEmployeeFeatureMapper();
+
+        $result = $mapper->mapForUseCase('payroll', [
+            'employee_id' => 'EMP0003',
+            'gaji_bulanan' => 9000000,
+            'departemen' => 'Finance',
+        ]);
+
+        $this->assertSame(9000000.0, $result['gaji_pokok']);
+        $this->assertSame(9000000.0, $result['total_gaji']);
+        $this->assertSame('Staff', $result['level']);
+        $this->assertMatchesRegularExpression('/^\d{4}-\d{2}$/', $result['periode']);
+    }
+
+    public function test_maps_survival_payload(): void
+    {
+        $mapper = new DefaultEmployeeFeatureMapper();
+
+        $result = $mapper->mapForUseCase('survival', [
+            'employee_id' => 'EMP0004',
+            'usia' => 34,
+            'gaji_bulanan' => 9500000,
+            'jam_lembur_bulanan' => 18.0,
+            'kepuasan_kerja' => 3.4,
+            'bulan_sejak_promosi' => 22.0,
+            'jarak_km' => 11.5,
+            'departemen' => 'IT',
+            'pendidikan' => 'S1',
+        ]);
+
+        $this->assertSame(9500000.0, $result['gaji_bulanan']);
+        $this->assertSame(22.0, $result['bulan_sejak_promosi']);
+    }
+
+    public function test_map_for_use_case_turnover_matches_map(): void
+    {
+        $mapper = new DefaultEmployeeFeatureMapper();
+
+        $employee = [
+            'employee_id' => 'EMP0001', 'usia' => 38, 'masa_kerja_bulan' => 172,
+            'jam_lembur_bulanan' => 2, 'gaji_bulanan' => 14514816,
+            'tanggal_masuk' => '2010-08-12', 'tanggal_promosi' => '2015-07-28',
+            'departemen' => 'Marketing', 'status_kerja' => 'Tetap', 'pendidikan' => 'S1',
+        ];
+
+        $this->assertSame($mapper->map($employee), $mapper->mapForUseCase('turnover', $employee));
+    }
+
+    public function test_map_for_use_case_rejects_unknown(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        (new DefaultEmployeeFeatureMapper())->mapForUseCase('tidak-ada', []);
+    }
 }

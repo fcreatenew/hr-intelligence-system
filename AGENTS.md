@@ -6,7 +6,7 @@ Panduan kerja untuk agen/AI di repository ini.
 
 | Folder | Isi |
 |---|---|
-| `hr_intelligence_api/` | FastAPI — melayani prediksi turnover (model v1/v2) |
+| `hr_intelligence_api/` | FastAPI — melayani prediksi multi-model (turnover, absensi, kinerja, payroll, survival) |
 | `hr_application/` | Laravel — aplikasi HR (konsumen API) |
 | `notebooks/` | Notebook training & analisis |
 | `models/` | Artifact model + metadata per versi |

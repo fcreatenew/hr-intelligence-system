@@ -105,9 +105,9 @@ Service untuk menjalankan **Machine Learning inference** dan menyediakan akses m
 
 Contoh fungsi:
 
-* Employee Turnover Prediction
+* Multi-model prediction: turnover, absensi, kinerja, payroll anomaly, survival
 * Batch Prediction
-* Model Information
+* Model Information per use case
 * Health Check
 * API Authentication
 
