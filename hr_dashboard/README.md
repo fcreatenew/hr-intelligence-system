@@ -261,6 +261,13 @@ npm run build
 npm run preview
 ```
 
+Lint dan test:
+
+```bash
+npm run lint   # ESLint 9 (flat config, eslint.config.js)
+npm test       # Vitest + Testing Library (jsdom)
+```
+
 ---
 
 # Project Scope
