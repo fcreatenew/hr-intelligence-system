@@ -100,6 +100,18 @@ Contoh:
 * Prediction distribution
 * Model performance
 
+`DriftMonitor` (`src/monitoring/drift_monitor.py`) menjalankan deteksi drift lalu
+mengekspor hasilnya sebagai metrik Prometheus: gauge `drift_max_psi` dan
+`drift_features_total` per use case, serta counter `drift_alerts_total` dengan
+label `level`/`use_case` ketika drift terdeteksi. Aturan alert di
+`monitoring/alerts/alerts.yml` membaca `drift_max_psi` (peringatan > 0.1, kritis
+> 0.2). Riwayat evaluasi dan alert terbaru tersedia lewat endpoint:
+
+```text
+GET /monitoring/drift/history[?use_case=turnover]
+GET /monitoring/drift/alerts
+```
+
 ---
 
 ## Data Drift
@@ -164,6 +176,7 @@ mlops/
 │   ├── validation/model_validator.py # gate kelayakan deploy
 │   ├── monitoring/drift.py           # PSI + deteksi drift per fitur
 │   ├── monitoring/metrics.py         # MetricsCollector (format Prometheus)
+│   ├── monitoring/drift_monitor.py   # DriftMonitor: metrik + alert + riwayat
 │   ├── train/pipeline.py         # training turnover yang reproducible
 │   ├── api.py                    # FastAPI
 │   └── cli.py                    # validasi semua model (exit 1 bila gagal)

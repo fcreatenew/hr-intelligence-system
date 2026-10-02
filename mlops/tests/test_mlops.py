@@ -165,3 +165,65 @@ def test_training_rejects_missing_columns(tmp_path):
 
     with pytest.raises(ValueError):
         load_data(bad, TrainingConfig().ref_timestamp)
+
+
+# ---------------------------------------------------------------------------
+# Monitoring drift + alert otomatis
+# ---------------------------------------------------------------------------
+def test_drift_monitor_records_history_and_metrics():
+    from src.monitoring.drift_monitor import DriftMonitor
+
+    collector = MetricsCollector()
+    monitor = DriftMonitor(collector=collector)
+
+    rng = np.random.default_rng(3)
+    ref = pd.DataFrame({"a": rng.normal(0, 1, 800)})
+    cur = pd.DataFrame({"a": rng.normal(5, 1, 800)})
+
+    report = monitor.evaluate("turnover", ref, cur)
+
+    assert report.use_case == "turnover"
+    assert report.drift_terdeteksi
+    assert report.level == "kritis"
+    assert report.max_psi > 0.2
+    assert len(monitor.history("turnover")) == 1
+
+    prometheus = collector.to_prometheus()
+    assert 'drift_max_psi{use_case="turnover"}' in prometheus
+    assert 'drift_alerts_total{level="kritis",use_case="turnover"}' in prometheus
+
+
+def test_drift_monitor_stable_data_produces_no_alert():
+    from src.monitoring.drift_monitor import DriftMonitor
+
+    collector = MetricsCollector()
+    monitor = DriftMonitor(collector=collector)
+
+    rng = np.random.default_rng(4)
+    ref = pd.DataFrame({"a": rng.normal(0, 1, 800)})
+    cur = pd.DataFrame({"a": rng.normal(0, 1, 800)})
+
+    report = monitor.evaluate("attrition", ref, cur)
+
+    assert not report.drift_terdeteksi
+    assert report.level == "stabil"
+    assert monitor.alerts() == []
+    assert "drift_alerts_total" not in collector.to_prometheus()
+
+
+def test_drift_monitor_alerts_use_latest_evaluation_per_use_case():
+    from src.monitoring.drift_monitor import DriftMonitor
+
+    monitor = DriftMonitor()
+    rng = np.random.default_rng(5)
+    ref = pd.DataFrame({"a": rng.normal(0, 1, 600)})
+
+    # Pertama drift, lalu stabil pada evaluasi berikutnya.
+    monitor.evaluate("turnover", ref, pd.DataFrame({"a": rng.normal(5, 1, 600)}))
+    monitor.evaluate("turnover", ref, pd.DataFrame({"a": rng.normal(0, 1, 600)}))
+    monitor.evaluate("performance", ref, pd.DataFrame({"a": rng.normal(6, 1, 600)}))
+
+    alerts = monitor.alerts()
+
+    assert {report.use_case for report in alerts} == {"performance"}
+    assert monitor.latest("turnover").drift_terdeteksi is False
