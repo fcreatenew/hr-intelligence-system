@@ -20,4 +20,10 @@ Route::middleware(['auth', 'can:manage-hr-intelligence'])
         Route::get('/{useCase}/predictions', [HrIntelligenceController::class, 'index'])
             ->whereIn('useCase', ['absensi', 'kinerja', 'payroll', 'survival'])
             ->name('use-case.predictions');
+
+        // Halaman HTML (Fase 5) — dipakai saat permintaan bukan JSON.
+        Route::get('/', [HrIntelligenceController::class, 'showUseCases'])->name('dashboard');
+        Route::get('/{useCase}', [HrIntelligenceController::class, 'showPredictions'])
+            ->whereIn('useCase', ['absensi', 'kinerja', 'payroll', 'survival'])
+            ->name('use-case.show');
     });
