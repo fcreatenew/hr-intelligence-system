@@ -188,7 +188,7 @@ terakhir. Cuti **tidak** dihitung karena sudah direncanakan dan disetujui.
 - ✅ Persetujuan menulis saldo + catatan absensi dalam satu transaksi
 - ✅ Persetujuan ditolak bila saldo tidak mencukupi
 - ✅ Pengajuan yang sudah diputuskan tidak bisa diputuskan ulang
-- ⬜ Kalender cuti tim
+- ✅ Kalender cuti tim (grid bulanan, tumpang tindih terlihat)
 - ⬜ Kuota per jenis cuti selain tahunan
 
 **Keputusan penting:** hanya cuti `tahunan` yang memotong saldo. Cuti
@@ -251,7 +251,7 @@ Daftar ini jujur menyebut hal yang belum beres, agar tidak hilang dari pandangan
 | 8 | `deep_learning` MLP belum dipakai produksi | Eksperimen saja | Tidak diprioritaskan |
 | 9 | Belum ada impor mesin absensi | Absensi masih diisi manual | Fase 5 |
 | 10 | ~~Lembur belum dihitung dari jam masuk/keluar~~ | Sudah dihitung dari `overtime_minutes` absensi per periode | Selesai |
-| 11 | Kalender cuti tim belum ada | HR belum bisa melihat tumpang tindih cuti | Fase 5 |
+| 11 | ~~Kalender cuti tim belum ada~~ | Grid bulanan menampilkan cuti disetujui & tumpang tindih | Selesai |
 | 12 | Daftar nilai kategorikal sempat tidak sinkron | Form menawarkan nilai yang tidak dikenal pipeline, sehingga mapper diam-diam mengubahnya | Selesai — `HrCategories` jadi sumber tunggal |
 
 ---
