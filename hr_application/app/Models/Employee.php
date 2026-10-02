@@ -150,13 +150,32 @@ class Employee extends Model
      * Saldo cuti tahun berjalan, membuat baris default bila belum ada sehingga
      * pemanggil tidak perlu menangani null.
      */
-    public function leaveBalanceFor(?int $year = null): LeaveBalance
+    public function leaveBalanceFor(?int $year = null, string $type = 'tahunan'): LeaveBalance
     {
         $year = $year ?? (int) now()->year;
 
         return $this->leaveBalances()->firstOrCreate(
-            ['year' => $year],
-            ['entitled_days' => LeaveBalance::DEFAULT_ENTITLED_DAYS, 'used_days' => 0],
+            ['year' => $year, 'type' => $type],
+            ['entitled_days' => LeaveBalance::defaultEntitledDays($type), 'used_days' => 0],
         );
+    }
+
+    /**
+     * Saldo tiap jenis cuti untuk satu tahun, selalu ada barisnya (dibuat
+     * sesuai jatah default bila belum ada).
+     *
+     * @return array<string, LeaveBalance>
+     */
+    public function leaveBalancesFor(?int $year = null): array
+    {
+        $year = $year ?? (int) now()->year;
+
+        $balances = [];
+
+        foreach (LeaveRequest::TYPES as $type) {
+            $balances[$type] = $this->leaveBalanceFor($year, $type);
+        }
+
+        return $balances;
     }
 }

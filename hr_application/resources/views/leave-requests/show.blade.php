@@ -36,7 +36,7 @@
     </div>
 
     @if ($leaveRequest->consumesBalance())
-        <h2>Saldo cuti {{ $balance->year }}</h2>
+        <h2>Kuota cuti {{ $leaveRequest->type }} {{ $balance->year }}</h2>
         <div class="card">
             Tersisa <strong>{{ $balance->remaining_days }}</strong> dari {{ $balance->entitled_days }} hari
             (terpakai {{ $balance->used_days }}).

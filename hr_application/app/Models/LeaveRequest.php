@@ -23,10 +23,11 @@ class LeaveRequest extends Model
     public const STATUS_REJECTED = 'rejected';
 
     /**
-     * Jenis cuti yang memotong saldo cuti tahunan. Cuti di luar daftar ini
-     * (mis. melahirkan, duka) tidak mengurangi jatah tahunan.
+     * Setiap jenis cuti memotong kuota jenisnya sendiri. Jenis `lainnya`
+     * jatahnya 0, sehingga praktis selalu ditolak bila dimintai saldo —
+     * HR harus menaikkan jatah lebih dulu bila memang perlu.
      */
-    public const BALANCE_TYPES = ['tahunan'];
+    public const BALANCE_TYPES = self::TYPES;
 
     protected $fillable = [
         'employee_id',

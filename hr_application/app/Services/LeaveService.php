@@ -33,11 +33,15 @@ class LeaveService
             }
 
             if ($leaveRequest->consumesBalance()) {
-                $balance = $leaveRequest->employee->leaveBalanceFor((int) $leaveRequest->start_date->year);
+                $balance = $leaveRequest->employee->leaveBalanceFor(
+                    (int) $leaveRequest->start_date->year,
+                    $leaveRequest->type,
+                );
 
                 if ($balance->remaining_days < $leaveRequest->days) {
                     throw new RuntimeException(sprintf(
-                        'Saldo cuti tidak cukup: tersisa %d hari, diminta %d hari.',
+                        'Kuota cuti %s tidak cukup: tersisa %d hari, diminta %d hari.',
+                        $leaveRequest->type,
                         $balance->remaining_days,
                         $leaveRequest->days,
                     ));
