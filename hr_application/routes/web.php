@@ -3,6 +3,8 @@
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\Auth\ProfileController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\LeaveCalendarController;
 use App\Http\Controllers\LeaveRequestController;
@@ -10,6 +12,9 @@ use App\Http\Controllers\PayrollPeriodController;
 use App\Http\Controllers\PayrollSlipController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UserController;
+use App\Models\User;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Route;
 
 require __DIR__.'/hr_intelligence.php';
@@ -23,6 +28,13 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [LoginController::class, 'store'])
         ->middleware('throttle:login')
         ->name('login.store');
+
+    Route::get('/forgot-password', [PasswordResetController::class, 'request'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'email'])
+        ->middleware('throttle:login')
+        ->name('password.email');
+    Route::get('/reset-password/{token}', [PasswordResetController::class, 'reset'])->name('password.reset');
+    Route::post('/reset-password', [PasswordResetController::class, 'update'])->name('password.update');
 });
 
 Route::post('/logout', [LoginController::class, 'destroy'])
@@ -31,6 +43,9 @@ Route::post('/logout', [LoginController::class, 'destroy'])
 
 Route::middleware('auth')->group(function () {
     Route::post('employees/{employee}/terminate', [EmployeeController::class, 'terminate'])->name('employees.terminate');
+    Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');
+
     Route::resource('employees', EmployeeController::class);
 
     Route::get('attendances/recap', [AttendanceController::class, 'recap'])->name('attendances.recap');
@@ -54,6 +69,13 @@ Route::middleware('auth')->group(function () {
     Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
 
     Route::get('admin/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+
+    Route::post('users/{user}/send-reset', function (User $user) {
+        Gate::authorize('update', $user);
+        Password::sendResetLink(['email' => $user->email]);
+
+        return back()->with('status', "Tautan reset kata sandi dikirim ke {$user->email}.");
+    })->name('users.send-reset');
 
     Route::resource('users', UserController::class)->except(['show']);
 });

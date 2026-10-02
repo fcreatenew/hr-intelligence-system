@@ -31,5 +31,9 @@
 
             <button type="submit" class="btn" style="width:100%">Masuk</button>
         </form>
+
+        <p class="sub" style="text-align:center;margin-top:16px">
+            <a href="{{ route('password.request') }}">Lupa kata sandi?</a>
+        </p>
     </div>
 @endsection
