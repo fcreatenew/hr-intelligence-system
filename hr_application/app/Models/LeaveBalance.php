@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Concerns\RecordsAudit;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LeaveBalance extends Model
 {
     use HasFactory;
+    use RecordsAudit;
 
     /** Jatah cuti tahunan default per tahun. */
     public const DEFAULT_ENTITLED_DAYS = 12;

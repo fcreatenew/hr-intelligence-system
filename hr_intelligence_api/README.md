@@ -323,18 +323,23 @@ Prediction  : 1
 Risk Level  : Tinggi
 ```
 
-Risk level:
+Risk level (T = `threshold` model, yaitu batas `prediction`):
 
 ```text
-< 0.25
+< T/2
 Rendah
 
-0.25 - < 0.50
+T/2 - < T
 Sedang
 
->= 0.50
+>= T
 Tinggi
 ```
+
+Ambang `Tinggi` sengaja sama dengan threshold model, bukan 0.50 tetap, agar
+`Risk Level: Tinggi` selalu konsisten dengan `Prediction: 1`. Untuk model
+turnover aktif (`v2_mitigated`, threshold 0.31) batasnya menjadi `< 0.155`
+Rendah, `0.155 - < 0.31` Sedang, dan `>= 0.31` Tinggi.
 
 Laravel menggunakan hasil dari API dan tidak menjalankan file model Machine Learning secara langsung.
 
