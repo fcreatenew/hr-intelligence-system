@@ -164,6 +164,7 @@ mlops/
 │   ├── validation/model_validator.py # gate kelayakan deploy
 │   ├── monitoring/drift.py           # PSI + deteksi drift per fitur
 │   ├── monitoring/metrics.py         # MetricsCollector (format Prometheus)
+│   ├── train/pipeline.py         # training turnover yang reproducible
 │   ├── api.py                    # FastAPI
 │   └── cli.py                    # validasi semua model (exit 1 bila gagal)
 │
@@ -182,6 +183,51 @@ mlops/
 ```
 
 Struktur dapat berkembang mengikuti kebutuhan deployment dan infrastructure.
+
+---
+
+# Training Reproducible
+
+`src/train/` adalah sumber kebenaran tunggal untuk pipeline training turnover:
+pemuatan data, rekayasa fitur, pemilihan model, pemilihan ambang, dan penulisan
+artifact. Notebook dipakai untuk eksplorasi; **artifact yang dipakai API
+sebaiknya dihasilkan dari CLI ini** agar dapat direproduksi dan lolos gate.
+
+```bash
+cd mlops && python -m src.train --version v3 --seed 42
+```
+
+Alur pipeline:
+
+```text
+data/hr_turnover.csv
+        │  buat_fitur (kontrak sama dengan features.py)
+        ▼
+split train/test stratified (seed tetap)
+        │  bandingkan 3 kandidat + soft voting lewat CV ROC-AUC
+        ▼
+pilih ambang dari prediksi out-of-fold (bukan test)
+        │
+        ▼
+refit pada seluruh data → models/<versi>/turnover_model.joblib
+                          models/<versi>/model_metadata.json
+        │
+        ▼
+gate `validate_record` (exit 1 bila model di bawah ambang)
+```
+
+Opsi:
+
+| Flag | Arti | Default |
+|---|---|---|
+| `--version` | versi artifact tujuan (`models/<versi>/`) | `v2` |
+| `--seed` | random state; seed sama = hasil sama | `42` |
+| `--data` | nama berkas di `data/` | `hr_turnover.csv` |
+| `--no-validate` | lewati gate validasi | — |
+
+Jalankan dengan `--version` baru (mis. `v3`) agar versi lama tetap utuh untuk
+rollback. Perubahan nama fitur, rumus, atau `tanggal_acuan` bersifat breaking:
+latih ulang dan terbitkan versi baru.
 
 ---
 
