@@ -230,6 +230,44 @@ class PayrollManagementTest extends TestCase
         $this->assertStringContainsString('total_gaji', $csv);
     }
 
+    public function test_payroll_slip_renders_employee_components(): void
+    {
+        $period = PayrollPeriod::factory()->create(['periode' => '2026-05']);
+        $employee = Employee::factory()->create([
+            'status' => true,
+            'name' => 'Siti Aminah',
+            'nik' => 'EMP7777',
+            'gaji_pokok' => 8_000_000,
+        ]);
+
+        $this->actingAs($this->admin())->post(route('payroll-periods.calculate', $period));
+
+        $item = PayrollItem::where('employee_id', $employee->id)->firstOrFail();
+
+        $this->actingAs($this->admin())
+            ->get(route('payroll-periods.slip', [$period, $item]))
+            ->assertOk()
+            ->assertSee('Slip Gaji')
+            ->assertSee('Siti Aminah')
+            ->assertSee('EMP7777')
+            ->assertSee('Total diterima');
+    }
+
+    public function test_payroll_slip_rejects_item_from_another_period(): void
+    {
+        $periodA = PayrollPeriod::factory()->create(['periode' => '2026-05']);
+        $periodB = PayrollPeriod::factory()->create(['periode' => '2026-06']);
+        Employee::factory()->create(['status' => true]);
+
+        $this->actingAs($this->admin())->post(route('payroll-periods.calculate', $periodA));
+
+        $item = PayrollItem::where('payroll_period_id', $periodA->id)->firstOrFail();
+
+        $this->actingAs($this->admin())
+            ->get(route('payroll-periods.slip', [$periodB, $item]))
+            ->assertNotFound();
+    }
+
     public function test_calculation_service_is_consistent_with_reference_formula(): void
     {
         $employee = Employee::factory()->create([

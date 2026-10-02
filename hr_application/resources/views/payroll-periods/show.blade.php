@@ -80,7 +80,10 @@
             @forelse ($items as $item)
                 <tr>
                     <td class="muted">{{ $item->employee->nik }}</td>
-                    <td>{{ $item->employee->name }}</td>
+                    <td>
+                        {{ $item->employee->name }}
+                        <div><a class="btn link" style="padding:0;font-size:12px" href="{{ route('payroll-periods.slip', [$period, $item]) }}">Lihat slip</a></div>
+                    </td>
                     <td>{{ $item->departemen }}</td>
                     <td>Rp {{ number_format((float) $item->gaji_pokok, 0, ',', '.') }}</td>
                     <td>Rp {{ number_format((float) $item->tunjangan, 0, ',', '.') }}</td>
