@@ -46,10 +46,26 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "")
 
 # --- Embeddings ---
-EMBEDDING_BACKEND = os.getenv("EMBEDDING_BACKEND", "hashing").strip().lower()
-EMBEDDING_DIM = _int("EMBEDDING_DIM", 512)
+# lsa     : TF-IDF + SVD (semantik, tanpa model eksternal, deterministik) — default.
+# hashing : feature hashing leksikal, tanpa fit, paling ringan.
+# neural  : sentence-transformers (butuh paket & unduhan model).
+EMBEDDING_BACKEND = os.getenv("EMBEDDING_BACKEND", "lsa").strip().lower()
+EMBEDDING_DIM = _int("EMBEDDING_DIM", 256)
+EMBEDDING_MODEL = os.getenv(
+    "EMBEDDING_MODEL", "paraphrase-multilingual-MiniLM-L12-v2"
+)
+
+# --- Chunking ---
+CHUNK_MAX_CHARS = _int("CHUNK_MAX_CHARS", 900)
+CHUNK_OVERLAP_CHARS = _int("CHUNK_OVERLAP_CHARS", 150)
+CHUNK_MIN_CHARS = _int("CHUNK_MIN_CHARS", 40)
 
 # --- Retrieval ---
+# fusion: rrf (default) | linear | lexical | semantic
+RAG_FUSION = os.getenv("RAG_FUSION", "rrf").strip().lower()
+RAG_LEXICAL_WEIGHT = _float("RAG_LEXICAL_WEIGHT", 0.7)
+RAG_MMR = os.getenv("RAG_MMR", "true").strip().lower() in {"1", "true", "yes", "on"}
+RAG_MMR_LAMBDA = _float("RAG_MMR_LAMBDA", 0.7)
 RAG_TOP_K = _int("RAG_TOP_K", 4)
 RAG_MIN_SCORE = _float("RAG_MIN_SCORE", 0.05)
 

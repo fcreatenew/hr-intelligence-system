@@ -1,0 +1,42 @@
+# Aturan alert untuk HR Intelligence System.
+# Format mengikuti Prometheus alerting rules.
+groups:
+  - name: hr-intelligence-api
+    rules:
+      - alert: HrApiDown
+        expr: hr_api_up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "HR Intelligence API tidak dapat dijangkau"
+          description: "Health check MLOps gagal menghubungi HR Intelligence API selama 2 menit."
+
+      - alert: HrApiLatencyTinggi
+        expr: hr_api_latency_ms > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Latensi HR Intelligence API tinggi"
+          description: "Latensi rata-rata di atas 1000 ms selama 5 menit."
+
+      - alert: TingkatErrorTinggi
+        expr: rate(hr_api_check_failed[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Banyak request prediksi gagal"
+          description: "Tingkat kegagalan pemanggilan API di atas 10% selama 5 menit."
+
+  - name: model-drift
+    rules:
+      - alert: DriftFiturKritis
+        expr: drift_max_psi > 0.2
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Drift data produksi terdeteksi"
+          description: "PSI maksimum melewati 0.2; pertimbangkan evaluasi ulang dan retraining model."
