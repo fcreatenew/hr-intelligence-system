@@ -121,3 +121,54 @@ def test_forecast_short_series_falls_back():
 
     assert len(hasil.periode) == 2
     assert hasil.model == "rata-rata"
+
+
+def test_score_with_uses_reference_distribution(df):
+    """Baris baru dinilai terhadap detektor acuan, bukan terhadap dirinya sendiri."""
+    from src.analytics.anomaly import AnomalyDetector, score_with
+
+    detector = AnomalyDetector().fit(df)
+
+    normal = df.head(1).copy()
+    aneh = normal.copy()
+    aneh.loc[aneh.index[0], "total_gaji"] = aneh["total_gaji"].iloc[0] * 8
+
+    skor_normal = score_with(detector, normal).loc[0, "skor_anomali"]
+    skor_aneh = score_with(detector, aneh).loc[0, "skor_anomali"]
+
+    assert 0 <= skor_normal <= 1
+    assert skor_aneh > skor_normal
+    assert "total gaji tidak konsisten" in score_with(detector, aneh).loc[0, "alasan"]
+
+
+def test_score_endpoint_returns_scores():
+    from fastapi.testclient import TestClient
+
+    from src.api import app
+
+    client = TestClient(app)
+
+    payload = {
+        "employees": [
+            {
+                "employee_id": "EMP9999",
+                "periode": "2025-06",
+                "departemen": "IT",
+                "level": "Staff",
+                "gaji_pokok": 8_000_000,
+                "tunjangan": 1_500_000,
+                "lembur_jam": 5,
+                "tarif_lembur": 50_000,
+                "potongan": 400_000,
+                "total_gaji": 9_350_000,
+            }
+        ]
+    }
+
+    resp = client.post("/anomalies/score", json=payload)
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["jumlah_diproses"] == 1
+    assert 0 <= body["hasil"][0]["skor_anomali"] <= 1
+    assert body["hasil"][0]["level"] in {"Normal", "Perlu Ditinjau", "Anomali"}

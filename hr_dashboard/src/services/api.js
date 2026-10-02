@@ -11,6 +11,7 @@
  */
 
 import { fixtures } from './fixtures.js'
+import { authStore } from './auth.js'
 
 const MODE = import.meta.env.VITE_DATA_MODE ?? 'demo'
 const HR_BASE = import.meta.env.VITE_HR_API_BASE ?? '/api'
@@ -22,10 +23,17 @@ async function getJSON(base, path, { timeout = 8000 } = {}) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeout)
 
+  const headers = { Accept: 'application/json' }
+  const apiKey = authStore.getKey()
+
+  if (apiKey) {
+    headers['X-API-Key'] = apiKey
+  }
+
   try {
     const response = await fetch(`${base}${path}`, {
       signal: controller.signal,
-      headers: { Accept: 'application/json' },
+      headers,
     })
 
     if (!response.ok) {

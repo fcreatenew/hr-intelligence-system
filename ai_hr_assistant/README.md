@@ -382,19 +382,24 @@ karyawan sebenarnya dapat ditambahkan tanpa mengubah agent maupun registry.
 
 ## Endpoint REST
 
-| Method | Path | Keterangan |
-| ------ | ---- | ---------- |
-| `GET` | `/health` | Status assistant, knowledge base, dan koneksi API HR |
-| `GET` | `/tools` | Daftar tool yang tersedia |
-| `GET` | `/knowledge` | Daftar dokumen knowledge base |
-| `GET` | `/models` | Daftar model dari HR Intelligence API |
-| `POST` | `/chat` | Tanya jawab assistant |
+Seluruh endpoint **kecuali `/health`** mewajibkan header `X-API-Key`. Bila
+`ASSISTANT_API_KEY` belum diset di server, endpoint terproteksi menolak semua
+request (fail closed).
+
+| Method | Path | Auth | Keterangan |
+| ------ | ---- | ---- | ---------- |
+| `GET` | `/health` | publik | Status assistant, knowledge base, dan koneksi API HR |
+| `GET` | `/tools` | API key | Daftar tool yang tersedia |
+| `GET` | `/knowledge` | API key | Daftar dokumen knowledge base |
+| `GET` | `/models` | API key | Daftar model dari HR Intelligence API |
+| `POST` | `/chat` | API key | Tanya jawab assistant |
 
 Contoh:
 
 ```bash
 curl -X POST http://127.0.0.1:8100/chat \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: $ASSISTANT_API_KEY" \
   -d '{"message":"Berapa risiko turnover karyawan EMP0001?","employee_id":"EMP0001"}'
 ```
 
@@ -407,8 +412,8 @@ HR_API_KEY=dev-secret uvicorn app.main:app --port 8000
 
 # 2. Jalankan AI HR Assistant
 cd ai_hr_assistant
-cp .env.example .env          # isi HR_INTELLIGENCE_API_KEY
-uvicorn src.main:app --port 8100
+cp .env.example .env          # isi HR_INTELLIGENCE_API_KEY & ASSISTANT_API_KEY
+ASSISTANT_API_KEY=dev-assistant uvicorn src.main:app --port 8100
 ```
 
 ## Testing

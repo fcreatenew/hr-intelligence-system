@@ -50,6 +50,21 @@ class AttendanceFactory extends Factory
         ]);
     }
 
+    /**
+     * Hari hadir yang deterministik. `definition()` memilih status secara acak
+     * sehingga hari yang dimaksud "hadir" bisa saja menjadi ALPHA — pada test
+     * payroll itu diam-diam menambah potongan dan membuat hasil goyah.
+     */
+    public function hadir(): static
+    {
+        return $this->state(fn () => [
+            'status' => Attendance::STATUS_HADIR,
+            'check_in' => '08:00',
+            'check_out' => '17:00',
+            'late_minutes' => 0,
+        ]);
+    }
+
     public function onDate(string $date): static
     {
         return $this->state(fn () => ['date' => $date]);
