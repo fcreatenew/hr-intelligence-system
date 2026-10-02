@@ -32,6 +32,24 @@ cd ai_hr_assistant && python -m pytest tests/ -q
 cd ai_hr_assistant && uvicorn src.main:app --port 8100   # butuh HR Intelligence API di port 8000
 ```
 
+## Modul lain
+
+- **`payroll_intelligence/`** — analitik payroll, deteksi anomali (IsolationForest),
+  forecasting (statsmodels). `cd payroll_intelligence && python -m pytest tests/ -q`;
+  API di port 8300.
+- **`mlops/`** — registry, validasi model (gate deploy), drift PSI, metrics.
+  `cd mlops && python -m src.cli` memvalidasi kelima model dan **exit 1 bila ada
+  yang gagal** (dipakai di CI). Model registry membaca `models/<dir>/model_metadata.json`;
+  metrik diambil dari `metrik_holdout_test`/`metrik_evaluasi`/`metrik`, atau root
+  metadata untuk survival (`c_index`).
+- **`deep_learning/`** — MLP murni NumPy (tanpa PyTorch/TensorFlow) untuk turnover,
+  plus baseline klasik. Kontrak fitur turnover **dipakai ulang dari**
+  `hr_intelligence_api/app/features/features.py`. `cd deep_learning && python -m src.cli compare`.
+- **`hr_dashboard/`** — React + Vite. Default `VITE_DATA_MODE=demo` (fixtures lokal);
+  set `live` untuk memakai API. Proxy dev: `/api` → 8000, `/payroll-api` → 8300
+  (prefix `/payroll-api` agar tidak bentrok dengan route SPA `/payroll`).
+  `cd hr_dashboard && npm install && npm run dev`.
+
 ## Perintah penting
 
 Semua perintah notebook dijalankan dari **root repo** (notebook mencari `data/` relatif ke cwd).

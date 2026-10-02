@@ -156,25 +156,51 @@ New model version
 mlops/
 │
 ├── README.md
+├── requirements.txt
+│
+├── src/
+│   ├── config.py                 # path model/data, ambang drift & AUC
+│   ├── registry/model_registry.py    # registry berbasis model_metadata.json
+│   ├── validation/model_validator.py # gate kelayakan deploy
+│   ├── monitoring/drift.py           # PSI + deteksi drift per fitur
+│   ├── monitoring/metrics.py         # MetricsCollector (format Prometheus)
+│   ├── api.py                    # FastAPI
+│   └── cli.py                    # validasi semua model (exit 1 bila gagal)
 │
 ├── docker/
-│   ├── api/
-│   ├── dashboard/
+│   ├── api/Dockerfile            # image MLOps
+│   ├── hr-api/Dockerfile         # image HR Intelligence API
 │   └── docker-compose.yml
 │
-├── ci/
-│   ├── github-actions/
-│   └── scripts/
+├── ci/github-actions/ci.yml      # test modul + validasi model
 │
-└── monitoring/
-    ├── metrics/
-    ├── logs/
-    ├── dashboards/
-    ├── alerts/
-    └── drift/
+├── monitoring/
+│   ├── alerts/alerts.yml         # aturan alert Prometheus
+│   └── dashboards/checklist.md   # checklist monitoring
+│
+└── tests/test_mlops.py
 ```
 
 Struktur dapat berkembang mengikuti kebutuhan deployment dan infrastructure.
+
+---
+
+# Validasi Model
+
+`src/cli.py` memvalidasi kelima model dan menjadi **gate** sebelum model
+dianggap layak deploy. Pemeriksaan:
+
+- Metadata lengkap (versi & jenis model).
+- Ketersediaan metrik.
+- Metrik utama di atas ambang (`MIN_ROC_AUC`, default 0.6). Metrik utama dipilih
+  sesuai jenis model: ROC AUC untuk klasifikasi, **C-index** untuk survival,
+  **macro-F1** untuk model ordinal (kinerja).
+- Model unsupervised (IsolationForest payroll) dinilai dari PR AUC, bukan ROC AUC.
+- Akurasi wajar (≥ 0.5) bila tersedia.
+
+```bash
+cd mlops && python -m src.cli   # exit 1 bila ada model yang gagal
+```
 
 ---
 

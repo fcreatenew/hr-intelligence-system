@@ -133,22 +133,39 @@ Forecast dapat digunakan untuk membantu perencanaan biaya payroll.
 payroll_intelligence/
 │
 ├── README.md
+├── requirements.txt
+├── .env.example
 │
-├── notebooks/
-│   ├── exploration/
+├── src/
+│   ├── config.py                 # path data, ambang anomali, horizon forecast
+│   ├── ingestion/loader.py       # muat & validasi data payroll
+│   ├── processing/transform.py   # pembersihan + kolom turunan
+│   ├── calculations/payroll.py   # rumus komponen gaji
 │   ├── analytics/
-│   └── forecasting/
+│   │   ├── payroll_analytics.py  # ringkasan, per departemen/periode
+│   │   └── anomaly.py            # deteksi anomali + alasan
+│   ├── forecasting/
+│   │   ├── forecast.py           # model Holt / seasonal
+│   │   └── service.py            # orkestrasi proyeksi
+│   ├── reports/report.py         # laporan ringkas
+│   ├── api.py                    # FastAPI (port 8300)
+│   └── cli.py                    # CLI analitik
 │
-└── src/
-    ├── ingestion/
-    ├── processing/
-    ├── calculations/
-    ├── analytics/
-    ├── forecasting/
-    └── reports/
+└── tests/test_payroll_intelligence.py
 ```
 
 Struktur dapat berkembang sesuai kebutuhan implementasi.
+
+---
+
+# API
+
+```bash
+cd payroll_intelligence && uvicorn src.api:app --port 8300
+```
+
+Endpoint: `/health`, `/summary`, `/departments`, `/periods`, `/overtime`,
+`/components`, `/anomalies`, `/forecast/payroll`, `/forecast/overtime`.
 
 ---
 

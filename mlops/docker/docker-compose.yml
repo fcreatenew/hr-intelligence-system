@@ -1,0 +1,30 @@
+name: hr-intelligence
+
+services:
+  hr-intelligence-api:
+    build:
+      context: ..
+      dockerfile: mlops/docker/hr-api/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      HR_API_KEY: ${HR_API_KEY:-dev-secret}
+      MODEL_VERSION: ${MODEL_VERSION:-v2}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  mlops:
+    build:
+      context: ..
+      dockerfile: mlops/docker/api/Dockerfile
+    ports:
+      - "8200:8200"
+    environment:
+      HR_INTELLIGENCE_BASE_URL: http://hr-intelligence-api:8000
+      HR_INTELLIGENCE_API_KEY: ${HR_API_KEY:-dev-secret}
+    depends_on:
+      hr-intelligence-api:
+        condition: service_healthy

@@ -120,19 +120,35 @@ Employee Risk
 hr_dashboard/
 │
 ├── README.md
+├── index.html
+├── package.json
+├── vite.config.js
 │
 └── src/
-    ├── components/
-    ├── layouts/
-    ├── pages/
-    ├── features/
-    ├── services/
-    ├── hooks/
-    ├── utils/
-    └── ...
+    ├── components/     # PageHead, KpiCard, Section, DataTable, BarList, Badge, charts
+    ├── layouts/        # AppLayout (masthead + navigasi)
+    ├── pages/          # satu file per halaman
+    ├── services/       # api.js (klien API), fixtures.js (data contoh)
+    ├── hooks/          # useAsyncData (loading/error/refetch)
+    ├── styles/         # global.css (token desain)
+    ├── utils/          # format.js (angka, rupiah, persen, warna grafik)
+    └── main.jsx
 ```
 
 Struktur di dalam `src/` dapat berkembang mengikuti kebutuhan aplikasi dashboard.
+
+---
+
+# Halaman
+
+| Route | Isi |
+| --- | --- |
+| `/` | Ringkasan operasional: KPI utama, komposisi workforce, sinyal anomali |
+| `/workforce` | Komposisi, pertumbuhan, sebaran usia, status kerja |
+| `/turnover` | Turnover rate, sebaran risiko, analisis masa kerja, metrik model |
+| `/attendance` | Kehadiran, absen, keterlambatan, lembur, tren bulanan |
+| `/payroll` | Biaya payroll, per departemen, anomali, proyeksi |
+| `/models` | HR KPI dan status serta metrik lima model ML |
 
 ---
 
@@ -207,9 +223,7 @@ Masuk ke directory project:
 cd hr_dashboard
 ```
 
-Install dependency sesuai package manager yang digunakan.
-
-Contoh:
+Install dependency:
 
 ```bash
 npm install
@@ -219,6 +233,32 @@ Jalankan development server:
 
 ```bash
 npm run dev
+```
+
+Secara default dashboard berjalan dalam **mode demo**: memakai data contoh di
+`src/services/fixtures.js`, sehingga halaman tidak pernah kosong walau backend
+belum dinyalakan. Untuk memakai API sungguhan:
+
+```bash
+cp .env.example .env
+# ubah VITE_DATA_MODE=live
+npm run dev
+```
+
+Proxy dev (lihat `vite.config.js`):
+
+```text
+/api/*          → http://127.0.0.1:8000   (HR Intelligence API)
+/payroll-api/*  → http://127.0.0.1:8300   (Payroll Intelligence API)
+```
+
+Prefix `/payroll-api` dipakai agar tidak bentrok dengan route SPA `/payroll`.
+
+Build produksi:
+
+```bash
+npm run build
+npm run preview
 ```
 
 ---

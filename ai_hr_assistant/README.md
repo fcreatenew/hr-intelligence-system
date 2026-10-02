@@ -69,6 +69,57 @@ Relevant Documents
     Answer
 ```
 
+Alur implementasi:
+
+```text
+knowledge/*.md
+   │  loader.py        potong per heading, lalu per ukuran + overlap
+   ▼
+Chunk
+   │  embedder.py      LSA (TF-IDF + SVD) → vektor semantik
+   ▼
+Vector Store (cosine)
+   │
+   ▼
+Hybrid Retriever
+   ├─ jalur leksikal : BM25 ringan (presisi istilah)
+   ├─ jalur semantik : cosine embedding (kedekatan makna)
+   ├─ fusion         : RRF (default) / linear / lexical / semantic
+   └─ MMR            : buang hasil redundan (opsional, aktif default)
+   ▼
+RagService → agent → jawaban + sitasi
+```
+
+### Retrieval hybrid
+
+Dua jalur retrieval sengaja dipadukan karena sifatnya saling melengkapi:
+
+| Jalur | Kuat pada | Lemah pada |
+| --- | --- | --- |
+| Leksikal (BM25) | istilah persis, mis. "cuti tahunan" | sinonim ("izin tidak masuk") |
+| Semantik (embedding) | kemiripan makna & variasi kata | istilah langka/akronim |
+
+Hasil digabung dengan **Reciprocal Rank Fusion (RRF)** — menggabungkan
+*peringkat* alih-alih skor, sehingga tidak perlu menyeimbangkan skala skor kedua
+jalur. Mode `linear` (rata-rata berbobot), `lexical`, dan `semantic` tersedia
+untuk perbandingan.
+
+**MMR (Maximum Marginal Relevance)** membuang chunk yang isinya hampir sama,
+sehingga `top_k` hasil saling melengkapi. Ini penting setelah chunking overlap,
+karena potongan berdekatan bisa sangat mirip.
+
+### Chunking
+
+Dua tingkat agar potongan fokus namun tidak kehilangan konteks:
+
+1. Batas `##`/`###` — satu potongan = satu sub-topik.
+2. Batas ukuran (`CHUNK_MAX_CHARS`) + **overlap** (`CHUNK_OVERLAP_CHARS`) —
+   potongan panjang dipecah sadar-kalimat, dan ekor potongan sebelumnya
+   diulang di awal potongan berikutnya.
+
+Baris `> **Tag:**` dibuang dari isi chunk (sudah diekstrak terpisah), agar tidak
+muncul chunk "hantu" yang hanya berisi metadata.
+
 ---
 
 ## Knowledge Base
@@ -96,12 +147,19 @@ knowledge/
 
 ## Embeddings
 
-Dokumen dan query dapat diubah menjadi vector representation.
+Dokumen dan query diubah menjadi vector representation. Tiga backend tersedia
+dan dapat ditukar lewat `EMBEDDING_BACKEND` tanpa mengubah alur RAG:
+
+| Backend | Cara kerja | Sifat |
+| --- | --- | --- |
+| `lsa` *(default)* | TF-IDF + SVD (Latent Semantic Analysis) | semantik, deterministik, tanpa model eksternal, perlu `fit` pada korpus |
+| `hashing` | feature hashing token + bigram | leksikal, paling ringan, tanpa `fit` |
+| `neural` | sentence-transformers (mis. `paraphrase-multilingual-MiniLM-L12-v2`) | semantik terbaik & lintas bahasa, butuh paket + unduhan model |
 
 ```text
 Document
    ↓
-Embedding Model
+Embedding Model (lsa / hashing / neural)
    ↓
 Vector
    ↓
@@ -109,6 +167,12 @@ Vector Store
 ```
 
 Query pengguna kemudian digunakan untuk mencari dokumen yang relevan.
+
+> **Catatan jujur:** `lsa` menangkap kemiripan makna jauh lebih baik daripada
+> `hashing` (mis. kueri "uang lembur dibayar bagaimana" mencocokkan dokumen
+> lembur dengan skor semantik ~0.70 vs ~0.26), tetapi ia masih berbasis
+> statistik korpus — bukan embedding neural. Untuk kualitas terbaik, aktifkan
+> `EMBEDDING_BACKEND=neural`.
 
 ---
 
@@ -263,13 +327,13 @@ Modul berikut sudah diimplementasikan pada folder `src/`.
 | ----- | -------------- |
 | `config.py` | Konfigurasi (env): API HR, LLM, embeddings, retrieval |
 | `schemas/chat.py` | Kontrak request/response (`AssistantRequest`, `AssistantResponse`) |
-| `embeddings/embedder.py` | Antarmuka `Embedder` + `HashingEmbedder` lokal deterministik |
+| `embeddings/embedder.py` | Antarmuka `Embedder` + `LsaEmbedder` (semantik, default), `HashingEmbedder`, `NeuralEmbedder` |
 | `llm/provider.py` | Antarmuka `LLMProvider` + `MockLLM` (offline) & `OpenAILLM` (opsional) |
 | `llm/prompts.py` | Pemuat prompt terstruktur dari `prompts/` |
-| `rag/loader.py` | Pembaca markdown, chunker per heading, tag dokumen |
-| `rag/service.py` | `RagService`: knowledge base + retriever |
-| `retrieval/vector_store.py` | Vector store in-memory (cosine similarity) |
-| `retrieval/retriever.py` | Retriever hybrid: BM25 ringan + skor semantik |
+| `rag/loader.py` | Pembaca markdown, chunker dua tingkat (heading + ukuran/overlap), tag dokumen |
+| `rag/service.py` | `RagService`: knowledge base + retriever (embedder, fusion, MMR) |
+| `retrieval/vector_store.py` | Vector store in-memory (cosine similarity) + akses vektor untuk MMR |
+| `retrieval/retriever.py` | Retriever hybrid: BM25 + semantik, fusion RRF/linear, MMR |
 | `tools/hr_intelligence_client.py` | Klien HTTP ke HR Intelligence API (retry, auth, error mapping) |
 | `tools/prediction_tools.py` | AI tools untuk 5 model + `model_info`, `list_models`, `health` |
 | `tools/registry.py` | Registry tool dengan batas akses (hanya tool terdaftar) |

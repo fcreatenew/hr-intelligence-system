@@ -110,21 +110,86 @@ Tujuannya adalah mengubah dokumen HR menjadi informasi terstruktur.
 deep_learning/
 │
 ├── README.md
+├── requirements.txt
+├── .env.example
 │
-└── notebooks/
-    ├── 01_neural_network_basics.ipynb
-    ├── 02_employee_turnover_nn.ipynb
-    ├── 03_employee_embedding.ipynb
-    └── 04_experiments.ipynb
+├── src/
+│   ├── config.py              # konfigurasi (env) & parameter arsitektur
+│   ├── data/dataset.py        # muat data + kontrak fitur turnover
+│   ├── models/mlp.py          # MLP murni NumPy (ReLU/softmax + backprop)
+│   ├── training/trainer.py    # loop pelatihan + early stopping
+│   ├── evaluation/
+│   │   ├── metrics.py         # akurasi, F1, ROC AUC (manual)
+│   │   └── baseline.py        # logistic regression & majority class
+│   ├── experiments/tracker.py # pencatatan eksperimen (JSON)
+│   ├── api.py                 # FastAPI penyaji hasil eksperimen
+│   └── cli.py                 # CLI: train / baseline / compare / experiments
+│
+└── tests/test_deep_learning.py
 ```
 
-Notebook dapat bertambah sesuai eksperimen.
+Struktur dapat berkembang mengikuti eksperimen.
+
+---
+
+# Implementasi
+
+Modul ini sengaja **tidak bergantung pada PyTorch/TensorFlow** agar eksperimen
+dapat dijalankan di lingkungan minimal. Jaringan dibangun dari NumPy:
+
+- **MLP** dengan aktivasi ReLU, dropout opsional, dan output sigmoid (biner)
+  atau softmax (multikelas).
+- **Backpropagation** penuh dengan mini-batch SGD dan **early stopping**.
+- **Kontrak fitur turnover** dipakai ulang dari `hr_intelligence_api`
+  (`buat_fitur`), dengan `tanggal_acuan = 2025-01-01` — sama seperti training
+  produksi. Ada implementasi cadangan yang setara bila API tidak dapat diimpor.
+- **Standarisasi** memakai statistik data train saja untuk mencegah kebocoran.
+
+## Hasil pembanding (baseline)
+
+Deep Learning tidak otomatis lebih baik. Pada dataset turnover saat ini,
+baseline klasik masih unggul pada ROC AUC:
+
+```text
+Model                    ROC AUC        F1    Recall  Accuracy
+MLP (deep learning)       0.6868    0.5799    0.6712    0.6450
+Logistic Regression       0.7219    0.6203    0.6712    0.7000
+Majority class            0.5000    0.0000    0.0000    0.6350
+```
+
+Angka ini adalah alasan modul ini ada: menyediakan titik acuan agar klaim
+"Deep Learning lebih baik" dapat diuji, bukan diasumsikan. Dataset kecil
+(~1.000 baris) dengan fitur tabular sederhana memang condong menguntungkan
+model linear.
+
+## Menjalankan eksperimen
+
+```bash
+cd deep_learning
+
+python -m src.cli train                 # latih MLP, catat eksperimen
+python -m src.cli baseline              # baseline klasik
+python -m src.cli compare               # bandingkan MLP vs baseline
+python -m src.cli experiments           # tampilkan run terbaik
+python -m src.cli train --hidden 128,64 --epochs 300
+```
+
+Setiap run dicatat ke `experiments/runs/<timestamp>_<nama>.json` (tidak
+di-commit) sehingga konfigurasi dapat dibandingkan.
+
+## API
+
+```bash
+cd deep_learning && uvicorn src.api:app --port 8400
+```
+
+Endpoint: `/health`, `/metrics`, `/baseline`, `/experiments`.
 
 ---
 
 # Notebook
 
-Notebook digunakan untuk:
+Notebook (opsional) dipakai untuk eksplorasi dan visualisasi di luar alur CLI:
 
 * Learning
 * Experiment
