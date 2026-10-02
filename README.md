@@ -296,7 +296,7 @@ hr-intelligence-system/
 ├── models/
 │   ├── README.md
 │   ├── v1/                    # turnover — Logistic Regression
-│   ├── v2/                    # turnover — Soft Voting (default API)
+│   ├── v2/                    # turnover — Soft Voting
 │   ├── v2_mitigated/          # turnover — v2 + reweighting
 │   ├── absenteeism/v1/        # absensi
 │   ├── performance/v1/        # kinerja
@@ -368,8 +368,8 @@ diekspos lewat API dan dapat dipanggil dari `hr_application` maupun
 | 4 | Payroll anomaly | `POST /predict/payroll` | Isolation Forest | v1 | PR-AUC 0,8709 |
 | 5 | Survival attrition | `POST /predict/survival` | Cox Proportional Hazards | v1 | C-index 0,8144 |
 
-Turnover tersedia dalam tiga artifact: `v1`, `v2` (default API), dan
-`v2_mitigated` (reweighting, lebih setara — belum jadi default).
+Turnover tersedia dalam tiga artifact: `v1`, `v2`, dan `v2_mitigated`
+(reweighting, paling setara — **default API**).
 
 Model turnover juga tersedia dalam versi deep learning (MLP NumPy) sebagai
 pembanding di `deep_learning/`; pada dataset ini baseline klasik masih unggul.
@@ -379,7 +379,7 @@ Model artifact:
 ```text
 models/
 ├── v1/                        # turnover — Logistic Regression
-├── v2/                        # turnover — Soft Voting (default API)
+├── v2/                        # turnover — Soft Voting
 ├── v2_mitigated/              # turnover — v2 + reweighting
 ├── absenteeism/v1/            # absensi
 ├── performance/v1/            # kinerja
@@ -431,6 +431,26 @@ deep_learning/README.md
 ai_hr_assistant/README.md
 mlops/README.md
 ```
+
+## Menjalankan dengan Docker
+
+Seluruh stack inti dapat dijalankan sekaligus dengan Docker Compose:
+
+```bash
+HR_API_KEY=<secret> docker compose up --build
+```
+
+| Layanan | URL | Isi |
+|---|---|---|
+| `hr-api` | http://localhost:8000 | HR Intelligence API (prediksi model) |
+| `payroll-api` | http://localhost:8300 | Payroll Intelligence (analitik & skor anomali) |
+| `hr-app` | http://localhost:8080 | Laravel HRIS (attendance/leave/payroll) |
+| `dashboard` | http://localhost:8081 | React dashboard |
+| `assistant` | http://localhost:8100 | AI HR Assistant |
+
+`hr-app` otomatis diarahkan ke `hr-api` dan `payroll-api` di dalam jaringan
+Compose, sehingga prediksi dan skor anomali berjalan tanpa konfigurasi manual.
+`APP_KEY` untuk Laravel diisi lewat environment (`APP_KEY=base64:...`).
 
 Untuk kontribusi, baca:
 

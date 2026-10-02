@@ -1,0 +1,73 @@
+# Docker Compose untuk HR Intelligence System (stack inti).
+#
+# Menjalankan lima layanan yang saling terhubung:
+#   hr-api (8000)   — HR Intelligence API (prediksi model)
+#   payroll-api (8300) — Payroll Intelligence (analitik & skor anomali)
+#   hr-app (8080)   — Laravel HRIS (attendance/leave/payroll)
+#   dashboard (8081) — React dashboard
+#   assistant (8100) — AI HR Assistant
+#
+# Nilai kredensial sengaja dibaca dari environment; jangan commit `.env` asli.
+#   HR_API_KEY=<secret> docker compose up --build
+
+services:
+  hr-api:
+    build:
+      context: ./hr_intelligence_api
+      dockerfile: Dockerfile
+    environment:
+      HR_API_KEY: ${HR_API_KEY:-}
+      MODEL_VERSION: ${MODEL_VERSION:-v2}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/models:ro
+      - ./data:/data:ro
+
+  payroll-api:
+    build:
+      context: ./payroll_intelligence
+      dockerfile: Dockerfile
+    ports:
+      - "8300:8300"
+    volumes:
+      - ./data:/data:ro
+
+  hr-app:
+    build:
+      context: ./hr_application
+      dockerfile: Dockerfile
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:-}
+      DB_CONNECTION: sqlite
+      HR_INTELLIGENCE_BASE_URL: http://hr-api:8000
+      HR_INTELLIGENCE_API_KEY: ${HR_API_KEY:-}
+      PAYROLL_INTELLIGENCE_BASE_URL: http://payroll-api:8300
+    ports:
+      - "8080:8080"
+    depends_on:
+      - hr-api
+      - payroll-api
+
+  dashboard:
+    build:
+      context: ./hr_dashboard
+      dockerfile: Dockerfile
+    ports:
+      - "8081:80"
+    depends_on:
+      - hr-api
+
+  assistant:
+    build:
+      context: ./ai_hr_assistant
+      dockerfile: Dockerfile
+    environment:
+      HR_INTELLIGENCE_BASE_URL: http://hr-api:8000
+      HR_INTELLIGENCE_API_KEY: ${HR_API_KEY:-}
+    ports:
+      - "8100:8100"
+    depends_on:
+      - hr-api
