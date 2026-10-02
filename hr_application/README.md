@@ -55,6 +55,55 @@ tidak salah ditafsirkan sebagai data nyata.
 Halaman login/logout sederhana (`Auth\LoginController`). Tamu yang membuka
 route terlindungi diarahkan ke `/login`.
 
+### Attendance (Absensi)
+
+Pencatatan kehadiran harian dengan rekap per periode.
+
+| Route | Fungsi |
+|---|---|
+| `GET /attendances` | Daftar + filter rentang tanggal, karyawan, status |
+| `GET /attendances/create` | Form catat absensi |
+| `POST /attendances` | Simpan (satu catatan per karyawan per tanggal) |
+| `GET /attendances/{id}/edit` | Form ubah |
+| `PUT /attendances/{id}` | Simpan perubahan |
+| `DELETE /attendances/{id}` | Hapus (khusus `admin`) |
+| `GET /attendances/recap` | Rekap per karyawan: hadir, terlambat, tidak hadir, cuti |
+
+Status: `hadir`, `terlambat`, `izin`, `sakit`, `cuti`, `alpha`.
+
+### Leave (Cuti)
+
+Pengajuan cuti dengan alur persetujuan dan saldo per karyawan.
+
+| Route | Fungsi |
+|---|---|
+| `GET /leave-requests` | Daftar pengajuan (pending ditampilkan lebih dulu) |
+| `GET /leave-requests/create` | Form pengajuan |
+| `POST /leave-requests` | Simpan pengajuan |
+| `GET /leave-requests/{id}` | Detail + form keputusan |
+| `POST /leave-requests/{id}/approve` | Setujui |
+| `POST /leave-requests/{id}/reject` | Tolak |
+| `DELETE /leave-requests/{id}` | Hapus (khusus `admin`) |
+| `GET /leave-requests/balances` | Saldo cuti semua karyawan |
+
+Persetujuan menulis tiga hal dalam satu transaksi: status pengajuan, saldo
+cuti, dan catatan absensi harian bertipe `cuti`. Bila saldo tidak mencukupi,
+persetujuan ditolak dan tidak ada yang tersimpan separuh jalan.
+
+Hanya cuti `tahunan` yang memotong saldo. Cuti melahirkan/menikah/duka tidak,
+karena jatahnya terpisah dari jatah 12 hari.
+
+### Fitur ML dihitung dari data, bukan diisi manual
+
+`riwayat_absen_90hari` dan `hari_absen_setahun` sebelumnya adalah kolom yang
+diisi manual di form karyawan. Sekarang keduanya dihitung dari tabel
+`attendances` oleh `App\Services\AttendanceMetricsService`, sehingga tidak bisa
+basi atau salah isi. Form karyawan hanya menampilkan nilainya sebagai keterangan.
+
+Definisinya: jumlah hari **izin + sakit + alpha** dalam 90 hari (atau 365 hari)
+terakhir. **Cuti tidak dihitung** karena sudah direncanakan dan disetujui —
+memasukkannya akan membuat karyawan yang berlibur tampak seperti sering absen.
+
 ### Integrasi HR Intelligence
 
 Aplikasi ini adalah konsumen dari **HR Intelligence API** (FastAPI). Selain
