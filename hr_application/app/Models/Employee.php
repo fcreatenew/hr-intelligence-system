@@ -98,6 +98,11 @@ class Employee extends Model
         return $this->hasMany(LeaveBalance::class);
     }
 
+    public function payrollItems(): HasMany
+    {
+        return $this->hasMany(PayrollItem::class);
+    }
+
     /**
      * Saldo cuti tahun berjalan, membuat baris default bila belum ada sehingga
      * pemanggil tidak perlu menangani null.

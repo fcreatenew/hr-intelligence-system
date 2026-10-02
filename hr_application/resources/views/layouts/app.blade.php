@@ -61,6 +61,7 @@
                     <a href="{{ route('employees.index') }}">Karyawan</a>
                     <a href="{{ route('attendances.index') }}">Absensi</a>
                     <a href="{{ route('leave-requests.index') }}">Cuti</a>
+                    <a href="{{ route('payroll-periods.index') }}">Payroll</a>
                     <a href="{{ route('reports.index') }}">Laporan</a>
                     <a href="{{ route('hr-intelligence.use-cases') }}">Prediksi ML</a>
                 </nav>
