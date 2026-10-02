@@ -16,7 +16,9 @@ export function useAsyncData(loader, deps = []) {
     } catch (error) {
       setState({ data: null, loading: false, error: error.message })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // deps sengaja dinamis (dilewatkan pemanggil); rule compiler tidak bisa
+    // memverifikasi array literal. Warning/error ini disengaja.
+    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo
   }, deps)
 
   useEffect(() => {
