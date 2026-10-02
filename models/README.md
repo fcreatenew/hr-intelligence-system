@@ -23,25 +23,31 @@ untuk melakukan inference/prediction.
 ```text
 models/
 │
-├── v1/
+├── v1/                        # turnover — Logistic Regression
 │   ├── turnover_model.joblib
 │   └── model_metadata.json
 │
-├── v2/
+├── v2/                        # turnover — Soft Voting ensemble (default API)
 │   ├── turnover_model.joblib
 │   └── model_metadata.json
 │
-├── absenteeism/
-│   └── v1/
-│       ├── absenteeism_model.joblib
-│       └── model_metadata.json
+├── v2_mitigated/              # turnover v2 + reweighting (lebih adil)
+│   ├── turnover_model.joblib
+│   └── model_metadata.json
 │
-├── fairness_report.json
+├── absenteeism/v1/            # absensi — Logistic Regression
+├── performance/v1/            # kinerja — Logistic Regression (ordinal)
+├── payroll_anomaly/v1/        # anomali payroll — Isolation Forest
+├── survival_attrition/v1/     # survival — Cox Proportional Hazards
+│
+├── fairness_report.json       # audit bias turnover v1 vs v2
+├── mitigation_report.json     # hasil mitigasi bias
+├── significance_report.json   # uji DeLong/bootstrap v1 vs v2
 └── README.md
 ```
 
-Model turnover dilayani oleh `hr_intelligence_api`. Model absensi saat ini
-hanya artifact hasil notebook `02_absenteeism.ipynb` (belum diekspos API).
+Model turnover (v1/v2/v2_mitigated) dilayani oleh `hr_intelligence_api`. Model
+lain saat ini hanya artifact hasil notebook (belum diekspos API).
 
 ---
 
@@ -188,6 +194,31 @@ dapat dilayani API tanpa perubahan kode.
 > 0,45–0,48 vs v1 0,58–0,62). Karena itu, sebelum dipakai untuk keputusan nyata,
 > perlu langkah mitigasi (reweighting, threshold per kelompok, atau kembali ke v1).
 > Lihat `USE_CASES.md` #16.
+>
+> **Uji signifikansi** (`notebooks/07_significance_test.ipynb`) memastikan selisih
+> v2 vs v1 **tidak signifikan** (DeLong p = 0,64; bootstrap 95% CI [−0,021, +0,034]).
+> Lihat `models/significance_report.json`.
+>
+> **Mitigasi** (`notebooks/08_bias_mitigation_turnover.ipynb`) menghasilkan
+> `models/v2_mitigated/` (reweighting): impact ratio `status_kerja` 0,47→0,82,
+> `pendidikan` 0,48→0,83, dengan AUC OOF 0,697→0,669. Lihat
+> `models/mitigation_report.json`.
+
+---
+
+# Model Lain
+
+Selain turnover, repo ini punya empat artifact model dari notebook lain
+(semuanya data **sintetis**, belum diekspos API):
+
+| Artifact | Use case | Model | Metrik utama |
+|---|---|---|---|
+| `models/absenteeism/v1/` | #3 absensi | Logistic Regression | ROC-AUC 0,829 |
+| `models/performance/v1/` | #4 kinerja | Logistic Regression | macro-F1 0,636; MAE ordinal 0,309 |
+| `models/payroll_anomaly/v1/` | #6 anomali payroll | Isolation Forest | PR-AUC 0,871 |
+| `models/survival_attrition/v1/` | #2 survival | Cox PH | C-index 0,814 |
+
+Ringkasan lengkap ada di [`../MODEL_RESULTS.md`](../MODEL_RESULTS.md).
 
 ---
 

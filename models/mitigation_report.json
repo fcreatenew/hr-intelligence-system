@@ -1,0 +1,137 @@
+{
+  "baseline_v2": {
+    "kelompok_usia": {
+      "impact_ratio": 0.799,
+      "demographic_parity_diff": 0.112,
+      "equal_opportunity_diff": 0.0957,
+      "equalized_odds_diff": 0.1476,
+      "lolos_four_fifths": false
+    },
+    "departemen": {
+      "impact_ratio": 0.77,
+      "demographic_parity_diff": 0.1259,
+      "equal_opportunity_diff": 0.2616,
+      "equalized_odds_diff": 0.2616,
+      "lolos_four_fifths": false
+    },
+    "status_kerja": {
+      "impact_ratio": 0.4733,
+      "demographic_parity_diff": 0.3899,
+      "equal_opportunity_diff": 0.3053,
+      "equalized_odds_diff": 0.3795,
+      "lolos_four_fifths": false
+    },
+    "pendidikan": {
+      "impact_ratio": 0.4793,
+      "demographic_parity_diff": 0.3531,
+      "equal_opportunity_diff": 0.2721,
+      "equalized_odds_diff": 0.3545,
+      "lolos_four_fifths": false
+    }
+  },
+  "reweighting": {
+    "kelompok_usia": {
+      "impact_ratio": 0.6156,
+      "demographic_parity_diff": 0.2264,
+      "equal_opportunity_diff": 0.1107,
+      "equalized_odds_diff": 0.2753,
+      "lolos_four_fifths": false
+    },
+    "departemen": {
+      "impact_ratio": 0.732,
+      "demographic_parity_diff": 0.1386,
+      "equal_opportunity_diff": 0.2255,
+      "equalized_odds_diff": 0.2255,
+      "lolos_four_fifths": false
+    },
+    "status_kerja": {
+      "impact_ratio": 0.8222,
+      "demographic_parity_diff": 0.0924,
+      "equal_opportunity_diff": 0.0896,
+      "equalized_odds_diff": 0.0896,
+      "lolos_four_fifths": true
+    },
+    "pendidikan": {
+      "impact_ratio": 0.8285,
+      "demographic_parity_diff": 0.0854,
+      "equal_opportunity_diff": 0.0671,
+      "equalized_odds_diff": 0.0671,
+      "lolos_four_fifths": true
+    }
+  },
+  "threshold_per_kelompok": {
+    "kelompok_usia": {
+      "impact_ratio": 0.6307,
+      "demographic_parity_diff": 0.2445,
+      "equal_opportunity_diff": 0.2016,
+      "equalized_odds_diff": 0.2683,
+      "lolos_four_fifths": false
+    },
+    "departemen": {
+      "impact_ratio": 0.7283,
+      "demographic_parity_diff": 0.1705,
+      "equal_opportunity_diff": 0.2616,
+      "equalized_odds_diff": 0.2616,
+      "lolos_four_fifths": false
+    },
+    "status_kerja": {
+      "impact_ratio": 0.8661,
+      "demographic_parity_diff": 0.0767,
+      "equal_opportunity_diff": 0.0318,
+      "equalized_odds_diff": 0.1689,
+      "lolos_four_fifths": true
+    },
+    "pendidikan": {
+      "impact_ratio": 0.4443,
+      "demographic_parity_diff": 0.4222,
+      "equal_opportunity_diff": 0.2663,
+      "equalized_odds_diff": 0.4909,
+      "lolos_four_fifths": false
+    }
+  },
+  "performa_oof": {
+    "A. Baseline (v2)": {
+      "roc_auc": 0.6971,
+      "f1": 0.5593,
+      "precision": 0.4808,
+      "recall": 0.6685,
+      "positif_diprediksi": 495
+    },
+    "B. Reweighting": {
+      "roc_auc": 0.6691,
+      "f1": 0.531,
+      "precision": 0.4756,
+      "recall": 0.6011,
+      "positif_diprediksi": 450
+    },
+    "C. Threshold per kelompok": {
+      "roc_auc": 0.6971,
+      "f1": 0.5393,
+      "precision": 0.4494,
+      "recall": 0.6742,
+      "positif_diprediksi": 534
+    }
+  },
+  "ringkasan": [
+    {
+      "nama": "A. Baseline (v2)",
+      "atribut_lolos": "0/4",
+      "impact_ratio_min": 0.4733,
+      "eo_diff_max": 0.3053
+    },
+    {
+      "nama": "B. Reweighting",
+      "atribut_lolos": "2/4",
+      "impact_ratio_min": 0.6156,
+      "eo_diff_max": 0.2255
+    },
+    {
+      "nama": "C. Threshold per kelompok",
+      "atribut_lolos": "1/4",
+      "impact_ratio_min": 0.4443,
+      "eo_diff_max": 0.2663
+    }
+  ],
+  "model_terpilih": "v2_mitigated (reweighting)",
+  "threshold_terpilih": 0.31
+}

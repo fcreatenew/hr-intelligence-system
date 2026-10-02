@@ -1,0 +1,33 @@
+{
+  "versi_model": "v1",
+  "model": "IsolationForest",
+  "tujuan": "Deteksi anomali payroll (unsupervised)",
+  "fitur_numerik": [
+    "gaji_pokok",
+    "tunjangan",
+    "lembur_jam",
+    "tarif_lembur",
+    "potongan",
+    "total_gaji",
+    "rasio_tunjangan",
+    "rasio_potongan",
+    "total_per_pokok",
+    "biaya_lembur"
+  ],
+  "fitur_kategorikal": [
+    "departemen",
+    "level",
+    "periode"
+  ],
+  "kontaminasi": 0.04,
+  "metrik_evaluasi": {
+    "isolation_forest_pr_auc": 0.8709,
+    "isolation_forest_roc_auc": 0.9782,
+    "lof_pr_auc": 0.9887,
+    "zscore_pr_auc": 0.9056,
+    "random_forest_pr_auc_test": 1.0
+  },
+  "dilatih_pada": "2026-10-02T07:30:18.867026+00:00",
+  "dataset": "data/hr_payroll.csv",
+  "dataset_sintetis": true
+}

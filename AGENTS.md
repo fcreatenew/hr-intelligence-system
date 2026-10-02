@@ -22,9 +22,15 @@ Semua perintah notebook dijalankan dari **root repo** (notebook mencari `data/` 
 # API
 cd hr_intelligence_api && python -m pytest tests/ -q
 
-# Data absensi sintetis (deterministik, seed 42)
+# Data sintetis (deterministik, seed 42)
 python scripts/generate_absenteeism_data.py
+python scripts/generate_performance_data.py
+python scripts/generate_payroll_data.py
+python scripts/generate_attrition_survival_data.py
 ```
+
+Dependensi ML lengkap: `numpy pandas scikit-learn scipy joblib matplotlib seaborn
+xgboost lightgbm catboost shap lifelines nbformat nbclient`.
 
 Versi model yang dilayani API diatur lewat env `MODEL_VERSION` (default `v2`):
 

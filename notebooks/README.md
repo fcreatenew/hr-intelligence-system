@@ -7,7 +7,12 @@ notebooks/
 ├── train_model.ipynb                    # v1 — Logistic Regression (baseline)
 ├── train_model_alternatives.ipynb       # v2 — perbandingan metode alternatif
 ├── 02_absenteeism.ipynb                 # use case #3 — prediksi absen tinggi
-└── 05_fairness_audit_turnover.ipynb     # use case #16 — audit bias model turnover
+├── 03_performance_prediction.ipynb      # use case #4 — prediksi kinerja
+├── 04_payroll_anomaly_detection.ipynb   # use case #6 — anomali payroll
+├── 05_fairness_audit_turnover.ipynb     # use case #16 — audit bias model turnover
+├── 06_survival_attrition.ipynb          # use case #2 — survival analysis attrition
+├── 07_significance_test.ipynb           # v1 vs v2 — DeLong & bootstrap
+└── 08_bias_mitigation_turnover.ipynb    # use case #16 — mitigasi bias turnover
 ```
 
 ---
@@ -73,6 +78,40 @@ Audit **keadilan/bias** model turnover v1 vs v2.
 
 > Audit bersifat *in-sample* dan dataset tidak punya atribut gender/etnis —
 > keterbatasan ini harus ditutup sebelum model dipakai untuk keputusan nyata.
+> Tindak lanjut mitigasinya ada di `08_bias_mitigation_turnover.ipynb`.
+
+## `03_performance_prediction.ipynb` (use case #4)
+
+Memprediksi kategori kinerja (Rendah/Sedang/Tinggi) dari `data/hr_performance.csv`
+(sintetis). Target **ordinal**, jadi metrik utama macro-F1 dan **MAE ordinal**
+(bukan akurasi saja). Output: `models/performance/v1/`.
+
+## `04_payroll_anomaly_detection.ipynb` (use case #6)
+
+Deteksi anomali payroll dari `data/hr_payroll.csv` (sintetis, label buatan ~4%).
+Membandingkan aturan z-score, `IsolationForest`, `LocalOutlierFactor`, dan
+`RandomForest` (supervised). Metrik utama PR-AUC & precision@k.
+Output: `models/payroll_anomaly/v1/`.
+
+> Anomali sintetis sengaja dibuat mencolok, sehingga metrik tampak sangat tinggi;
+> pada data nyata angkanya akan jauh lebih rendah.
+
+## `06_survival_attrition.ipynb` (use case #2)
+
+Survival analysis attrition dari `data/hr_attrition_survival.csv` (sintetis):
+Kaplan–Meier, uji log-rank, dan Cox Proportional Hazards (`lifelines`).
+Menghasilkan hazard ratio dan C-index. Output: `models/survival_attrition/v1/`.
+
+## `07_significance_test.ipynb`
+
+Uji apakah v2 benar-benar lebih baik dari v1: **DeLong test** + **bootstrap
+berpasangan** pada test set. Output: `models/significance_report.json`.
+
+## `08_bias_mitigation_turnover.ipynb` (use case #16)
+
+Mitigasi bias v2 dengan **reweighting Kamiran–Calders** dan **threshold per
+kelompok**, lalu mengukur ulang fairness (OOF). Output:
+`models/v2_mitigated/` dan `models/mitigation_report.json`.
 
 ---
 

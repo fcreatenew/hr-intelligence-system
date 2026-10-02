@@ -106,7 +106,49 @@ kalibrasi, atau kembali ke v1 (yang lebih setara) bila keadilan diprioritaskan.
 
 ---
 
-## 6. Model Tambahan — Absenteeism (use case #3)
+## 6. Uji Signifikansi v1 vs v2
+
+Sumber: `models/significance_report.json` (`notebooks/07_significance_test.ipynb`).
+
+| Uji | Hasil | Arti |
+|---|---|---|
+| DeLong z | −0,4638 | AUC v1 & v2 tidak beda |
+| DeLong p | **0,6428** | jauh di atas 0,05 |
+| Bootstrap Δ ROC-AUC | +0,0064 | selisih rata-rata |
+| Bootstrap 95% CI | **[−0,0214, +0,0342]** | memuat 0 |
+| Bootstrap p | 0,6596 | tidak signifikan |
+
+**Kesimpulan:** secara statistik, **v2 tidak terbukti lebih baik** dari v1.
+Selisih 0,0064 berada di dalam noise. Untuk produksi, model yang lebih sederhana
+dan lebih adil (v1) tetap pilihan yang lebih aman sampai ada data lebih besar.
+
+---
+
+## 7. Mitigasi Bias (Fairness)
+
+Sumber: `models/mitigation_report.json` (`notebooks/08_bias_mitigation_turnover.ipynb`).
+Diukur pada prediksi **out-of-fold**.
+
+| Strategi | Atribut lolos 80% | Impact ratio terendah | ROC-AUC OOF |
+|---|---|---:|---:|
+| A. Baseline v2 | 0/4 | 0,473 | 0,697 |
+| B. **Reweighting** | **2/4** | 0,616 | 0,669 |
+| C. Threshold per kelompok | 1/4 | 0,444 | 0,697 |
+
+Impact ratio per atribut yang dimitigasi (reweighting):
+
+| Atribut | Baseline v2 | Reweighting |
+|---|---:|---:|
+| status_kerja | 0,473 | **0,822** ✅ |
+| pendidikan | 0,479 | **0,829** ✅ |
+
+**Kesimpulan:** reweighting memperbaiki dua atribut yang paling tidak setara
+dengan biaya AUC OOF hanya ~0,03. Model termitigasi ada di `models/v2_mitigated/`
+(belum dijadikan default API).
+
+---
+
+## 8. Model Tambahan — Absenteeism (use case #3)
 
 `notebooks/02_absenteeism.ipynb` → `models/absenteeism/v1/` (data **sintetis**).
 
@@ -121,21 +163,71 @@ kalibrasi, atau kembali ke v1 (yang lebih setara) bila keadilan diprioritaskan.
 | F1 | 0,4615 |
 | Threshold | 0,1929 |
 
-Catatan: performa tampak tinggi karena data sintetis dibangkitkan dari sinyal
-yang bersih. Pada data nyata, metrik akan lebih rendah.
+## 9. Model Tambahan — Performance Rating (use case #4)
+
+`notebooks/03_performance_prediction.ipynb` → `models/performance/v1/` (sintetis).
+Target **ordinal** (Rendah/Sedang/Tinggi).
+
+| Metric | Nilai |
+|---|---:|
+| Model | Logistic Regression |
+| Accuracy | 0,6971 |
+| Macro-F1 | 0,6357 |
+| Cohen's kappa | 0,4570 |
+| **MAE ordinal** | 0,3086 |
+
+MAE ordinal 0,31 (skala 1–3) artinya prediksi rata-rata meleset kurang dari
+satu tingkat — cukup baik untuk target ordinal.
+
+## 10. Model Tambahan — Payroll Anomaly (use case #6)
+
+`notebooks/04_payroll_anomaly_detection.ipynb` → `models/payroll_anomaly/v1/`.
+
+| Metode | PR-AUC |
+|---|---:|
+| Random Forest (supervised, test) | 1,000 |
+| LocalOutlierFactor | 0,9887 |
+| Aturan z-score | 0,9056 |
+| Isolation Forest | 0,8709 |
+
+> Anomali sintetis sengaja dibuat mencolok → metrik sangat tinggi. Pada data
+> nyata, PR-AUC akan jauh lebih rendah. Isolation Forest dipilih untuk artifact
+> karena tidak butuh label.
+
+## 11. Model Tambahan — Survival Attrition (use case #2)
+
+`notebooks/06_survival_attrition.ipynb` → `models/survival_attrition/v1/`.
+
+| Metric | Nilai |
+|---|---:|
+| Model | Cox Proportional Hazards |
+| C-index | 0,8144 |
+| Median survival | 12 bulan |
+| Log-rank (departemen) | p < 0,001 |
+| Log-rank (pendidikan) | p = 0,697 |
+
+Faktor yang menaikkan risiko keluar (HR > 1): `bulan_sejak_promosi`,
+`jam_lembur_bulanan`, `jarak_km`. Faktor protektif (HR < 1): `kepuasan_kerja`.
 
 ---
 
-## 7. Reproduksi
+## 12. Reproduksi
 
 ```bash
-# data absensi sintetis (deterministik)
+# data sintetis (deterministik)
 python scripts/generate_absenteeism_data.py
+python scripts/generate_performance_data.py
+python scripts/generate_payroll_data.py
+python scripts/generate_attrition_survival_data.py
 
-# training / audit
+# training / analisis
 jupyter notebook notebooks/train_model_alternatives.ipynb      # v2
+jupyter notebook notebooks/07_significance_test.ipynb          # signifikansi
+jupyter notebook notebooks/08_bias_mitigation_turnover.ipynb   # mitigasi bias
 jupyter notebook notebooks/02_absenteeism.ipynb                # absensi
-jupyter notebook notebooks/05_fairness_audit_turnover.ipynb    # fairness
+jupyter notebook notebooks/03_performance_prediction.ipynb     # kinerja
+jupyter notebook notebooks/04_payroll_anomaly_detection.ipynb  # anomali payroll
+jupyter notebook notebooks/06_survival_attrition.ipynb         # survival
 ```
 
 Versi model yang dilayani API diatur lewat env `MODEL_VERSION` (default `v2`):
@@ -147,9 +239,11 @@ MODEL_VERSION=v1 python -m uvicorn app.main:app   # rollback ke v1
 
 ---
 
-## 8. Keterbatasan & Langkah Lanjut
+## 13. Keterbatasan & Langkah Lanjut
 
 - Tambah sinyal yang lebih kuat (rating kinerja, engagement, manajer langsung).
-- Uji signifikansi (DeLong / bootstrap) untuk v1 vs v2.
-- Mitigasi bias lalu audit ulang (lihat #5).
-- Data absensi asli (bukan sintetis) untuk model #3.
+- Uji signifikansi sudah dilakukan → v2 belum terbukti lebih baik.
+- Mitigasi bias sudah dicoba → masih 2/4 atribut lolos; lanjutkan ke
+  kalibrasi/threshold sadar-keadilan.
+- Semua data tambahan masih **sintetis**; validasi ulang pada data nyata.
+- Model absensi/kinerja/payroll/survival belum diekspos API.

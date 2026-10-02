@@ -237,31 +237,41 @@ hr-intelligence-system/
 ├── data/
 │   ├── README.md
 │   ├── hr_turnover.csv
-│   └── hr_absenteeism.csv          # sintetis
+│   ├── hr_absenteeism.csv          # sintetis
+│   ├── hr_performance.csv          # sintetis
+│   ├── hr_payroll.csv              # sintetis
+│   └── hr_attrition_survival.csv   # sintetis
 │
 ├── scripts/
-│   └── generate_absenteeism_data.py
+│   ├── generate_absenteeism_data.py
+│   ├── generate_performance_data.py
+│   ├── generate_payroll_data.py
+│   └── generate_attrition_survival_data.py
 │
 ├── notebooks/
 │   ├── README.md
 │   ├── train_model.ipynb
 │   ├── train_model_alternatives.ipynb
 │   ├── 02_absenteeism.ipynb
-│   └── 05_fairness_audit_turnover.ipynb
+│   ├── 03_performance_prediction.ipynb
+│   ├── 04_payroll_anomaly_detection.ipynb
+│   ├── 05_fairness_audit_turnover.ipynb
+│   ├── 06_survival_attrition.ipynb
+│   ├── 07_significance_test.ipynb
+│   └── 08_bias_mitigation_turnover.ipynb
 │
 ├── models/
 │   ├── README.md
-│   ├── v1/
-│   │   ├── turnover_model.joblib
-│   │   └── model_metadata.json
-│   ├── v2/
-│   │   ├── turnover_model.joblib
-│   │   └── model_metadata.json
-│   ├── absenteeism/
-│   │   └── v1/
-│   │       ├── absenteeism_model.joblib
-│   │       └── model_metadata.json
-│   └── fairness_report.json
+│   ├── v1/                    # turnover — Logistic Regression
+│   ├── v2/                    # turnover — Soft Voting (default API)
+│   ├── v2_mitigated/          # turnover — v2 + reweighting
+│   ├── absenteeism/v1/        # absensi
+│   ├── performance/v1/        # kinerja
+│   ├── payroll_anomaly/v1/    # anomali payroll
+│   ├── survival_attrition/v1/ # survival
+│   ├── fairness_report.json
+│   ├── mitigation_report.json
+│   └── significance_report.json
 │
 ├── hr_intelligence_api/
 │   ├── README.md

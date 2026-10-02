@@ -23,12 +23,12 @@ Rekrutmen → Onboarding → Kinerja → Pengembangan → Engagement
 
 | # | Use case | Jenis ML | Komponen di repo | Status |
 |---|----------|----------|------------------|--------|
-| 1 | Employee Turnover Prediction | Klasifikasi biner | `hr_intelligence_api` | ✅ v1 & v2 |
-| 2 | Attrition Survival Analysis | Survival analysis | `hr_intelligence_api` (v3) | rencana |
+| 1 | Employee Turnover Prediction | Klasifikasi biner | `hr_intelligence_api` | ✅ v1 & v2 (+ v2_mitigated) |
+| 2 | Attrition Survival Analysis | Survival analysis | `hr_intelligence_api` (v3) | ✅ `06_survival_attrition.ipynb` |
 | 3 | Absenteeism Prediction | Klasifikasi / regresi | `hr_intelligence_api` | ✅ `02_absenteeism.ipynb` |
-| 4 | Performance Rating Prediction | Klasifikasi / regresi | `hr_intelligence_api` | rencana |
+| 4 | Performance Rating Prediction | Klasifikasi ordinal | `hr_intelligence_api` | ✅ `03_performance_prediction.ipynb` |
 | 5 | High-Potential (HiPo) / Promotion Readiness | Klasifikasi | `hr_intelligence_api` | rencana |
-| 6 | Payroll Anomaly Detection | Anomaly detection | `payroll_intelligence` | rencana |
+| 6 | Payroll Anomaly Detection | Anomaly detection | `payroll_intelligence` | ✅ `04_payroll_anomaly_detection.ipynb` |
 | 7 | Payroll / Headcount Forecasting | Time series | `payroll_intelligence` | rencana |
 | 8 | Overtime & Cost Analytics | Regresi / clustering | `payroll_intelligence` | rencana |
 | 9 | Resume Screening & Person-Job Fit | NLP / ranking | `ai_hr_assistant` | rencana |
@@ -38,7 +38,7 @@ Rekrutmen → Onboarding → Kinerja → Pengembangan → Engagement
 | 13 | Document Understanding / OCR | Computer vision + NLP | `deep_learning` | rencana |
 | 14 | Attrition Driver Discovery | Explainability / causal | `mlops` + API | sebagian (SHAP di v2) |
 | 15 | Workforce Segmentation | Clustering | `hr_dashboard` | rencana |
-| 16 | Fairness & Bias Audit | Model evaluation | `mlops` | ✅ `05_fairness_audit_turnover.ipynb` |
+| 16 | Fairness & Bias Audit | Model evaluation | `mlops` | ✅ audit + mitigasi |
 
 ## Artifact yang sudah tersedia
 
@@ -46,8 +46,14 @@ Rekrutmen → Onboarding → Kinerja → Pengembangan → Engagement
 models/
 ├── v1/                        # turnover — Logistic Regression
 ├── v2/                        # turnover — Soft Voting ensemble (default API)
+├── v2_mitigated/              # turnover — v2 + reweighting (lebih adil)
 ├── absenteeism/v1/            # absensi — model + metadata
-└── fairness_report.json       # audit bias turnover v1 vs v2
+├── performance/v1/            # kinerja — model + metadata
+├── payroll_anomaly/v1/        # anomali payroll — IsolationForest
+├── survival_attrition/v1/     # survival — Cox PH
+├── fairness_report.json       # audit bias turnover v1 vs v2
+├── mitigation_report.json     # hasil mitigasi bias
+└── significance_report.json   # uji DeLong/bootstrap v1 vs v2
 ```
 
 ## Temuan audit fairness (ringkas)
@@ -56,6 +62,10 @@ Audit `05_fairness_audit_turnover.ipynb` menunjukkan **v2 lebih tidak setara**
 daripada v1 pada kelompok `status_kerja` dan `pendidikan` (impact ratio v2 0,45–0,48
 vs v1 0,58–0,62). Artinya memilih model hanya dari ROC-AUC dapat memperburuk
 keadilan. Lihat `models/fairness_report.json`.
+
+Tindak lanjut `08_bias_mitigation_turnover.ipynb`: **reweighting** menaikkan
+impact ratio `status_kerja` 0,47→0,82 dan `pendidikan` 0,48→0,83 (2/4 atribut
+lolos four-fifths) dengan penurunan AUC OOF yang kecil (0,697→0,669).
 
 ---
 
