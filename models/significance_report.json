@@ -1,0 +1,14 @@
+{
+  "auc_v1": 0.6929,
+  "auc_v2": 0.6993,
+  "delta_auc": 0.0064,
+  "delong_z": -0.4638,
+  "delong_p": 0.6428,
+  "bootstrap_ci": [
+    -0.0214,
+    0.0342
+  ],
+  "bootstrap_p": 0.6596,
+  "kesimpulan": "v2 TIDAK terbukti lebih baik; selisih kemungkinan hanya noise",
+  "rekomendasi": "Tetap pakai model yang lebih sederhana & lebih adil (v1) sampai ada bukti tambahan pada data yang lebih besar."
+}

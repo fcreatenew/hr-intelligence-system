@@ -1,0 +1,36 @@
+{
+  "versi_model": "v1",
+  "model": "Logistic Regression",
+  "target": "kategori_kinerja",
+  "kelas": [
+    "Rendah",
+    "Sedang",
+    "Tinggi"
+  ],
+  "fitur_numerik": [
+    "usia",
+    "masa_kerja_bulan",
+    "jam_lembur_bulanan",
+    "jumlah_training_setahun",
+    "proyek_selesai",
+    "skor_umpan_balik_360",
+    "hari_absen_setahun"
+  ],
+  "fitur_kategorikal": [
+    "departemen",
+    "pendidikan"
+  ],
+  "training_rows": 1050,
+  "test_rows": 350,
+  "dilatih_pada": "2026-10-02T07:29:16.577231+00:00",
+  "metrik_holdout_test": {
+    "accuracy": 0.6971,
+    "f1_macro": 0.6357,
+    "f1_weighted": 0.691,
+    "cohen_kappa": 0.457,
+    "mae_ordinal": 0.3086
+  },
+  "dataset": "data/hr_performance.csv",
+  "dataset_sintetis": true,
+  "catatan": "Target ordinal. Utamakan MAE ordinal & macro-F1. Jangan pakai untuk keputusan PHK."
+}

@@ -1,0 +1,149 @@
+{
+  "versi_model": "v2_mitigated",
+  "dibuat_pada": "2026-10-01T15:33:15",
+  "tujuan": "Prediksi turnover karyawan (1 = keluar)",
+  "sumber_data": "hr_turnover.csv",
+  "jumlah_baris": 1000,
+  "rasio_positif": 0.356,
+  "model": "Soft Voting (ensemble)",
+  "metode": "alternatif_v2",
+  "hyperparameter": {
+    "Logistic Regression (v1)": {
+      "C": 0.006026889128682512,
+      "max_iter": 2000
+    },
+    "Random Forest": {
+      "max_depth": 4,
+      "max_features": "log2",
+      "max_leaf_nodes": null,
+      "min_samples_leaf": 9,
+      "n_estimators": 645
+    }
+  },
+  "threshold": 0.31,
+  "refit_seluruh_data": true,
+  "fitur_numerik": [
+    "usia",
+    "masa_kerja_bulan",
+    "jam_lembur_bulanan",
+    "log_gaji",
+    "usia_saat_masuk",
+    "ada_promosi",
+    "bulan_sejak_promosi",
+    "bulan_hingga_promosi"
+  ],
+  "fitur_kategorik": [
+    "departemen",
+    "status_kerja",
+    "pendidikan"
+  ],
+  "kolom_mentah_dibutuhkan": [
+    "usia",
+    "masa_kerja_bulan",
+    "jam_lembur_bulanan",
+    "gaji_bulanan",
+    "tanggal_masuk",
+    "tanggal_promosi",
+    "departemen",
+    "status_kerja",
+    "pendidikan"
+  ],
+  "tanggal_acuan": "2025-01-01",
+  "metrik_holdout_test": {
+    "roc_auc": 0.6993,
+    "pr_auc": 0.6223,
+    "brier": 0.2029,
+    "accuracy": 0.62,
+    "precision": 0.4752,
+    "recall": 0.6761,
+    "f1": 0.5581,
+    "roc_auc_95ci": [
+      0.6217,
+      0.7739
+    ]
+  },
+  "roc_auc_cv_tuned": 0.7085,
+  "perbandingan_model": {
+    "Logistic Regression (v1)": {
+      "roc_auc_cv": 0.69,
+      "pr_auc_cv": 0.629
+    },
+    "Random Forest": {
+      "roc_auc_cv": 0.6838,
+      "pr_auc_cv": 0.6166
+    },
+    "SVM (RBF)": {
+      "roc_auc_cv": 0.6704,
+      "pr_auc_cv": 0.6132
+    },
+    "CatBoost": {
+      "roc_auc_cv": 0.6697,
+      "pr_auc_cv": 0.6103
+    },
+    "LightGBM": {
+      "roc_auc_cv": 0.6529,
+      "pr_auc_cv": 0.5815
+    },
+    "XGBoost": {
+      "roc_auc_cv": 0.651,
+      "pr_auc_cv": 0.5871
+    },
+    "Hist Gradient Boosting": {
+      "roc_auc_cv": 0.6509,
+      "pr_auc_cv": 0.5893
+    },
+    "Dummy (prior)": {
+      "roc_auc_cv": 0.5,
+      "pr_auc_cv": 0.3563
+    }
+  },
+  "versi": {
+    "python_sklearn": "1.9.1",
+    "pandas": "3.0.6",
+    "numpy": "2.5.3"
+  },
+  "catatan": "Dipilih agar fairness membaik. AUC OOF tetap; bandingkan models/v2 dan models/fairness_report.json.",
+  "basis": "v2",
+  "strategi_mitigasi": "reweighting Kamiran-Calders",
+  "atribut_mitigasi": [
+    "status_kerja",
+    "pendidikan"
+  ],
+  "fairness_oof": {
+    "kelompok_usia": {
+      "impact_ratio": 0.6156,
+      "demographic_parity_diff": 0.2264,
+      "equal_opportunity_diff": 0.1107,
+      "equalized_odds_diff": 0.2753,
+      "lolos_four_fifths": false
+    },
+    "departemen": {
+      "impact_ratio": 0.732,
+      "demographic_parity_diff": 0.1386,
+      "equal_opportunity_diff": 0.2255,
+      "equalized_odds_diff": 0.2255,
+      "lolos_four_fifths": false
+    },
+    "status_kerja": {
+      "impact_ratio": 0.8222,
+      "demographic_parity_diff": 0.0924,
+      "equal_opportunity_diff": 0.0896,
+      "equalized_odds_diff": 0.0896,
+      "lolos_four_fifths": true
+    },
+    "pendidikan": {
+      "impact_ratio": 0.8285,
+      "demographic_parity_diff": 0.0854,
+      "equal_opportunity_diff": 0.0671,
+      "equalized_odds_diff": 0.0671,
+      "lolos_four_fifths": true
+    }
+  },
+  "performa_oof": {
+    "roc_auc": 0.6691,
+    "f1": 0.531,
+    "precision": 0.4756,
+    "recall": 0.6011,
+    "positif_diprediksi": 450
+  }
+}

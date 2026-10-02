@@ -4,8 +4,11 @@ Dataset untuk eksperimen Machine Learning HR Intelligence System.
 
 ```text
 data/
-├── hr_turnover.csv        # dataset turnover (anonim)
-├── hr_absenteeism.csv     # dataset absensi (SINTETIS)
+├── hr_turnover.csv             # dataset turnover (anonim)
+├── hr_absenteeism.csv          # dataset absensi (SINTETIS)
+├── hr_performance.csv          # dataset kinerja (SINTETIS)
+├── hr_payroll.csv              # dataset payroll + anomali (SINTETIS)
+├── hr_attrition_survival.csv   # dataset survival attrition (SINTETIS)
 └── README.md
 ```
 
@@ -70,3 +73,66 @@ python scripts/generate_absenteeism_data.py
 
 Kolom yang **tidak boleh** dipakai sebagai fitur (kebocoran): `employee_id`,
 `hari_absen_setahun`, `alasan_dominan`.
+
+---
+
+## `hr_performance.csv` (SINTETIS)
+
+1.400 baris. Dibangkitkan oleh `scripts/generate_performance_data.py`.
+Target: `kategori_kinerja` (Rendah / Sedang / Tinggi), berasal dari
+`rating_kinerja` **ordinal** 1–5.
+
+| Kolom | Tipe | Keterangan |
+|---|---|---|
+| `usia`, `masa_kerja_bulan` | int | usia & masa kerja |
+| `departemen`, `pendidikan` | kategori | sama dengan dataset lain |
+| `jam_lembur_bulanan` | float | jam lembur per bulan |
+| `jumlah_training_setahun` | int | jumlah training setahun |
+| `proyek_selesai` | int | proyek yang diselesaikan |
+| `skor_umpan_balik_360` | float | skor feedback 360 (1–5) |
+| `hari_absen_setahun` | int | hari absen setahun |
+| `rating_kinerja` | int | 1–5 (ordinal) — **jangan dipakai sebagai fitur** |
+| `kategori_kinerja` | kategori | target |
+
+> Karena target **ordinal**, metrik utama: macro-F1 dan **MAE ordinal**, bukan
+> akurasi saja. Jangan pakai untuk keputusan PHK.
+
+---
+
+## `hr_payroll.csv` (SINTETIS)
+
+1.800 baris (600 karyawan × 3 periode). Dibangkitkan oleh
+`scripts/generate_payroll_data.py`.
+
+| Kolom | Keterangan |
+|---|---|
+| `employee_id`, `periode`, `departemen`, `level` | identitas & konteks |
+| `gaji_pokok`, `tunjangan`, `potongan` | komponen gaji |
+| `lembur_jam`, `tarif_lembur` | komponen lembur |
+| `total_gaji` | total (dihitung) |
+| `is_anomaly` | 1 = anomali (label buatan, ~4%) |
+| `jenis_anomali` | jenis anomali (label buatan) — **jangan dipakai sebagai fitur** |
+
+Jenis anomali yang disisipkan: `gaji_typo`, `tunjangan_negatif`,
+`potongan_besar`, `lembur_ekstrem`, `total_tidak_konsisten`.
+
+> Label buatan hanya untuk evaluasi. Di dunia nyata label jarang tersedia →
+> pakai pendekatan unsupervised.
+
+---
+
+## `hr_attrition_survival.csv` (SINTETIS)
+
+1.200 baris. Dibangkitkan oleh `scripts/generate_attrition_survival_data.py`.
+Format survival (durasi + event/censoring).
+
+| Kolom | Keterangan |
+|---|---|
+| `usia`, `departemen`, `pendidikan` | demografi |
+| `gaji_bulanan`, `jam_lembur_bulanan`, `kepuasan_kerja` | kondisi kerja |
+| `bulan_sejak_promosi`, `jarak_km` | faktor retensi |
+| `tenure_bulan` | **durasi** observasi (bulan) |
+| `event_keluar` | **event**: 1 = keluar, 0 = disensor (masih bekerja) |
+
+> Data survival tidak boleh dipakai dengan classifier biasa tanpa
+> memperhitungkan censoring — gunakan Kaplan–Meier / Cox PH.
