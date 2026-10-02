@@ -27,7 +27,11 @@
         </div>
         <div class="field">
             <label for="department">Departemen</label>
-            <input id="department" name="department" value="{{ $val('department') }}" required>
+            <select id="department" name="department" required>
+                @foreach (App\Support\HrCategories::DEPARTEMEN as $opt)
+                    <option value="{{ $opt }}" @selected($val('department') === $opt)>{{ $opt }}</option>
+                @endforeach
+            </select>
             @error('department') <div class="error">{{ $message }}</div> @enderror
         </div>
         <div class="field">
@@ -72,7 +76,7 @@
             <label for="status_kerja">Status kerja</label>
             <select id="status_kerja" name="status_kerja">
                 <option value="">—</option>
-                @foreach (['Tetap', 'Kontrak', 'Freelance', 'Magang'] as $opt)
+                @foreach (App\Support\HrCategories::STATUS_KERJA as $opt)
                     <option value="{{ $opt }}" @selected($val('status_kerja') === $opt)>{{ $opt }}</option>
                 @endforeach
             </select>
@@ -81,7 +85,7 @@
             <label for="pendidikan">Pendidikan</label>
             <select id="pendidikan" name="pendidikan">
                 <option value="">—</option>
-                @foreach (['SMA', 'SMK', 'D3', 'S1', 'S2', 'S3'] as $opt)
+                @foreach (App\Support\HrCategories::PENDIDIKAN as $opt)
                     <option value="{{ $opt }}" @selected($val('pendidikan') === $opt)>{{ $opt }}</option>
                 @endforeach
             </select>
@@ -118,12 +122,12 @@
             <input id="beban_kerja" name="beban_kerja" type="number" step="0.1" min="0" max="100" value="{{ $val('beban_kerja') }}">
         </div>
         <div class="field">
-            <label for="riwayat_absen_90hari">Riwayat absen 90 hari</label>
-            <input id="riwayat_absen_90hari" name="riwayat_absen_90hari" type="number" min="0" max="90" value="{{ $val('riwayat_absen_90hari') }}">
+            <label>Riwayat absen 90 hari</label>
+            <input type="text" value="dihitung dari catatan absensi" disabled>
         </div>
         <div class="field">
-            <label for="hari_absen_setahun">Hari absen setahun</label>
-            <input id="hari_absen_setahun" name="hari_absen_setahun" type="number" min="0" max="365" value="{{ $val('hari_absen_setahun') }}">
+            <label>Hari absen setahun</label>
+            <input type="text" value="dihitung dari catatan absensi" disabled>
         </div>
         <div class="field">
             <label for="jumlah_training_setahun">Training setahun</label>

@@ -82,4 +82,33 @@ class Employee extends Model
     {
         return $this->hasMany(HrIntelligencePrediction::class, 'employee_id', 'nik');
     }
+
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
+    public function leaveRequests(): HasMany
+    {
+        return $this->hasMany(LeaveRequest::class);
+    }
+
+    public function leaveBalances(): HasMany
+    {
+        return $this->hasMany(LeaveBalance::class);
+    }
+
+    /**
+     * Saldo cuti tahun berjalan, membuat baris default bila belum ada sehingga
+     * pemanggil tidak perlu menangani null.
+     */
+    public function leaveBalanceFor(?int $year = null): LeaveBalance
+    {
+        $year = $year ?? (int) now()->year;
+
+        return $this->leaveBalances()->firstOrCreate(
+            ['year' => $year],
+            ['entitled_days' => LeaveBalance::DEFAULT_ENTITLED_DAYS, 'used_days' => 0],
+        );
+    }
 }

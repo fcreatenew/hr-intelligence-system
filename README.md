@@ -85,10 +85,9 @@ Setiap komponen memiliki source code, dependency, testing, dan dokumentasi masin
 
 Aplikasi HRIS (Human Resource Information System) berbasis **Laravel / PHP**.
 
-> **Status: sedang dibangun.** Saat ini yang sudah berjalan adalah **integrasi
-> Machine Learning** (pemetaan fitur karyawan, pemanggilan API prediksi, prediksi
-> batch terjadwal, penyimpanan hasil). Modul proses bisnis HR di bawah masih
-> dalam pengerjaan — lihat [`ROADMAP.md`](./ROADMAP.md) untuk urutannya.
+> **Status: HRIS inti sudah berjalan.** Employee Management, Attendance, dan
+> Leave sudah dapat dipakai staf HR; Payroll dan Reporting menyusul — lihat
+> [`ROADMAP.md`](./ROADMAP.md) untuk urutannya.
 
 Sudah berjalan:
 
@@ -96,12 +95,14 @@ Sudah berjalan:
 * Pemetaan record karyawan → input model (`EmployeeFeatureMapper`)
 * Prediksi batch terjadwal (bulanan/mingguan/kuartalan)
 * Penyimpanan & penelusuran hasil prediksi
+* Login/logout dengan peran `admin` dan `hr-manager`
+* **Employee Management** — CRUD, pencarian, filter, paginasi, riwayat prediksi
+* **Attendance** — pencatatan harian + rekap per periode
+* **Leave** — pengajuan, persetujuan, dan saldo cuti
+* Fitur absensi model dihitung dari data absensi, bukan diisi manual
 
 Rencana modul proses bisnis HR:
 
-* Employee Management *(dalam pengerjaan)*
-* Attendance
-* Leave
 * Payroll
 * Employee History
 * HR Administration

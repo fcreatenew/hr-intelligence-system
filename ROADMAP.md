@@ -82,8 +82,8 @@ menjalankan model. Batas ini dijaga agar kontrak fitur tidak terduplikasi.
 ```text
 Fase 0  Fondasi ML + API                 ✅ selesai
 Fase 1  Integrasi HRIS ↔ ML              ✅ selesai
-Fase 2  HRIS inti (Employee Management)  🚧 dikerjakan
-Fase 3  Operasional HR (Attendance/Leave) ⬜
+Fase 2  HRIS inti (Employee Management)  ✅ selesai
+Fase 3  Operasional HR (Attendance/Leave) ✅ selesai
 Fase 4  Payroll run                      ⬜
 Fase 5  Pelaporan & administrasi         ⬜
 Fase 6  Hardening produksi               ⬜
@@ -120,12 +120,12 @@ Kriteria selesai: prediksi dapat dijalankan terjadwal dan hasilnya tersimpan.
 
 ---
 
-# 6. Fase 2 — HRIS Inti (Employee Management) 🚧
+# 6. Fase 2 — HRIS Inti (Employee Management) ✅
 
 Fase ini mengubah `hr_application` dari "kerangka integrasi" menjadi aplikasi
 yang benar-benar dapat dipakai staf HR.
 
-## 2.1 Employee Management 🚧
+## 2.1 Employee Management ✅
 
 - ✅ Model `Employee` + tabel + atribut ML
 - ✅ CRUD karyawan (create, read, update, delete)
@@ -156,21 +156,42 @@ karyawan, dan melihat riwayat perubahannya — tanpa menyentuh database langsung
 
 ---
 
-# 7. Fase 3 — Operasional HR ⬜
+# 7. Fase 3 — Operasional HR ✅
 
-## 3.1 Attendance
+## 3.1 Attendance ✅
 
-- ⬜ Pencatatan kehadiran harian
-- ⬜ Rekap per periode + tingkat absensi
-- ⬜ Integrasi ke use case absensi ML (fitur `riwayat_absen_90hari` terisi otomatis)
+- ✅ Pencatatan kehadiran harian (hadir, terlambat, izin, sakit, cuti, alpha)
+- ✅ Satu catatan per karyawan per tanggal (dijaga di level DB + validasi)
+- ✅ Jam masuk/keluar, menit terlambat, menit lembur, catatan
+- ✅ Rekap per periode: kehadiran, keterlambatan, ketidakhadiran, cuti
+- ✅ **Integrasi ML**: `riwayat_absen_90hari` dan `hari_absen_setahun` kini
+  dihitung dari tabel `attendances` (`AttendanceMetricsService`), bukan lagi
+  diisi manual — kolom manualnya dihapus dari form
+- ⬜ Impor mesin absensi / fingerprint
+- ⬜ Perhitungan lembur otomatis dari jam masuk/keluar
 
-## 3.2 Leave (Cuti)
+**Definisi fitur (penting agar konsisten dengan pelatihan model):**
+`riwayat_absen_90hari` = jumlah hari izin + sakit + alpha dalam 90 hari
+terakhir. Cuti **tidak** dihitung karena sudah direncanakan dan disetujui.
+`hari_absen_setahun` = perhitungan yang sama pada rentang 365 hari.
 
-- ⬜ Pengajuan cuti + alur persetujuan
-- ⬜ Saldo cuti per karyawan
+## 3.2 Leave (Cuti) ✅
+
+- ✅ Pengajuan cuti (tahunan, sakit, melahirkan, menikah, duka, lainnya)
+- ✅ Alur persetujuan/penolakan oleh `admin` & `hr-manager`
+- ✅ Saldo cuti per karyawan per tahun (jatah, terpakai, tersisa)
+- ✅ Jumlah hari dihitung di server dari rentang tanggal (bukan input klien)
+- ✅ Persetujuan menulis saldo + catatan absensi dalam satu transaksi
+- ✅ Persetujuan ditolak bila saldo tidak mencukupi
+- ✅ Pengajuan yang sudah diputuskan tidak bisa diputuskan ulang
 - ⬜ Kalender cuti tim
+- ⬜ Kuota per jenis cuti selain tahunan
 
-**Kriteria selesai Fase 3:** data kehadiran dan cuti tercatat di HRIS dan
+**Keputusan penting:** hanya cuti `tahunan` yang memotong saldo. Cuti
+melahirkan/duka/menikah tidak, karena jatahnya terpisah dan biasanya diatur
+regulasi — bukan bagian dari jatah 12 hari.
+
+**Kriteria selesai Fase 3:** ✅ data kehadiran dan cuti tercatat di HRIS dan
 mengalir otomatis menjadi fitur model, bukan diisi manual.
 
 ---
@@ -223,14 +244,21 @@ Daftar ini jujur menyebut hal yang belum beres, agar tidak hilang dari pandangan
 | 6 | Halaman prediksi ML masih JSON | Belum ramah pengguna non-teknis | Fase 5 |
 | 7 | Tidak ada audit trail karyawan | Perubahan data tidak tertelusur | Fase 2.1 |
 | 8 | `deep_learning` MLP belum dipakai produksi | Eksperimen saja | Tidak diprioritaskan |
+| 9 | Belum ada impor mesin absensi | Absensi masih diisi manual | Fase 5 |
+| 10 | Lembur belum dihitung dari jam masuk/keluar | `overtime_minutes` masih diisi manual | Fase 4 |
+| 11 | Kalender cuti tim belum ada | HR belum bisa melihat tumpang tindih cuti | Fase 5 |
+| 12 | Daftar nilai kategorikal sempat tidak sinkron | Form menawarkan nilai yang tidak dikenal pipeline, sehingga mapper diam-diam mengubahnya | Selesai — `HrCategories` jadi sumber tunggal |
 
 ---
 
 # 12. Prinsip yang Dipegang
 
 1. **Data dulu, model kemudian.** Model tanpa data yang benar tidak berarti.
-2. **Kontrak fitur tunggal.** Feature engineering hanya di `hr_intelligence_api`;
-   HRIS tidak menduplikasi rumus fitur.
+2. **Kontrak fitur tunggal.** Feature engineering (transformasi menjadi vektor
+   model) hanya di `hr_intelligence_api`. HRIS boleh menghitung *agregat domain*
+   yang menjadi input mentah (mis. jumlah hari tidak hadir dari tabel absensi),
+   tetapi tidak boleh meniru one-hot encoding, penskalaan, atau bobot model.
+   Aturan praktisnya: HRIS menghitung fakta, API mengubahnya menjadi fitur.
 3. **Jujur soal metrik.** Selisih yang tidak signifikan tidak diklaim sebagai
    peningkatan; model yang lebih setara diprioritaskan untuk keputusan nyata.
 4. **Modul terpisah, kontrak jelas.** Setiap komponen punya test sendiri.
