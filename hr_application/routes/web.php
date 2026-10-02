@@ -32,6 +32,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('employees', EmployeeController::class);
 
     Route::get('attendances/recap', [AttendanceController::class, 'recap'])->name('attendances.recap');
+    Route::get('attendances/import/template', [AttendanceController::class, 'importTemplate'])->name('attendances.import-template');
+    Route::post('attendances/import', [AttendanceController::class, 'import'])->name('attendances.import');
     Route::resource('attendances', AttendanceController::class)->except(['show']);
 
     Route::get('leave-requests/balances', [LeaveRequestController::class, 'balances'])->name('leave-requests.balances');
