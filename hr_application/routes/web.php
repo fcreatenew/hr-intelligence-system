@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\EmployeeController;
@@ -37,4 +38,6 @@ Route::middleware('auth')->group(function () {
     Route::post('payroll-periods/{payroll_period}/finalize', [PayrollPeriodController::class, 'finalize'])->name('payroll-periods.finalize');
     Route::get('payroll-periods/{payroll_period}/export', [PayrollPeriodController::class, 'export'])->name('payroll-periods.export');
     Route::resource('payroll-periods', PayrollPeriodController::class)->only(['index', 'store', 'show', 'destroy']);
+
+    Route::get('admin/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
 });

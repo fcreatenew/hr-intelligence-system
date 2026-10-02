@@ -50,6 +50,18 @@ class AttendanceFactory extends Factory
         ]);
     }
 
+    /** Kehadiran normal tanpa keterlambatan — dipakai test yang butuh nilai pasti. */
+    public function present(): static
+    {
+        return $this->state(fn () => [
+            'status' => Attendance::STATUS_HADIR,
+            'check_in' => '08:00',
+            'check_out' => '17:00',
+            'late_minutes' => 0,
+            'overtime_minutes' => 0,
+        ]);
+    }
+
     public function onDate(string $date): static
     {
         return $this->state(fn () => ['date' => $date]);
