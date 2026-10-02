@@ -155,7 +155,17 @@ class AttendanceManagementTest extends TestCase
     {
         $employee = $this->employee(['name' => 'Budi Santoso']);
 
-        Attendance::factory()->count(3)->for($employee)->absence()->create();
+        // Tanggal ditentukan eksplisit: `date` acak dari factory bisa bentrok
+        // sesama baris (atau dengan baris hadir hari ini) dan melanggar unique
+        // (employee_id, date).
+        foreach ([3, 2, 1] as $daysAgo) {
+            Attendance::factory()
+                ->for($employee)
+                ->onDate(now()->subDays($daysAgo)->toDateString())
+                ->absence()
+                ->create();
+        }
+
         Attendance::factory()->for($employee)->onDate(now()->toDateString())->create([
             'status' => Attendance::STATUS_HADIR,
         ]);

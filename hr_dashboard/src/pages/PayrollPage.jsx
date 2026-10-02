@@ -1,7 +1,7 @@
 import { payrollApi } from '../services/api.js'
 import { useAsyncData } from '../hooks/useAsyncData.js'
 import { fixtures } from '../services/fixtures.js'
-import { fmtInt, fmtPercent, fmtRupiah, fmtRupiahCompact } from '../utils/format.js'
+import { fmtInt, fmtRupiah, fmtRupiahCompact } from '../utils/format.js'
 
 import PageHead from '../components/PageHead.jsx'
 import Section from '../components/Section.jsx'
