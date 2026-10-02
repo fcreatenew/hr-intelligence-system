@@ -10,6 +10,7 @@
         </div>
         <span style="flex:1"></span>
         <a href="{{ route('leave-requests.balances') }}" class="btn secondary">Saldo cuti</a>
+        <a href="{{ route('leave-requests.calendar') }}" class="btn secondary">Kalender tim</a>
         @can('create', App\Models\LeaveRequest::class)
             <a href="{{ route('leave-requests.create') }}" class="btn">Ajukan cuti</a>
         @endcan

@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\LeaveCalendarController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\PayrollPeriodController;
 use App\Http\Controllers\ReportController;
@@ -34,6 +35,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('attendances', AttendanceController::class)->except(['show']);
 
     Route::get('leave-requests/balances', [LeaveRequestController::class, 'balances'])->name('leave-requests.balances');
+    Route::get('leave-requests/calendar', [LeaveCalendarController::class, 'index'])->name('leave-requests.calendar');
     Route::post('leave-requests/{leave_request}/approve', [LeaveRequestController::class, 'approve'])->name('leave-requests.approve');
     Route::post('leave-requests/{leave_request}/reject', [LeaveRequestController::class, 'reject'])->name('leave-requests.reject');
     Route::resource('leave-requests', LeaveRequestController::class);
