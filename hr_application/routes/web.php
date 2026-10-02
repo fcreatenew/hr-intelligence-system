@@ -7,6 +7,7 @@ use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\LeaveCalendarController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\PayrollPeriodController;
+use App\Http\Controllers\PayrollSlipController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -43,6 +44,7 @@ Route::middleware('auth')->group(function () {
     Route::post('payroll-periods/{payroll_period}/calculate', [PayrollPeriodController::class, 'calculate'])->name('payroll-periods.calculate');
     Route::post('payroll-periods/{payroll_period}/finalize', [PayrollPeriodController::class, 'finalize'])->name('payroll-periods.finalize');
     Route::get('payroll-periods/{payroll_period}/export', [PayrollPeriodController::class, 'export'])->name('payroll-periods.export');
+    Route::get('payroll-periods/{payroll_period}/items/{item}/slip', [PayrollSlipController::class, 'show'])->name('payroll-periods.slip');
     Route::resource('payroll-periods', PayrollPeriodController::class)->only(['index', 'store', 'show', 'destroy']);
 
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
