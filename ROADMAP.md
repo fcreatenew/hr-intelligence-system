@@ -221,7 +221,8 @@ sehingga Fase 4 lebih banyak soal alur kerja daripada pemodelan data.
 # 10. Fase 6 — Hardening Produksi ⬜
 
 - ✅ CI root (`.github/workflows/ci.yml`) mencakup kelima modul + gate validasi model
-- ⬜ Halaman login + rate limiting
+- ✅ Halaman login
+- ✅ Rate limiting login (5/menit per email+IP) & endpoint admin HR Intelligence (30/menit per pengguna)
 - ⬜ Audit trail menyeluruh
 - ⬜ Backup & retensi data
 - ⬜ Dockerfile untuk `hr_application` & `hr_dashboard`

@@ -4,7 +4,7 @@ use App\Http\Controllers\Admin\HrIntelligenceController;
 use App\Http\Controllers\Admin\TurnoverPredictionController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'can:manage-hr-intelligence'])
+Route::middleware(['auth', 'can:manage-hr-intelligence', 'throttle:admin-api'])
     ->prefix('admin/hr-intelligence')
     ->name('hr-intelligence.')
     ->group(function () {
