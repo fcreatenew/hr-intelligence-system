@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.core.auth import _request_log
-from app.core.config import API_KEY
+from app.core.config import API_KEY, MODEL_VERSION
 from app.main import app
 
 HEADERS = {"X-API-Key": API_KEY}
@@ -118,8 +118,18 @@ def test_batch_response_reports_model_version(client):
     payload = {"employees": [VALID_EMPLOYEE]}
     resp = client.post("/predict/batch", json=payload, headers=HEADERS)
     assert resp.status_code == 200
-    # model_version harus berupa versi artifact (mis. "v2"), bukan nama algoritma.
+    # model_version harus berupa versi artifact, bukan nama algoritma.
     assert resp.json()["model_version"].startswith("v")
+
+
+def test_turnover_default_version_is_mitigated(client):
+    """Default API harus memakai artifact paling adil (v2_mitigated)."""
+    assert MODEL_VERSION == "v2_mitigated"
+
+    resp = client.post("/predict/batch", json={"employees": [VALID_EMPLOYEE]}, headers=HEADERS)
+
+    assert resp.status_code == 200
+    assert resp.json()["model_version"] == "v2_mitigated"
 
 
 def test_rate_limit_eventually_blocks(client, monkeypatch):
