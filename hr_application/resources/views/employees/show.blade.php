@@ -25,6 +25,8 @@
             <dt>Email</dt><dd>{{ $employee->email }}</dd>
             <dt>Telepon</dt><dd>{{ $employee->phone ?: '—' }}</dd>
             <dt>Tanggal masuk</dt><dd>{{ $employee->join_date?->format('d M Y') ?? '—' }}</dd>
+            <dt>Tanggal keluar</dt><dd>{{ $employee->termination_date?->format('d M Y') ?? '—' }}</dd>
+            <dt>Alasan keluar</dt><dd>{{ $employee->termination_reason ?: '—' }}</dd>
             <dt>Masa kerja</dt><dd>{{ $employee->masa_kerja_bulan !== null ? $employee->masa_kerja_bulan.' bulan' : '—' }}</dd>
             <dt>Usia</dt><dd>{{ $employee->usia !== null ? $employee->usia.' tahun' : '—' }}</dd>
             <dt>Status kerja</dt><dd>{{ $employee->status_kerja ?: '—' }}</dd>
@@ -70,6 +72,73 @@
             </tbody>
         </table>
     @endif
+
+    <h2>Riwayat karyawan</h2>
+    @if ($histories->isEmpty())
+        <div class="card muted">Belum ada riwayat perubahan (mutasi, promosi, gaji, status).</div>
+    @else
+        <table>
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Peristiwa</th>
+                    <th>Dari</th>
+                    <th>Menjadi</th>
+                    <th>Oleh</th>
+                    <th>Catatan</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($histories as $history)
+                    <tr>
+                        <td class="muted">{{ $history->created_at?->format('d M Y H:i') }}</td>
+                        <td><strong>{{ $history->label() }}</strong></td>
+                        <td class="muted">{{ $history->old_value ?: '—' }}</td>
+                        <td>{{ $history->new_value ?: '—' }}</td>
+                        <td class="muted">{{ $history->changedBy?->name ?? 'Sistem' }}</td>
+                        <td class="muted">{{ $history->note ?: '—' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
+    @can('update', $employee)
+        @if (! $employee->has_terminated)
+            <h2>Hentikan karyawan</h2>
+            <div class="card">
+                <p style="margin-top:0">
+                    Tandai karyawan ini berhenti kerja. Status menjadi nonaktif dan tanggal
+                    keluar dipakai untuk laporan turnover per periode.
+                </p>
+                <form method="POST" action="{{ route('employees.terminate', $employee) }}">
+                    @csrf
+                    <div class="grid">
+                        <div class="field">
+                            <label for="termination_date">Tanggal keluar</label>
+                            <input id="termination_date" name="termination_date" type="date" value="{{ old('termination_date', now()->toDateString()) }}" required>
+                            @error('termination_date') <div class="error">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="field">
+                            <label for="termination_reason">Alasan</label>
+                            <select id="termination_reason" name="termination_reason" required>
+                                <option value="">— pilih —</option>
+                                @foreach (App\Models\Employee::TERMINATION_REASONS as $reason)
+                                    <option value="{{ $reason }}" @selected(old('termination_reason') === $reason)>{{ $reason }}</option>
+                                @endforeach
+                            </select>
+                            @error('termination_reason') <div class="error">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="field">
+                            <label for="termination_note">Catatan (opsional)</label>
+                            <input id="termination_note" name="termination_note" value="{{ old('termination_note') }}">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn" style="margin-top:12px">Tandai berhenti kerja</button>
+                </form>
+            </div>
+        @endif
+    @endcan
 
     @can('delete', $employee)
         <h2>Hapus</h2>
