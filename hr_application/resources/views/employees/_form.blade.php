@@ -51,6 +51,22 @@
                 <option value="0" @selected((string) $val('status', '1') === '0')>Nonaktif</option>
             </select>
         </div>
+        <div class="field">
+            <label for="termination_date">Tanggal keluar</label>
+            <input id="termination_date" name="termination_date" type="date" value="{{ $dateVal('termination_date') }}">
+            <div class="hint">Isi bila karyawan sudah berhenti; dipakai menghitung turnover per periode.</div>
+            @error('termination_date') <div class="error">{{ $message }}</div> @enderror
+        </div>
+        <div class="field">
+            <label for="termination_reason">Alasan keluar</label>
+            <select id="termination_reason" name="termination_reason">
+                <option value="">—</option>
+                @foreach (App\Models\Employee::TERMINATION_REASONS as $opt)
+                    <option value="{{ $opt }}" @selected($val('termination_reason') === $opt)>{{ $opt }}</option>
+                @endforeach
+            </select>
+            @error('termination_reason') <div class="error">{{ $message }}</div> @enderror
+        </div>
     </div>
 </div>
 

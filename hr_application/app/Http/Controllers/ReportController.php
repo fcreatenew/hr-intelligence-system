@@ -43,7 +43,7 @@ class ReportController extends Controller
             $out = fopen('php://output', 'w');
             fwrite($out, "\xEF\xBB\xBF"); // BOM agar Excel membaca UTF-8 dengan benar
 
-            fputcsv($out, ['Departemen', 'Karyawan', 'Aktif', 'Non-aktif', 'Rasio turnover (%)', 'Total gaji bulanan', 'Rata-rata tidak hadir']);
+            fputcsv($out, ['Departemen', 'Karyawan', 'Aktif', 'Non-aktif', 'Keluar (periode)', 'Rasio turnover (%)', 'Total gaji bulanan', 'Rata-rata tidak hadir']);
 
             foreach ($report['departments'] as $row) {
                 fputcsv($out, [
@@ -51,6 +51,7 @@ class ReportController extends Controller
                     $row['total'],
                     $row['aktif'],
                     $row['non_aktif'],
+                    $row['keluar'],
                     $row['turnover_rate'],
                     $row['total_gaji'],
                     $row['rata_tidak_hadir'],
@@ -58,7 +59,7 @@ class ReportController extends Controller
             }
 
             fputcsv($out, []);
-            fputcsv($out, ['Total', $report['totals']['total'], $report['totals']['aktif'], $report['totals']['non_aktif'], $report['totals']['turnover_rate'], $report['totals']['total_gaji'], '']);
+            fputcsv($out, ['Total', $report['totals']['total'], $report['totals']['aktif'], $report['totals']['non_aktif'], $report['totals']['keluar'], $report['totals']['turnover_rate'], $report['totals']['total_gaji'], '']);
 
             fclose($out);
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
@@ -67,10 +68,11 @@ class ReportController extends Controller
     /**
      * Susun angka laporan dari data HRIS.
      *
-     * Rasio turnover di sini adalah proksi dari karyawan berstatus non-aktif
-     * (`status = false`) dibagi total karyawan per departemen. Tanggal keluar
-     * belum tersimpan di tabel `employees`, sehingga angka ini tidak dapat
-     * dibatasi per periode — dicatat agar pembaca tidak salah tafsir.
+     * Rasio turnover dihitung dari jumlah karyawan yang **keluar dalam rentang
+     * periode** dibagi total karyawan per departemen. Tanggal keluar
+     * (`termination_date`) dipakai bila tersedia; karyawan berstatus non-aktif
+     * tanpa tanggal keluar (data lama) tetap dihitung sebagai keluar agar
+     * laporan tidak kehilangan angka.
      *
      * @return array<string, mixed>
      */
@@ -90,17 +92,28 @@ class ReportController extends Controller
             ->orderBy('department')
             ->get()
             ->groupBy('department')
-            ->map(function ($employees, string $department) use ($absences) {
+            ->map(function ($employees, string $department) use ($absences, $from, $to) {
                 $total = $employees->count();
                 $aktif = $employees->where('status', true)->count();
                 $nonAktif = $total - $aktif;
+
+                $keluar = $employees->filter(function (Employee $employee) use ($from, $to) {
+                    if ($employee->termination_date !== null) {
+                        $tanggal = $employee->termination_date->toDateString();
+
+                        return $tanggal >= $from && $tanggal <= $to;
+                    }
+
+                    return $employee->status === false;
+                })->count();
 
                 return [
                     'department' => $department,
                     'total' => $total,
                     'aktif' => $aktif,
                     'non_aktif' => $nonAktif,
-                    'turnover_rate' => $total > 0 ? round($nonAktif / $total * 100, 1) : 0.0,
+                    'keluar' => $keluar,
+                    'turnover_rate' => $total > 0 ? round($keluar / $total * 100, 1) : 0.0,
                     'total_gaji' => (float) $employees->where('status', true)->sum('gaji_bulanan'),
                     'rata_tidak_hadir' => $total > 0
                         ? round($employees->sum(fn (Employee $e) => (int) ($absences[$e->id] ?? 0)) / $total, 1)
@@ -120,8 +133,9 @@ class ReportController extends Controller
                 'total' => $totalKaryawan,
                 'aktif' => (int) $departments->sum('aktif'),
                 'non_aktif' => (int) $departments->sum('non_aktif'),
+                'keluar' => (int) $departments->sum('keluar'),
                 'turnover_rate' => $totalKaryawan > 0
-                    ? round((int) $departments->sum('non_aktif') / $totalKaryawan * 100, 1)
+                    ? round((int) $departments->sum('keluar') / $totalKaryawan * 100, 1)
                     : 0.0,
                 'total_gaji' => $totalGaji,
             ],

@@ -30,8 +30,8 @@
             </div>
         </div>
         <p class="hint" style="margin-top:10px">
-            Periode hanya memengaruhi kolom ketidakhadiran. Rasio turnover dihitung dari
-            status karyawan saat ini karena tanggal keluar belum tersimpan di data karyawan.
+            Rasio turnover dihitung dari jumlah karyawan yang keluar dalam periode
+            (berdasarkan tanggal keluar), dibagi total karyawan per departemen.
         </p>
     </form>
 
@@ -44,7 +44,7 @@
         <div class="card">
             <div class="muted" style="font-size:12px">Rasio turnover</div>
             <div style="font-size:26px;font-weight:600">{{ $totals['turnover_rate'] }}%</div>
-            <div class="muted" style="font-size:12px">non-aktif / total</div>
+            <div class="muted" style="font-size:12px">{{ $totals['keluar'] }} keluar / total</div>
         </div>
         <div class="card">
             <div class="muted" style="font-size:12px">Total gaji bulanan</div>

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreEmployeeRequest;
+use App\Http\Requests\TerminateEmployeeRequest;
 use App\Http\Requests\UpdateEmployeeRequest;
 use App\Models\Employee;
+use App\Models\EmployeeHistory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -65,7 +67,12 @@ class EmployeeController extends Controller
             ->limit(20)
             ->get();
 
-        return view('employees.show', compact('employee', 'predictions'));
+        $histories = $employee->histories()
+            ->with('changedBy:id,name')
+            ->limit(50)
+            ->get();
+
+        return view('employees.show', compact('employee', 'predictions', 'histories'));
     }
 
     public function edit(Employee $employee): View
@@ -77,11 +84,89 @@ class EmployeeController extends Controller
 
     public function update(UpdateEmployeeRequest $request, Employee $employee): RedirectResponse
     {
+        $before = [
+            'department' => $employee->department,
+            'position' => $employee->position,
+            'gaji_bulanan' => $employee->gaji_bulanan,
+            'status' => (bool) $employee->status,
+        ];
+
         $employee->update($this->payload($request));
+
+        $this->recordMeaningfulChanges($employee, $before);
 
         return redirect()
             ->route('employees.show', $employee)
             ->with('status', "Data \"{$employee->name}\" berhasil diperbarui.");
+    }
+
+    /**
+     * Catat mutasi/promosi/perubahan gaji/status ke linimasa karyawan.
+     *
+     * @param  array<string, mixed>  $before
+     */
+    private function recordMeaningfulChanges(Employee $employee, array $before): void
+    {
+        if ($before['department'] !== $employee->department) {
+            $employee->recordHistory(
+                EmployeeHistory::EVENT_DEPARTMENT,
+                'department',
+                $before['department'],
+                $employee->department,
+            );
+        }
+
+        if ($before['position'] !== $employee->position) {
+            $employee->recordHistory(
+                EmployeeHistory::EVENT_POSITION,
+                'position',
+                $before['position'],
+                $employee->position,
+            );
+        }
+
+        if ((int) $before['gaji_bulanan'] !== (int) $employee->gaji_bulanan) {
+            $employee->recordHistory(
+                EmployeeHistory::EVENT_SALARY,
+                'gaji_bulanan',
+                $before['gaji_bulanan'],
+                $employee->gaji_bulanan,
+            );
+        }
+
+        if ($before['status'] !== (bool) $employee->status) {
+            $employee->recordHistory(
+                EmployeeHistory::EVENT_STATUS,
+                'status',
+                $before['status'] ? 'Aktif' : 'Nonaktif',
+                $employee->status ? 'Aktif' : 'Nonaktif',
+            );
+        }
+    }
+
+    /**
+     * Hentikan karyawan: simpan tanggal & alasan keluar, set status nonaktif,
+     * dan catat ke linimasa.
+     */
+    public function terminate(TerminateEmployeeRequest $request, Employee $employee): RedirectResponse
+    {
+        $employee->update([
+            'termination_date' => $request->date('termination_date'),
+            'termination_reason' => $request->string('termination_reason')->toString(),
+            'status' => false,
+        ]);
+
+        $employee->recordHistory(
+            EmployeeHistory::EVENT_TERMINATED,
+            'termination_date',
+            null,
+            $employee->termination_date?->toDateString(),
+            $request->string('termination_note')->toString() ?: null,
+        );
+
+        return redirect()
+            ->route('employees.show', $employee)
+            ->with('status', "Karyawan \"{$employee->name}\" ditandai berhenti kerja.");
     }
 
     public function destroy(Employee $employee): RedirectResponse

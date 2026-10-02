@@ -23,6 +23,8 @@ class UpdateEmployeeRequest extends StoreEmployeeRequest
         return array_merge(parent::rules(), [
             'nik' => ['required', 'string', 'max:50', Rule::unique('employees', 'nik')->ignore($id)],
             'email' => ['required', 'email', 'max:255', Rule::unique('employees', 'email')->ignore($id)],
+            'termination_date' => ['nullable', 'date', 'before_or_equal:today'],
+            'termination_reason' => ['nullable', Rule::in(Employee::TERMINATION_REASONS)],
         ]);
     }
 }

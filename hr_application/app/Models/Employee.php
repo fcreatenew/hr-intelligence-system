@@ -2,15 +2,26 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\Concerns\RecordsAudit;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Auth;
 
 class Employee extends Model
 {
     use HasFactory;
     use RecordsAudit;
+
+    /** Alasan keluar karyawan (dipakai saat menghentikan karyawan). */
+    public const TERMINATION_REASONS = [
+        'Resign',
+        'Kontrak berakhir',
+        'Pensiun',
+        'PHK',
+        'Meninggal dunia',
+        'Lainnya',
+    ];
 
     protected $fillable = [
         'nik',
@@ -20,6 +31,8 @@ class Employee extends Model
         'department',
         'position',
         'join_date',
+        'termination_date',
+        'termination_reason',
         'status',
         'tanggal_lahir',
         'tanggal_promosi',
@@ -48,6 +61,7 @@ class Employee extends Model
 
     protected $casts = [
         'join_date' => 'date',
+        'termination_date' => 'date',
         'tanggal_lahir' => 'date',
         'tanggal_promosi' => 'date',
         'status' => 'boolean',
@@ -74,6 +88,12 @@ class Employee extends Model
         return $this->join_date
             ? (int) $this->join_date->diffInMonths(now())
             : null;
+    }
+
+    /** Sudah berhenti (punya tanggal keluar) atau masih aktif bekerja. */
+    public function getHasTerminatedAttribute(): bool
+    {
+        return $this->termination_date !== null;
     }
 
     /**
@@ -103,6 +123,27 @@ class Employee extends Model
     public function payrollItems(): HasMany
     {
         return $this->hasMany(PayrollItem::class);
+    }
+
+    public function histories(): HasMany
+    {
+        return $this->hasMany(EmployeeHistory::class)->latest();
+    }
+
+    /**
+     * Catat perubahan bermakna menjadi linimasa terstruktur. Dipanggil dari
+     * controller setiap kali karyawan diubah/dihentikan.
+     */
+    public function recordHistory(string $event, ?string $field = null, mixed $old = null, mixed $new = null, ?string $note = null): EmployeeHistory
+    {
+        return $this->histories()->create([
+            'event' => $event,
+            'field' => $field,
+            'old_value' => $old === null ? null : (string) $old,
+            'new_value' => $new === null ? null : (string) $new,
+            'note' => $note,
+            'changed_by' => Auth::id(),
+        ]);
     }
 
     /**
