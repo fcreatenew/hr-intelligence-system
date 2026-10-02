@@ -1,0 +1,556 @@
+/* ==========================================================================
+   HR Intelligence — Operations Console
+   Arah desain: editorial data broadsheet. Tinta gelap, kertas hangat,
+   tipografi display serif (Fraunces), monospace untuk angka, aksen amber.
+   ========================================================================== */
+
+:root {
+  --ink: #14110d;
+  --ink-2: #1c1814;
+  --ink-3: #262019;
+  --paper: #f4ede1;
+  --paper-dim: #cfc4b2;
+  --amber: #e8a33d;
+  --amber-deep: #c07d1c;
+  --rust: #b4472e;
+  --sage: #7d8f6a;
+  --sky: #5d7f96;
+  --line: rgba(244, 237, 225, 0.14);
+  --line-strong: rgba(244, 237, 225, 0.28);
+
+  --font-display: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  --font-body: 'IBM Plex Sans', 'Helvetica Neue', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --step-0: clamp(0.9rem, 0.85rem + 0.2vw, 1rem);
+  --step-1: clamp(1.1rem, 1rem + 0.5vw, 1.35rem);
+  --step-2: clamp(1.6rem, 1.3rem + 1.4vw, 2.6rem);
+  --step-3: clamp(2.6rem, 1.8rem + 4vw, 5.4rem);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tekstur kertas + vignette: memberi kedalaman, bukan warna solid datar. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image: radial-gradient(
+      circle at 18% -10%,
+      rgba(232, 163, 61, 0.09),
+      transparent 45%
+    ),
+    radial-gradient(circle at 92% 8%, rgba(93, 127, 150, 0.08), transparent 40%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(244, 237, 225, 0.014) 0px,
+      rgba(244, 237, 225, 0.014) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: var(--amber);
+  color: var(--ink);
+}
+
+/* --------------------------------------------------------------- Kerangka */
+
+.shell {
+  position: relative;
+  z-index: 1;
+  min-height: 100%;
+  display: grid;
+  grid-template-columns: 264px 1fr;
+}
+
+.masthead {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  padding: 2.2rem 1.5rem;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  background: linear-gradient(180deg, var(--ink-2), var(--ink));
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.brand__mark {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.75rem;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.brand__mark em {
+  font-style: italic;
+  color: var(--amber);
+}
+
+.brand__rule {
+  height: 3px;
+  width: 52px;
+  background: var(--amber);
+  margin: 0.35rem 0 0.6rem;
+}
+
+.brand__sub {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--paper-dim);
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.nav__link {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  padding: 0.5rem 0.6rem;
+  border-left: 2px solid transparent;
+  color: var(--paper-dim);
+  font-size: 0.92rem;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.nav__link:hover {
+  color: var(--paper);
+  background: rgba(244, 237, 225, 0.04);
+}
+
+.nav__link.is-active {
+  color: var(--paper);
+  border-left-color: var(--amber);
+  background: rgba(232, 163, 61, 0.08);
+}
+
+.nav__num {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--amber-deep);
+}
+
+.masthead__foot {
+  margin-top: auto;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  line-height: 1.7;
+  color: var(--paper-dim);
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 0.45rem;
+  background: var(--paper-dim);
+}
+
+.status-dot.is-live {
+  background: var(--sage);
+  box-shadow: 0 0 0 4px rgba(125, 143, 106, 0.18);
+}
+
+.status-dot.is-down {
+  background: var(--rust);
+}
+
+/* ------------------------------------------------------------------ Isi */
+
+.canvas {
+  padding: 2.6rem 3rem 5rem;
+  max-width: 1280px;
+}
+
+.page-head {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 1.6rem;
+  margin-bottom: 2.4rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 1.5rem;
+}
+
+.page-head__kicker {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 0.7rem;
+}
+
+.page-head__title {
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: var(--step-3);
+  line-height: 0.94;
+  letter-spacing: -0.035em;
+  margin: 0;
+}
+
+.page-head__title strong {
+  font-weight: 900;
+  font-style: italic;
+}
+
+.page-head__note {
+  max-width: 34ch;
+  color: var(--paper-dim);
+  font-size: 0.86rem;
+  text-align: right;
+}
+
+/* --------------------------------------------------------------- Kartu */
+
+.grid {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.grid--kpi {
+  grid-template-columns: repeat(auto-fit, minmax(196px, 1fr));
+}
+
+.grid--split {
+  grid-template-columns: 1.35fr 1fr;
+  align-items: start;
+}
+
+.grid--halves {
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+}
+
+.card {
+  background: linear-gradient(160deg, var(--ink-2), rgba(20, 17, 13, 0.6));
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 1.35rem 1.4rem;
+  position: relative;
+  overflow: hidden;
+  animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+.card--flush {
+  padding: 0;
+}
+
+.card__label {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--paper-dim);
+  margin-bottom: 0.6rem;
+}
+
+.card__value {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--step-2);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.card__hint {
+  margin-top: 0.55rem;
+  font-size: 0.76rem;
+  color: var(--paper-dim);
+}
+
+.card__accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--amber);
+  opacity: 0.75;
+}
+
+.card--rust .card__accent {
+  background: var(--rust);
+}
+.card--sage .card__accent {
+  background: var(--sage);
+}
+.card--sky .card__accent {
+  background: var(--sky);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------------------------- Tabel */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.table th {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--paper-dim);
+  text-align: left;
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--line-strong);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.table tr:hover td {
+  background: rgba(244, 237, 225, 0.03);
+}
+
+.num {
+  font-family: var(--font-mono);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------- Badge */
+
+.badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.16rem 0.5rem;
+  border-radius: 2px;
+  border: 1px solid currentColor;
+}
+
+.badge--low {
+  color: var(--sage);
+}
+.badge--mid {
+  color: var(--amber);
+}
+.badge--high {
+  color: var(--rust);
+}
+
+.bar {
+  height: 6px;
+  background: rgba(244, 237, 225, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bar__fill {
+  height: 100%;
+  background: var(--amber);
+}
+
+/* -------------------------------------------------------------- Bagian */
+
+.section {
+  margin-top: 2.8rem;
+}
+
+.section__head {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.6rem;
+}
+
+.section__index {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--amber-deep);
+}
+
+.section__title {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.section__meta {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--paper-dim);
+}
+
+/* ---------------------------------------------------------------- Utilitas */
+
+.muted {
+  color: var(--paper-dim);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.notice {
+  border: 1px dashed var(--line-strong);
+  border-left: 3px solid var(--amber);
+  padding: 0.85rem 1rem;
+  font-size: 0.82rem;
+  color: var(--paper-dim);
+  background: rgba(232, 163, 61, 0.05);
+}
+
+.notice--error {
+  border-left-color: var(--rust);
+  background: rgba(180, 71, 46, 0.07);
+}
+
+.skeleton {
+  height: 1em;
+  background: linear-gradient(
+    90deg,
+    rgba(244, 237, 225, 0.06),
+    rgba(244, 237, 225, 0.14),
+    rgba(244, 237, 225, 0.06)
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 2px;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.footnote {
+  margin-top: 3rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--paper-dim);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* -------------------------------------------------------------- Responsif */
+
+@media (max-width: 960px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .masthead {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .masthead__foot {
+    margin: 0;
+    border: none;
+    padding: 0;
+  }
+
+  .nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .canvas {
+    padding: 1.8rem 1.2rem 4rem;
+  }
+
+  .page-head {
+    grid-template-columns: 1fr;
+  }
+
+  .page-head__note {
+    text-align: left;
+  }
+
+  .grid--split {
+    grid-template-columns: 1fr;
+  }
+}

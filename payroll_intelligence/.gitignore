@@ -1,0 +1,12 @@
+# Jangan commit kredensial.
+.env
+
+# Artefak Python.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Output analitik.
+reports/output/
