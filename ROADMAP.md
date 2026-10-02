@@ -84,7 +84,7 @@ Fase 0  Fondasi ML + API                 ✅ selesai
 Fase 1  Integrasi HRIS ↔ ML              ✅ selesai
 Fase 2  HRIS inti (Employee Management)  ✅ selesai
 Fase 3  Operasional HR (Attendance/Leave) ✅ selesai
-Fase 4  Payroll run                      ⬜
+Fase 4  Payroll run                      ✅ selesai
 Fase 5  Pelaporan & administrasi         ⬜
 Fase 6  Hardening produksi               ⬜
 ```
@@ -196,16 +196,16 @@ mengalir otomatis menjadi fitur model, bukan diisi manual.
 
 ---
 
-# 8. Fase 4 — Payroll Run ⬜
+# 8. Fase 4 — Payroll Run ✅
 
-- ⬜ Periode payroll + komponen gaji (menggunakan skema yang sudah dipakai model)
-- ⬜ Perhitungan lembur, potongan, total
-- ⬜ Ekspor slip/ringkasan
-- ⬜ Integrasi ke `payroll_intelligence` untuk anomali & forecast
+- ✅ Periode payroll + komponen gaji (tabel `payroll_periods` & `payroll_items`)
+- ✅ Perhitungan lembur, potongan, total (dari absensi, bukan input manual)
+- ✅ Ekspor komponen payroll ke CSV
+- ✅ Integrasi ke `payroll_intelligence` untuk skor anomali
 
-Catatan: tabel `employees` sudah punya kolom payroll (`gaji_pokok`, `tunjangan`,
-`lembur_jam`, `tarif_lembur`, `potongan`, `total_gaji`, `periode`, `level`),
-sehingga Fase 4 lebih banyak soal alur kerja daripada pemodelan data.
+Catatan: hasil perhitungan disimpan per periode (bukan ditulis ulang ke
+`employees`) agar setiap bulan dapat ditelusuri dan dihitung ulang. Rumus total
+gaji identik dengan `payroll_intelligence` dan fitur model anomali payroll.
 
 ---
 
@@ -246,7 +246,7 @@ Daftar ini jujur menyebut hal yang belum beres, agar tidak hilang dari pandangan
 | 7 | Tidak ada audit trail karyawan | Perubahan data tidak tertelusur | Fase 2.1 |
 | 8 | `deep_learning` MLP belum dipakai produksi | Eksperimen saja | Tidak diprioritaskan |
 | 9 | Belum ada impor mesin absensi | Absensi masih diisi manual | Fase 5 |
-| 10 | Lembur belum dihitung dari jam masuk/keluar | `overtime_minutes` masih diisi manual | Fase 4 |
+| 10 | ~~Lembur belum dihitung dari jam masuk/keluar~~ | Sudah dihitung dari `overtime_minutes` absensi per periode | Selesai |
 | 11 | Kalender cuti tim belum ada | HR belum bisa melihat tumpang tindih cuti | Fase 5 |
 | 12 | Daftar nilai kategorikal sempat tidak sinkron | Form menawarkan nilai yang tidak dikenal pipeline, sehingga mapper diam-diam mengubahnya | Selesai — `HrCategories` jadi sumber tunggal |
 

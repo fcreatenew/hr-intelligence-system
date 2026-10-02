@@ -103,6 +103,20 @@ def detect(
         contamination=contamination, threshold=threshold
     ).fit(df)
 
+    return score_with(detector, df, threshold=threshold)
+
+
+def score_with(
+    detector: AnomalyDetector,
+    df: pd.DataFrame,
+    threshold: float = 0.5,
+) -> pd.DataFrame:
+    """Skor baris baru memakai detektor yang sudah dilatih pada data acuan.
+
+    Dipakai agar payroll yang baru dihitung dapat dinilai terhadap distribusi
+    data historis — bukan dinormalisasi terhadap dirinya sendiri, yang akan
+    membuat setiap batch selalu tampak "normal".
+    """
     skor = detector.score(df)
     flags = rule_based_flags(df)
 
