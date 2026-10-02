@@ -11,6 +11,7 @@
         <span style="flex:1"></span>
         <a href="{{ route('attendances.recap') }}" class="btn secondary">Rekap</a>
         @can('create', App\Models\Attendance::class)
+            <a href="{{ route('attendances.import-template') }}" class="btn secondary">Template CSV</a>
             <a href="{{ route('attendances.create') }}" class="btn">Tambah catatan</a>
         @endcan
     </div>
@@ -18,6 +19,36 @@
     @if ($errors->any())
         <div class="alert err" style="margin-top:16px">{{ $errors->first() }}</div>
     @endif
+
+    @if (session('import_skipped'))
+        <div class="alert err" style="margin-top:16px">
+            <strong>Baris yang dilewati:</strong>
+            <ul style="margin:8px 0 0 18px">
+                @foreach (session('import_skipped') as $message)
+                    <li>{{ $message }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
+    @can('create', App\Models\Attendance::class)
+        <details class="card" style="margin:18px 0">
+            <summary style="cursor:pointer;font-weight:600">Impor dari mesin absensi (CSV)</summary>
+            <p class="hint" style="margin-top:10px">
+                Kolom: <code>nik,date,in,out,status</code>. Status opsional; bila kosong diturunkan dari jam masuk.
+                Menit terlambat dan lembur dihitung dari jam masuk/keluar memakai jam kerja di konfigurasi.
+                Baris dengan NIK tak dikenal atau tanggal tidak valid dilewati dan dilaporkan.
+            </p>
+            <form method="POST" action="{{ route('attendances.import') }}" enctype="multipart/form-data">
+                @csrf
+                <div class="field">
+                    <label for="file">Berkas CSV</label>
+                    <input id="file" name="file" type="file" accept=".csv,text/csv" required>
+                </div>
+                <button type="submit" class="btn">Impor</button>
+            </form>
+        </details>
+    @endcan
 
     <form method="GET" action="{{ route('attendances.index') }}" class="card" style="margin:18px 0">
         <div class="grid">
