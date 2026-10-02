@@ -71,7 +71,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.3"
+          php-version: "8.4"
           extensions: mbstring, pdo_sqlite, sqlite3, bcmath
           coverage: none
       - name: Copy environment file
