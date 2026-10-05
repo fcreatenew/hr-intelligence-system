@@ -20,7 +20,7 @@ COPY . .
 RUN composer dump-autoload --optimize --no-dev --no-interaction
 
 
-FROM php:8.3-cli AS runtime
+FROM php:8.4-cli AS runtime
 
 # Ekstensi yang dibutuhkan Laravel + SQLite (default DB_CONNECTION=sqlite).
 RUN apt-get update \
@@ -40,4 +40,7 @@ RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cac
 EXPOSE 8080
 
 # Migrasi dijalankan saat start agar container langsung siap dipakai.
-CMD ["sh", "-c", "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8080"]
+# Scheduler dan queue worker dijalankan di latar belakang supaya prediksi batch
+# terjadwal (routes/console.php) dan RunUseCaseBatchPredictionJob benar-benar
+# tereksekusi, bukan hanya terdaftar. QUEUE_CONNECTION default `database`.
+CMD ["sh", "-c", "php artisan migrate --force && php artisan schedule:work & php artisan queue:work --tries=3 --sleep=3 & php artisan serve --host=0.0.0.0 --port=8080"]

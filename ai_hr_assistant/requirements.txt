@@ -1,16 +1,7 @@
-fastapi>=0.110
-uvicorn>=0.27
-pydantic>=2.6
-httpx>=0.27
-python-dotenv>=1.0
-pytest>=8.0
-
-# Embedding semantik LSA (TF-IDF + SVD) — default.
-scikit-learn>=1.4
-numpy>=1.26
-
-# Opsional: aktifkan bila LLM_PROVIDER=openai
-# openai>=1.30
-
-# Opsional: aktifkan bila EMBEDDING_BACKEND=neural
-# sentence-transformers>=2.7
+# AI HR Assistant — dependensi.
+#
+# Versi kanonik ada di requirements/base.txt (sumber tunggal seluruh modul).
+-r ../requirements/base.txt
+# Embedding default (TF-IDF + SVD) memakai scikit-learn dari base.txt.
+# Opsional: aktifkan bila LLM_PROVIDER=openai -> openai>=1.30
+# Opsional: aktifkan bila EMBEDDING_BACKEND=neural -> sentence-transformers>=2.7

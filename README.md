@@ -273,6 +273,10 @@ hr-intelligence-system/
 │   ├── hr_payroll.csv              # sintetis
 │   └── hr_attrition_survival.csv   # sintetis
 │
+├── requirements/
+│   ├── base.txt                     # sumber tunggal versi dependensi Python
+│   └── README.md
+│
 ├── scripts/
 │   ├── generate_absenteeism_data.py
 │   ├── generate_performance_data.py
@@ -310,7 +314,7 @@ hr-intelligence-system/
 │   ├── README.md
 │   ├── app/
 │   ├── tests/
-│   ├── requirements.txt
+│   ├── requirements.txt             # -r ../requirements/base.txt
 │   └── .env.example
 │
 ├── hr_application/
@@ -362,7 +366,7 @@ diekspos lewat API dan dapat dipanggil dari `hr_application` maupun
 
 | # | Use case | Endpoint | Model | Versi | Metrik utama |
 |---|----------|----------|-------|-------|--------------|
-| 1 | Turnover | `POST /predict` | Soft Voting (ensemble LR + RF) | v2 | ROC-AUC 0,6993 |
+| 1 | Turnover | `POST /predict` | Soft Voting (ensemble LR + RF) | v2_mitigated | ROC-AUC 0,6993 |
 | 2 | Absensi | `POST /predict/absensi` | Logistic Regression | v1 | ROC-AUC 0,8287 |
 | 3 | Kinerja | `POST /predict/kinerja` | Logistic Regression (ordinal) | v1 | macro-F1 0,6357 |
 | 4 | Payroll anomaly | `POST /predict/payroll` | Isolation Forest | v1 | PR-AUC 0,8709 |

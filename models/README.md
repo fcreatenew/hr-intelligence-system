@@ -27,11 +27,11 @@ models/
 │   ├── turnover_model.joblib
 │   └── model_metadata.json
 │
-├── v2/                        # turnover — Soft Voting ensemble (default API)
+├── v2/                        # turnover — Soft Voting ensemble
 │   ├── turnover_model.joblib
 │   └── model_metadata.json
 │
-├── v2_mitigated/              # turnover v2 + reweighting (lebih adil)
+├── v2_mitigated/              # turnover v2 + reweighting (default API, lebih adil)
 │   ├── turnover_model.joblib
 │   └── model_metadata.json
 │
@@ -48,7 +48,7 @@ models/
 
 Semua artifact di atas **dilayani oleh `hr_intelligence_api`**: turnover
 (v1/v2/v2_mitigated), absensi, kinerja, anomali payroll, dan survival. Pilih versi
-turnover lewat env `MODEL_VERSION` (default `v2`).
+turnover lewat env `MODEL_VERSION` (default `v2_mitigated`).
 
 ---
 
@@ -260,7 +260,8 @@ ROC-AUC 95% confidence interval pada holdout test:
 Threshold model:
 
 ```text
-0,33
+0,33   (v1 dan v2)
+0,31   (v2_mitigated — default API)
 ```
 
 Threshold dipilih berdasarkan prediksi out-of-fold pada data training.
@@ -527,9 +528,9 @@ models/<MODEL_VERSION>/
 
 API tidak mengubah model artifact.
 
-Versi model yang dilayani dipilih lewat env `MODEL_VERSION` (default **`v2`**).
-Untuk rollback, set `MODEL_VERSION=v1` tanpa mengubah kode. Bisa juga
-meng-override path langsung lewat `MODEL_PATH` / `METADATA_PATH`.
+Versi model yang dilayani dipilih lewat env `MODEL_VERSION`
+(default **`v2_mitigated`**). Untuk rollback, set `MODEL_VERSION=v1` tanpa
+mengubah kode.
 
 ---
 

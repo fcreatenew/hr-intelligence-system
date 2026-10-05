@@ -1,4 +1,7 @@
-numpy>=1.26
-pandas>=2.2
-python-dotenv>=1.0
-pytest>=8.0
+# Deep Learning — dependensi.
+#
+# Versi kanonik ada di requirements/base.txt (sumber tunggal seluruh modul).
+-r ../requirements/base.txt
+# fastapi & uvicorn sebelumnya tidak dicantumkan padahal dipakai src/api.py,
+# sehingga `pip install -r requirements.txt` tidak cukup untuk menjalankan API.
+# Keduanya kini ikut dari base.txt.
