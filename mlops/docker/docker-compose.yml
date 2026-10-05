@@ -1,15 +1,18 @@
 name: hr-intelligence
 
+# Catatan: file ini berada di mlops/docker/, sehingga konteks build harus
+# menunjuk ke root repository (dua level di atas) agar `COPY models/` dan
+# `COPY mlops/...` pada Dockerfile dapat ditemukan.
 services:
   hr-intelligence-api:
     build:
-      context: ..
+      context: ../..
       dockerfile: mlops/docker/hr-api/Dockerfile
     ports:
       - "8000:8000"
     environment:
       HR_API_KEY: ${HR_API_KEY:-dev-secret}
-      MODEL_VERSION: ${MODEL_VERSION:-v2}
+      MODEL_VERSION: ${MODEL_VERSION:-v2_mitigated}
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8000/health')"]
       interval: 15s
@@ -18,7 +21,7 @@ services:
 
   mlops:
     build:
-      context: ..
+      context: ../..
       dockerfile: mlops/docker/api/Dockerfile
     ports:
       - "8200:8200"

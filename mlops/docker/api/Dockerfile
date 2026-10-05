@@ -1,12 +1,15 @@
-FROM python:3.12-slim
+FROM python:3.13-slim
 
 WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-COPY mlops/requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# requirements.txt memakai `-r ../requirements/base.txt`; base ikut disalin
+# dengan struktur relatif yang sama.
+COPY requirements/ ./requirements/
+COPY mlops/requirements.txt ./mlops/requirements.txt
+RUN pip install --no-cache-dir -r mlops/requirements.txt
 
 # Model dan metadata dibutuhkan registry & validasi.
 COPY models/ ./models/

@@ -392,10 +392,10 @@ cd mlops
 
 Komponen MLOps dapat dijalankan sesuai kebutuhan masing-masing.
 
-Contoh menjalankan Docker Compose:
+Contoh menjalankan Docker Compose (file ada di `mlops/docker/`):
 
 ```bash
-docker compose up --build
+docker compose -f docker/docker-compose.yml up --build
 ```
 
 Pipeline CI/CD dijalankan melalui konfigurasi pada:
