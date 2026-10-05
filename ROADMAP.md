@@ -89,8 +89,9 @@ Fase 1  Integrasi HRIS ↔ ML              ✅ selesai
 Fase 2  HRIS inti (Employee Management)  ✅ selesai
 Fase 3  Operasional HR (Attendance/Leave) ✅ selesai
 Fase 4  Payroll run                      ✅ selesai
-Fase 5  Pelaporan & administrasi         ⬜
-Fase 6  Hardening produksi               ⬜
+Fase 5  Pelaporan & administrasi         🔶 sebagian
+Fase 6  Hardening produksi               🔶 sebagian
+Fase 7  Modul proses bisnis HR           ⬜ rencana
 ```
 
 ---
@@ -241,6 +242,35 @@ ketidakhadiran.
 
 ---
 
+# 10b. Fase 7 — Modul Proses Bisnis HR ⬜
+
+Fase ini melengkapi `hr_application` dari "HRIS inti" menjadi HRIS yang
+mencakup **siklus karyawan end-to-end** (hire-to-retire). Semua modul bersifat
+aditif di atas fondasi yang ada (route + policy + migrasi + test) dan mengikuti
+konvensi modul saat ini. Rincian tiap modul ada di
+[`hr_application/README.md`](./hr_application/README.md).
+
+| # | Modul | Isi utama | Menyambung ke ML | Status |
+|---|---|---|---|---|
+| 1 | Recruitment / ATS | Lowongan, kandidat, jadwal interview, offer | Resume screening & person-job fit (#9) | ⬜ |
+| 2 | Onboarding / Offboarding | Checklist onboarding, aset, exit interview | Turnover & survival (#1, #2) | 🔶 sebagian |
+| 3 | Performance Management | Goal/OKR, siklus review, appraisal | Prediksi kinerja & HiPo (#4, #5) | ⬜ |
+| 4 | Training & Development | Katalog pelatihan, enrollment, sertifikasi | Job/training recommendation (#10) | ⬜ |
+| 5 | Compensation & Benefits | Tunjangan, BPJS, PPh21, THR | Payroll anomaly & forecasting (#6, #7) | ⬜ |
+| 6 | Time & Attendance lanjutan | Shift, persetujuan lembur, akrual cuti otomatis | Absensi (#3) | 🔶 sebagian |
+| 7 | Employee Self-Service | Portal peran `employee`: ajukan cuti, lihat slip | — | ⬜ |
+| 8 | Document Management | Kontrak, e-sign, retensi dokumen | — | ⬜ |
+| 9 | Compliance & Statutory Reporting | Laporan BPJS/PPh21 & regulasi ketenagakerjaan | — | ⬜ |
+
+**Kriteria selesai Fase 7:** staf HR dapat menjalankan seluruh siklus karyawan
+(rekrutmen → onboarding → kinerja → pengembangan → kompensasi → offboarding)
+tanpa menyentuh database langsung, dan data yang dihasilkan mengalir menjadi
+fitur model lewat API.
+
+Nomor use case (#9, #10, dst.) mengacu ke katalog di [`USE_CASES.md`](./USE_CASES.md).
+
+---
+
 # 11. Utang Teknis yang Diketahui
 
 Daftar ini jujur menyebut hal yang belum beres, agar tidak hilang dari pandangan.
@@ -252,10 +282,10 @@ Daftar ini jujur menyebut hal yang belum beres, agar tidak hilang dari pandangan
 | 3 | ~~`v2_mitigated` belum jadi default~~ | Sudah jadi default `MODEL_VERSION` | Selesai |
 | 4 | Audit fairness masih in-sample | Belum dapat dijadikan dasar keputusan | Fase 6 |
 | 5 | ~~Belum ada Dockerfile/CI `hr_application`~~ | Sudah ada CI + Dockerfile + `docker-compose.yml` | Selesai |
-| 6 | Halaman prediksi ML masih JSON | Belum ramah pengguna non-teknis | Fase 5 |
+| 6 | ~~Halaman prediksi ML masih JSON~~ | Sudah ada halaman HTML `/admin/hr-intelligence` | Selesai |
 | 7 | ~~Tidak ada audit trail karyawan~~ | Jejak audit otomatis untuk karyawan, absensi, cuti, payroll | Selesai |
 | 8 | `deep_learning` MLP belum dipakai produksi | Eksperimen saja | Tidak diprioritaskan |
-| 9 | Belum ada impor mesin absensi | Absensi masih diisi manual | Fase 5 |
+| 9 | ~~Belum ada impor mesin absensi~~ | Sudah ada impor CSV (`/attendances/import`) | Selesai |
 | 10 | ~~Lembur belum dihitung dari jam masuk/keluar~~ | Sudah dihitung dari `overtime_minutes` absensi per periode | Selesai |
 | 11 | ~~Kalender cuti tim belum ada~~ | Grid bulanan menampilkan cuti disetujui & tumpang tindih | Selesai |
 | 12 | Daftar nilai kategorikal sempat tidak sinkron | Form menawarkan nilai yang tidak dikenal pipeline, sehingga mapper diam-diam mengubahnya | Selesai — `HrCategories` jadi sumber tunggal |

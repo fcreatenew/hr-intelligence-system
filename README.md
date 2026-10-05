@@ -84,10 +84,12 @@ Setiap komponen memiliki source code, dependency, testing, dan dokumentasi masin
 ## `hr_application/`
 
 Aplikasi HRIS (Human Resource Information System) berbasis **Laravel / PHP**.
+Aplikasi bisnis untuk staf HR sekaligus konsumen layanan ML
+(`hr_intelligence_api` dan `payroll_intelligence`).
 
-> **Status: HRIS inti sudah berjalan.** Employee Management, Attendance, dan
-> Leave sudah dapat dipakai staf HR; Payroll dan Reporting menyusul — lihat
-> [`ROADMAP.md`](./ROADMAP.md) untuk urutannya.
+> **Status: HRIS inti sudah berjalan.** Siklus karyawan inti — Employee
+> Management, Employee History, Attendance, Leave, Payroll, Reporting, Audit
+> Trail, dan Manajemen Pengguna — sudah dapat dipakai staf HR.
 
 Sudah berjalan:
 
@@ -95,18 +97,33 @@ Sudah berjalan:
 * Pemetaan record karyawan → input model (`EmployeeFeatureMapper`)
 * Prediksi batch terjadwal (bulanan/mingguan/kuartalan)
 * Penyimpanan & penelusuran hasil prediksi
-* Login/logout dengan peran `admin` dan `hr-manager`
-* **Employee Management** — CRUD, pencarian, filter, paginasi, riwayat prediksi
-* **Attendance** — pencatatan harian + rekap per periode
-* **Leave** — pengajuan, persetujuan, dan saldo cuti
+* Autentikasi, profil, reset kata sandi, peran `admin` & `hr-manager`
+* **Employee Management** — CRUD, pencarian, filter, paginasi, terminasi
+* **Employee History** — linimasa mutasi/jabatan/gaji/status
+* **Attendance** — pencatatan harian, rekap periode, impor CSV mesin absensi
+* **Leave** — pengajuan, persetujuan, saldo cuti, kalender tim
+* **Payroll** — periode, perhitungan dari absensi, finalisasi, slip, ekspor
+* **Reporting** — headcount, turnover, biaya per departemen + ekspor CSV
+* **Audit Trail** & **Manajemen Pengguna**
 * Fitur absensi model dihitung dari data absensi, bukan diisi manual
 
-Rencana modul proses bisnis HR:
+Rencana modul proses bisnis HR (melengkapi siklus karyawan end-to-end):
 
-* Payroll
-* Employee History
-* HR Administration
-* Reporting
+| # | Modul | Menyambung ke ML |
+|---|---|---|
+| 1 | Recruitment / ATS | Resume screening & person-job fit |
+| 2 | Onboarding / Offboarding | Turnover & survival |
+| 3 | Performance Management | Prediksi kinerja & HiPo |
+| 4 | Training & Development | Rekomendasi pelatihan |
+| 5 | Compensation & Benefits | Anomali & forecasting payroll |
+| 6 | Time & Attendance lanjutan | Prediksi absensi |
+| 7 | Employee Self-Service | — |
+| 8 | Document Management | — |
+| 9 | Compliance & Statutory Reporting | — |
+
+Detail tiap modul, rumus payroll, dan jadwal prediksi ada di
+[`hr_application/README.md`](./hr_application/README.md); urutan fase & kriteria
+selesai di [`ROADMAP.md`](./ROADMAP.md).
 
 **Teknologi:** Laravel / PHP
 
