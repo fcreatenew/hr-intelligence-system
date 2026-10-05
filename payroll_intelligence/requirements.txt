@@ -1,9 +1,8 @@
-fastapi>=0.110
-uvicorn>=0.27
-pydantic>=2.6
-pandas>=2.2
-numpy>=1.26
-scikit-learn>=1.4
-httpx>=0.27
-python-dotenv>=1.0
-pytest>=8.0
+# Payroll Intelligence — dependensi.
+#
+# Versi kanonik ada di requirements/base.txt (sumber tunggal seluruh modul).
+
+-r ../requirements/base.txt
+
+# Forecasting Holt-Winters (statsmodels). Kompatibel dengan pandas==2.3.3.
+statsmodels==0.15.0

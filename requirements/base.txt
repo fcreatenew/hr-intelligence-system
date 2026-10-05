@@ -1,0 +1,30 @@
+# Sumber tunggal versi dependensi Python untuk seluruh modul.
+#
+# Semua modul (hr_intelligence_api, ai_hr_assistant, payroll_intelligence,
+# mlops, deep_learning) memakai pin yang sama dari file ini lewat `-r`.
+# Tujuannya: satu versi scikit-learn/numpy/pandas/fastapi di semua modul,
+# sehingga CI, Docker, dan dev tidak lagi berbeda versi.
+#
+# Cara menaikkan versi: ubah HANYA di file ini, lalu jalankan test seluruh
+# modul (lihat CONTRIBUTE.md). Jangan menulis versi berbeda di
+# <modul>/requirements.txt.
+
+# --- Web framework ---------------------------------------------------------
+fastapi==0.141.1
+uvicorn==0.54.0
+pydantic==2.13.5
+
+# --- Komputasi data & ML ---------------------------------------------------
+numpy==2.5.3
+pandas==2.3.3
+scikit-learn==1.9.1
+scipy==1.18.1
+joblib==1.6.0
+
+# --- HTTP client & konfigurasi --------------------------------------------
+httpx==0.28.1
+python-dotenv==1.2.3
+
+# --- Testing ---------------------------------------------------------------
+# CI memasang pytest terpisah; pin di sini agar dev & CI sama.
+pytest>=8.0

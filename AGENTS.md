@@ -88,12 +88,16 @@ cd hr_intelligence_api && MODEL_VERSION=v1 python -m uvicorn app.main:app
 - **Node CI = 24.** `jsdom` 30 menarik `undici` 8.x yang memakai
   `worker_threads.markAsUncloneable` (Node >= 22.19). Di Node 20, Vitest crash
   dengan `webidl.util.markAsUncloneable is not a function`.
-- **`pandas` di `hr_intelligence_api/requirements.txt` harus `<3.0`** (dipakai
-  2.3.3). `lifelines==0.30.3` (model survival CoxPH) mensyaratkan
-  `pandas<3.0`; menaikkan pandas ke 3.x membuat `pip install` mustahil.
-- **`requirements.txt` = hasil freeze, tanpa pytest.** Job CI memasang pytest
-  terpisah. Jangan tambah pin baru sembarangan; kalau memang perlu, verifikasi
-  dengan `pip install --dry-run -r requirements.txt` di venv bersih.
+- **Satu sumber versi Python: `requirements/base.txt`.** Semua
+  `<modul>/requirements.txt` memakai `-r ../requirements/base.txt` dan hanya
+  menambah dependensi khusus modul. Jangan menulis pin versi berbeda per modul
+  (mis. scikit-learn) — inilah yang dulu menyebabkan drift.
+- **`pandas` di `requirements/base.txt` harus `<3.0`** (dipakai 2.3.3).
+  `lifelines==0.30.3` (model survival CoxPH) mensyaratkan `pandas<3.0`.
+- **Verifikasi perubahan dependensi** dengan
+  `pip install --dry-run -r <modul>/requirements.txt` di venv bersih, lalu
+  jalankan test seluruh modul. `requirements.txt` bukan lagi hasil freeze;
+  `pytest` ikut ter-pin di `base.txt` (CI memasangnya terpisah).
 - **`hr_dashboard` lint** memakai ESLint 9 flat config (`eslint.config.js`).
   ESLint 9 tidak membaca `.eslintrc`, dan flag `--ext` sudah dihapus.
 

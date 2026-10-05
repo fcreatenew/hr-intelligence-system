@@ -13,11 +13,13 @@
 services:
   hr-api:
     build:
-      context: ./hr_intelligence_api
-      dockerfile: Dockerfile
+      # Konteks root karena Dockerfile ikut menyalin requirements/base.txt.
+      context: .
+      dockerfile: hr_intelligence_api/Dockerfile
     environment:
       HR_API_KEY: ${HR_API_KEY:-}
-      MODEL_VERSION: ${MODEL_VERSION:-v2}
+      # Default v2_mitigated = versi turnover paling adil (sesuai kode).
+      MODEL_VERSION: ${MODEL_VERSION:-v2_mitigated}
     ports:
       - "8000:8000"
     volumes:
@@ -26,8 +28,8 @@ services:
 
   payroll-api:
     build:
-      context: ./payroll_intelligence
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: payroll_intelligence/Dockerfile
     ports:
       - "8300:8300"
     volumes:
@@ -55,15 +57,19 @@ services:
     build:
       context: ./hr_dashboard
       dockerfile: Dockerfile
+      args:
+        # Mode `live` agar dashboard memanggil API lewat proxy nginx.
+        VITE_DATA_MODE: live
     ports:
       - "8081:80"
     depends_on:
       - hr-api
+      - payroll-api
 
   assistant:
     build:
-      context: ./ai_hr_assistant
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ai_hr_assistant/Dockerfile
     environment:
       HR_INTELLIGENCE_BASE_URL: http://hr-api:8000
       HR_INTELLIGENCE_API_KEY: ${HR_API_KEY:-}

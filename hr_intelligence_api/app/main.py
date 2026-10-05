@@ -6,7 +6,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.api.router import api_router
-from app.core.config import APP_DESCRIPTION, APP_TITLE, APP_VERSION
+from app.core.config import (
+    APP_DESCRIPTION,
+    APP_TITLE,
+    APP_VERSION,
+    ENABLE_DOCS,
+)
 from app.core.exceptions import register_exception_handlers
 from app.core.logging import setup_logging
 from app.core.middleware import register_middlewares
@@ -37,6 +42,9 @@ app = FastAPI(
     description=APP_DESCRIPTION,
     version=APP_VERSION,
     lifespan=lifespan,
+    docs_url="/docs" if ENABLE_DOCS else None,
+    redoc_url="/redoc" if ENABLE_DOCS else None,
+    openapi_url="/openapi.json" if ENABLE_DOCS else None,
 )
 
 register_middlewares(app)

@@ -1,0 +1,22 @@
+# Konteks build root (dipakai hr_intelligence_api, payroll_intelligence,
+# ai_hr_assistant, dan mlops/docker). Mengecilkan context dan mencegah bocornya
+# file lokal ke image.
+#
+# Folder yang tetap disertakan: requirements/, hr_intelligence_api/,
+# payroll_intelligence/, ai_hr_assistant/, mlops/, models/, data/ — semuanya
+# disalin oleh salah satu Dockerfile dengan konteks root.
+.git
+.github
+**/__pycache__
+**/*.pyc
+**/.venv
+**/venv
+**/node_modules
+**/dist
+**/.pytest_cache
+**/*.log
+**/.env
+notebooks
+deep_learning
+hr_dashboard
+hr_application
