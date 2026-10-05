@@ -91,25 +91,6 @@ def use_case_paths(use_case: str) -> tuple[Path, Path]:
     return directory / cfg["model_file"], directory / cfg["metadata_file"]
 
 
-DEFAULT_MODEL_PATH = MODELS_DIR / MODEL_VERSION / "turnover_model.joblib"
-DEFAULT_METADATA_PATH = MODELS_DIR / MODEL_VERSION / "model_metadata.json"
-
-
-MODEL_PATH = Path(
-    os.getenv(
-        "MODEL_PATH",
-        DEFAULT_MODEL_PATH,
-    )
-)
-
-METADATA_PATH = Path(
-    os.getenv(
-        "METADATA_PATH",
-        DEFAULT_METADATA_PATH,
-    )
-)
-
-
 API_KEY = os.getenv(
     "HR_API_KEY",
 )
@@ -135,3 +116,18 @@ LOG_LEVEL = os.getenv(
     "LOG_LEVEL",
     "INFO",
 )
+
+# Docs interaktif (Swagger/ReDoc/OpenAPI) nonaktif secara default agar skema
+# tidak terbuka tanpa kunci. Aktifkan eksplisit untuk lokal: ENABLE_DOCS=true.
+ENABLE_DOCS = os.getenv(
+    "ENABLE_DOCS",
+    "false",
+).strip().lower() in {"1", "true", "yes", "on"}
+
+# Origin browser yang boleh mengakses API. Kosong = CORS nonaktif (default),
+# karena dashboard di dev memakai proxy Vite dan tidak butuh CORS.
+CORS_ALLOW_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("CORS_ALLOW_ORIGINS", "").split(",")
+    if origin.strip()
+]

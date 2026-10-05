@@ -7,6 +7,10 @@ Employee Turnover Prediction, plus model tambahan (absensi) dan audit keadilan.
 - Split: 75% train / 25% test (stratified, `random_state = 42`)
 - Threshold: 0,33 (dipilih dari prediksi out-of-fold, bukan dari test set)
 
+> **Status default API saat ini:** `MODEL_VERSION=v2_mitigated` (v2 + reweighting,
+> threshold 0,31). Dokumen ini mencatat hasil v1/v2 sekaligus mitigasi; angka
+> v1/v2 di bawah tetap berlaku untuk perbandingan.
+
 ---
 
 ## 1. Ringkasan Eksekutif
@@ -20,7 +24,9 @@ Employee Turnover Prediction, plus model tambahan (absensi) dan audit keadilan.
 | F1 | 0,538 | **0,5581** |
 | Brier | — | 0,2029 |
 | Threshold | 0,33 | 0,33 |
-| Status API | tersedia | **default** |
+| Status API | tersedia (rollback) | tersedia (rollback) |
+
+> Default API = `v2_mitigated` (v2 + reweighting), bukan v1/v2. Lihat bagian 7.
 
 **Kesimpulan singkat:** v2 menang tipis pada ROC-AUC/F1, tetapi **selisihnya
 tidak signifikan** (lihat bagian 3) dan v2 **lebih buruk pada keadilan**
@@ -144,7 +150,7 @@ Impact ratio per atribut yang dimitigasi (reweighting):
 
 **Kesimpulan:** reweighting memperbaiki dua atribut yang paling tidak setara
 dengan biaya AUC OOF hanya ~0,03. Model termitigasi ada di `models/v2_mitigated/`
-(belum dijadikan default API).
+dan **sudah menjadi default API** (`MODEL_VERSION=v2_mitigated`).
 
 ---
 
@@ -230,10 +236,12 @@ jupyter notebook notebooks/04_payroll_anomaly_detection.ipynb  # anomali payroll
 jupyter notebook notebooks/06_survival_attrition.ipynb         # survival
 ```
 
-Versi model yang dilayani API diatur lewat env `MODEL_VERSION` (default `v2`):
+Versi model yang dilayani API diatur lewat env `MODEL_VERSION`
+(default `v2_mitigated`):
 
 ```bash
 cd hr_intelligence_api
+MODEL_VERSION=v2 python -m uvicorn app.main:app   # bandingkan dengan v2
 MODEL_VERSION=v1 python -m uvicorn app.main:app   # rollback ke v1
 ```
 
