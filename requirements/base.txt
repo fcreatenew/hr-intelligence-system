@@ -5,12 +5,16 @@
 # Tujuannya: satu versi scikit-learn/numpy/pandas/fastapi di semua modul,
 # sehingga CI, Docker, dan dev tidak lagi berbeda versi.
 #
+# Runtime yang didukung: **Python 3.14** (lihat .python-version, CI, dan
+# Dockerfile tiap modul). Seluruh pin di bawah sudah punya wheel cp314 atau
+# murni `py3-none-any`, jadi tidak perlu kompilasi dari sumber.
+#
 # Cara menaikkan versi: ubah HANYA di file ini, lalu jalankan test seluruh
 # modul (lihat CONTRIBUTE.md). Jangan menulis versi berbeda di
 # <modul>/requirements.txt.
 
 # --- Web framework ---------------------------------------------------------
-fastapi==0.141.1
+fastapi==0.142.2
 uvicorn==0.54.0
 pydantic==2.13.5
 
@@ -23,7 +27,7 @@ joblib==1.6.0
 
 # --- HTTP client & konfigurasi --------------------------------------------
 httpx==0.28.1
-python-dotenv==1.2.3
+python-dotenv==1.2.4
 
 # --- Testing ---------------------------------------------------------------
 # CI memasang pytest terpisah; pin di sini agar dev & CI sama.

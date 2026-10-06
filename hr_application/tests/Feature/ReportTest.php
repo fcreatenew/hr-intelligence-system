@@ -143,4 +143,62 @@ class ReportTest extends TestCase
             ->assertOk()
             ->assertSee('IT');
     }
+
+    public function test_export_pdf_returns_pdf_document(): void
+    {
+        Employee::factory()->create([
+            'department' => 'IT',
+            'status' => true,
+            'gaji_bulanan' => 7_500_000,
+        ]);
+
+        $response = $this->actingAs($this->admin())
+            ->get(route('reports.export-pdf', ['from' => '2026-05-01', 'to' => '2026-05-31']));
+
+        $response->assertOk();
+        $this->assertSame('application/pdf', $response->headers->get('content-type'));
+        $this->assertStringContainsString(
+            'attachment; filename="laporan-hr-2026-05-01-2026-05-31.pdf"',
+            $response->headers->get('content-disposition')
+        );
+
+        $body = $response->getContent();
+        $this->assertStringStartsWith('%PDF-1.4', $body);
+        $this->assertStringEndsWith("%%EOF\n", $body);
+        $this->assertStringContainsString('Laporan HR', $body);
+        $this->assertStringContainsString('IT', $body);
+        // Xref harus menunjuk offset yang benar agar PDF valid.
+        $this->assertMatchesRegularExpression('/startxref\s+\d+\s+%%EOF/', $body);
+    }
+
+    public function test_export_pdf_is_forbidden_for_guest(): void
+    {
+        $this->get(route('reports.export-pdf'))->assertRedirect(route('login'));
+    }
+
+    public function test_pdf_writer_supports_multiple_pages(): void
+    {
+        $pdf = new \App\Support\Pdf\SimplePdfWriter;
+        $pdf->text('Halaman satu', 40, 800);
+        $pdf->newPage();
+        $pdf->text('Halaman dua', 40, 800);
+
+        $this->assertSame(2, $pdf->pageCount());
+
+        $out = $pdf->output();
+        $this->assertStringContainsString('/Count 2', $out);
+        $this->assertStringContainsString('Halaman satu', $out);
+        $this->assertStringContainsString('Halaman dua', $out);
+    }
+
+    public function test_pdf_writer_escapes_special_characters(): void
+    {
+        $pdf = new \App\Support\Pdf\SimplePdfWriter;
+        $pdf->text('Biaya (Rp) 50% \\ tunjangan', 40, 800);
+
+        $out = $pdf->output();
+
+        $this->assertStringContainsString('\\(Rp\\)', $out);
+        $this->assertStringContainsString('\\\\', $out);
+    }
 }

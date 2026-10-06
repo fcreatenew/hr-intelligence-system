@@ -9,6 +9,8 @@ from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel, Field
 
 from src.config import (
+    ALERT_TIMEOUT,
+    ALERT_WEBHOOK_URL,
     DATA_DIR,
     DRIFT_CRITICAL,
     DRIFT_WARNING,
@@ -18,13 +20,18 @@ from src.config import (
 )
 from src.lifecycle import (
     LifecycleError,
+    PerformanceMonitorConfig,
     active_version_info,
     list_versions,
     promote,
     rollback,
+    run_performance_monitor,
     run_retraining,
 )
+from src.monitoring.fairness import FairnessConfig, run_fairness_audit
+from src.monitoring.feedback import FeedbackStore
 from src.lifecycle.retraining import RetrainingConfig
+from src.monitoring.alerting import AlertDispatcher, build_alert_sender
 from src.monitoring.drift_monitor import DriftMonitor
 from src.monitoring.metrics import MetricsCollector
 from src.registry.model_registry import ModelRegistry
@@ -185,6 +192,44 @@ async def drift_alerts() -> dict:
     }
 
 
+@app.post("/monitoring/check-drift", tags=["monitoring"])
+async def check_drift(payload: DriftCheckRequest | None = None) -> dict:
+    """Evaluasi drift data produksi vs data training dan kirim alert bila perlu.
+
+    Dipakai oleh penjadwal (cron) sebagai pemeriksaan berkala. Alert dikirim ke
+    webhook bila `ALERT_WEBHOOK_URL` diisi; jika tidak, hanya dicatat sebagai
+    metrik.
+    """
+    payload = payload or DriftCheckRequest()
+
+    from src.config import DATA_DIR
+    from src.lifecycle.retraining import RetrainingConfig, reference_features
+
+    config = RetrainingConfig(data_file=payload.data)
+    referensi = reference_features(config, DATA_DIR)
+
+    if payload.current:
+        current_path = Path(payload.current)
+        if not current_path.exists():
+            raise HTTPException(
+                status_code=400,
+                detail=f"Data produksi tidak ditemukan: {current_path}",
+            )
+        current = pd.read_csv(current_path)
+    else:
+        current = pd.read_csv(DATA_DIR / payload.data)
+
+    report = drift_monitor.evaluate("turnover", referensi, current)
+
+    dispatcher = AlertDispatcher(
+        sender=build_alert_sender(payload.webhook or ALERT_WEBHOOK_URL, ALERT_TIMEOUT),
+        collector=metrics,
+    )
+    pengiriman = dispatcher.dispatch(report)
+
+    return {"drift": report.to_dict(), "alert": pengiriman}
+
+
 # ---------------------------------------------------------------------------
 # Siklus hidup model: versi aktif, promosi, rollback, retraining otomatis.
 # ---------------------------------------------------------------------------
@@ -199,6 +244,18 @@ class RollbackRequest(BaseModel):
     reason: str = "rollback manual"
 
 
+class FeedbackEntryRequest(BaseModel):
+    prediction: dict = Field(..., description="Fitur mentah + skor/probabilitas prediksi")
+    actual: dict = Field(..., description="Label sebenarnya, mis. {'target_turnover': 1}")
+    use_case: str = "turnover"
+    version: str | None = None
+
+
+class FeedbackExportRequest(BaseModel):
+    destination: str = Field(..., description="Path CSV tujuan ekspor")
+    use_case: str = "turnover"
+
+
 class RetrainRequest(BaseModel):
     current: str | None = Field(
         None,
@@ -208,6 +265,35 @@ class RetrainRequest(BaseModel):
     seed: int = 42
     force: bool = False
     min_delta: float = 0.0
+
+
+class DriftCheckRequest(BaseModel):
+    current: str | None = Field(
+        None,
+        description="Path CSV data produksi untuk deteksi drift (opsional).",
+    )
+    data: str = "hr_turnover.csv"
+    webhook: str | None = Field(
+        None,
+        description="URL webhook alert; default dari env ALERT_WEBHOOK_URL.",
+    )
+
+
+class PerformanceCheckRequest(BaseModel):
+    current: str = Field(
+        ...,
+        description="Path CSV umpan balik berlabel (kolom skor + label_aktual).",
+    )
+    tolerance: float = 0.05
+    min_samples: int = 30
+
+
+class FairnessAuditRequest(BaseModel):
+    version: str | None = Field(None, description="Versi turnover; default versi aktif.")
+    data: str = "hr_turnover.csv"
+    threshold: float | None = None
+    min_group_size: int = 20
+    impact_ratio: float = 0.8
 
 
 @app.get("/lifecycle/{use_case}", tags=["lifecycle"])
@@ -275,3 +361,114 @@ async def retraining_run(payload: RetrainRequest) -> dict:
         return run_retraining(config, current=current, collector=metrics)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/monitoring/performance", tags=["monitoring"])
+async def performance_check(payload: PerformanceCheckRequest) -> dict:
+    """Evaluasi performa produksi dan rollback otomatis bila turun.
+
+    `current` harus CSV umpan balik berlabel dengan kolom `skor` dan
+    `label_aktual`. Bila performa (ROC AUC) turun melebihi `tolerance`
+    dibanding metrik holdout versi aktif, versi sebelumnya dipin kembali.
+    """
+    current_path = Path(payload.current)
+    if not current_path.exists():
+        raise HTTPException(
+            status_code=400,
+            detail=f"Data umpan balik tidak ditemukan: {current_path}",
+        )
+
+    try:
+        current = pd.read_csv(current_path)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=400, detail=f"Gagal membaca CSV: {exc}") from exc
+
+    config = PerformanceMonitorConfig(
+        tolerance=payload.tolerance,
+        min_samples=payload.min_samples,
+    )
+
+    return run_performance_monitor(current, config=config, collector=metrics)
+
+
+@app.post("/monitoring/fairness", tags=["monitoring"])
+async def fairness_audit(payload: FairnessAuditRequest) -> dict:
+    """Audit fairness model turnover per atribut pelindung.
+
+    Menghitung demographic parity difference, impact ratio (four-fifths),
+    equal opportunity difference, dan equalized odds difference untuk atribut
+    usia/departemen/status kerja/pendidikan. Mengembalikan `ringkasan.lolos`
+    beserta daftar pelanggaran.
+    """
+    config = FairnessConfig(
+        version=payload.version,
+        data_file=payload.data,
+        threshold=payload.threshold,
+        min_group_size=payload.min_group_size,
+        impact_ratio_threshold=payload.impact_ratio,
+    )
+
+    try:
+        return run_fairness_audit(config)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except KeyError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
+# Umpan balik produksi (prediksi + label sebenarnya)
+# ---------------------------------------------------------------------------
+
+feedback_store = FeedbackStore()
+
+
+@app.post("/feedback", tags=["monitoring"])
+async def record_feedback(payload: FeedbackEntryRequest) -> dict:
+    """Simpan pasangan prediksi–label sebenarnya untuk monitoring performa.
+
+    Dipakai sistem HR / job ETL untuk mengirim label aktual (mis. karyawan
+    benar-benar keluar) agar `run_performance_monitor` punya data.
+    """
+    try:
+        entry = feedback_store.record(
+            payload.prediction,
+            payload.actual,
+            use_case=payload.use_case,
+            version=payload.version,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {"tersimpan": True, "total": len(feedback_store.entries(payload.use_case)), "entri": entry}
+
+
+@app.get("/feedback", tags=["monitoring"])
+async def feedback_summary(use_case: str = "turnover") -> dict:
+    """Ringkasan umpan balik tersimpan untuk sebuah use case."""
+    entries = feedback_store.entries(use_case)
+    df = feedback_store.to_dataframe(use_case)
+
+    return {
+        "use_case": use_case,
+        "total": len(entries),
+        "kolom": list(df.columns),
+        "siap_dievaluasi": len(df) > 0,
+    }
+
+
+@app.post("/feedback/export", tags=["monitoring"])
+async def feedback_export(payload: FeedbackExportRequest) -> dict:
+    """Ekspor umpan balik ke CSV agar bisa dipakai monitoring performa/drift."""
+    destination = Path(payload.destination)
+    df = feedback_store.to_dataframe(payload.use_case)
+
+    if df.empty:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Tidak ada umpan balik untuk use case '{payload.use_case}'.",
+        )
+
+    feedback_store.export_csv(destination, payload.use_case)
+
+    return {"diekspor": str(destination), "baris": len(df), "kolom": list(df.columns)}

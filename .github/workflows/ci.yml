@@ -16,11 +16,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
           cache: pip
           cache-dependency-path: |
             requirements/base.txt
             hr_intelligence_api/requirements.txt
+      - name: Assert Python 3.14
+        run: python -c "import sys; assert sys.version_info[:2] == (3, 14), sys.version"
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
@@ -39,11 +41,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
           cache: pip
           cache-dependency-path: |
             requirements/base.txt
             ${{ matrix.module }}/requirements.txt
+      - name: Assert Python 3.14
+        run: python -c "import sys; assert sys.version_info[:2] == (3, 14), sys.version"
       - name: Install dependencies
         working-directory: ${{ matrix.module }}
         run: pip install -r requirements.txt
@@ -59,20 +63,28 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
           cache: pip
           cache-dependency-path: |
             requirements/base.txt
             mlops/requirements.txt
+      - name: Assert Python 3.14
+        run: python -c "import sys; assert sys.version_info[:2] == (3, 14), sys.version"
       - name: Install MLOps dependencies
         working-directory: mlops
         run: pip install -r requirements.txt
       - name: Validate registered models
         working-directory: mlops
         run: python -m src.cli
+      - name: Validate raw dataset (data intake)
+        working-directory: mlops
+        run: python -m src.cli validate-data hr_turnover.csv
       - name: Train turnover (reproducible) and validate
         working-directory: mlops
         run: python -m src.train --version v_ci --seed 42
+      - name: Fairness regression gate
+        working-directory: mlops
+        run: python -m src.cli fairness-gate
 
   hr-application:
     name: hr_application (php artisan test)

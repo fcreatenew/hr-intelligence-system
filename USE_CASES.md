@@ -67,6 +67,13 @@ Tindak lanjut `08_bias_mitigation_turnover.ipynb`: **reweighting** menaikkan
 impact ratio `status_kerja` 0,47→0,82 dan `pendidikan` 0,48→0,83 (2/4 atribut
 lolos four-fifths) dengan penurunan AUC OOF yang kecil (0,697→0,669).
 
+Audit yang sama kini juga tersedia sebagai modul yang dapat dijalankan berkala
+dan diuji: `mlops/src/monitoring/fairness.py`
+(`python -m src.cli fairness`, `POST /monitoring/fairness`). Modul ini menghitung
+metrik fairness dari model **versi aktif** (bukan hanya v1/v2), menandai
+pelanggaran four-fifths, dan mengembalikan `ringkasan.lolos` untuk dipakai gate
+CI. Notebook tetap menjadi tempat analisis eksploratif.
+
 ---
 
 # 1. Employee Turnover Prediction

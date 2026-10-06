@@ -27,3 +27,14 @@ Schedule::command('hr-intelligence:predict', ['kinerja'])
 Schedule::command('hr-intelligence:predict', ['survival'])
     ->monthlyOn(1, '05:00')
     ->withoutOverlapping();
+
+// Backup harian + retensi data operasional. Backup hanya menulis ke disk
+// aplikasi; pemindahan ke penyimpanan luar dilakukan terpisah (lihat
+// BACKUP_DISK, mis. disk S3).
+Schedule::command('db:backup')
+    ->dailyAt('01:30')
+    ->withoutOverlapping();
+
+Schedule::command('hr:prune')
+    ->dailyAt('02:30')
+    ->withoutOverlapping();

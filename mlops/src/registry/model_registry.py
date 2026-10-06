@@ -4,18 +4,37 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from src.config import MODELS_DIR
+from src.config import (
+    DEFAULT_MODEL_LOCATIONS,
+    MODELS_DIR,
+    read_pinned_version,
+    resolve_turnover_version,
+)
 
 
-# Peta use case -> direktori model. Turnover punya beberapa versi di
+# Peta use case -> direktori model default. Turnover punya beberapa versi di
 # models/v1, models/v2, models/v2_mitigated; use case lain di subdirektori.
-MODEL_LOCATIONS: dict[str, str] = {
-    "turnover": "v2",
-    "absensi": "absenteeism/v1",
-    "kinerja": "performance/v1",
-    "payroll": "payroll_anomaly/v1",
-    "survival": "survival_attrition/v1",
-}
+# Versi **aktif** ditentukan `models/active_version.json` (lihat
+# `resolve_version`), bukan nilai di peta ini.
+MODEL_LOCATIONS: dict[str, str] = dict(DEFAULT_MODEL_LOCATIONS)
+
+
+def resolve_version(use_case: str, models_dir: Path = MODELS_DIR) -> str:
+    """Path artifact aktif untuk sebuah use case.
+
+    Urutan: pin `active_version.json` → default dari `MODEL_LOCATIONS`.
+    Semua use case memakai mekanisme yang sama, sehingga promote/rollback
+    berlaku seragam.
+    """
+    pinned = read_pinned_version(models_dir, use_case)
+
+    if pinned:
+        return pinned
+
+    if use_case == "turnover":
+        return resolve_turnover_version(models_dir)
+
+    return MODEL_LOCATIONS.get(use_case, "")
 
 
 @dataclass
@@ -81,6 +100,13 @@ class ModelRegistry:
         return dict(MODEL_LOCATIONS)
 
     def list_versions(self, use_case: str) -> list[str]:
+        """Versi yang tersedia (nama direktori versi) untuk sebuah use case.
+
+        Turnover: direktori `v*` langsung di bawah `models/`. Use case lain:
+        direktori `v*` di bawah folder induknya (mis. `performance/v1`,
+        `performance/v2`) yang punya metadata. Nama yang dikembalikan adalah
+        nama versi saja (`v1`, `v2`) agar seragam.
+        """
         base = self._models_dir
         found: list[str] = []
 
@@ -90,19 +116,43 @@ class ModelRegistry:
                     found.append(candidate.name)
         else:
             prefix = MODEL_LOCATIONS.get(use_case, "")
-            if prefix and (base / prefix / "model_metadata.json").exists():
+            parent = Path(prefix).parent if prefix else Path(".")
+            if parent != Path("."):
+                for candidate in sorted((base / parent).glob("v*")):
+                    if (candidate / "model_metadata.json").exists():
+                        found.append(candidate.name)
+            elif prefix and (base / prefix / "model_metadata.json").exists():
                 found.append(Path(prefix).name)
 
         return found
+
+    def normalize_version(self, use_case: str, versi: str) -> str:
+        """Ubah nama versi menjadi path relatif di bawah `models/`.
+
+        Menerima path relatif penuh (`performance/v2`) atau nama versi saja
+        (`v2`). Nama versi saja diprefiks folder induk use case non-turnover.
+        """
+        if "/" in versi:
+            return versi
+
+        if use_case == "turnover":
+            return versi
+
+        prefix = MODEL_LOCATIONS.get(use_case, "")
+        parent = Path(prefix).parent if prefix else Path(".")
+
+        return str(parent / versi) if parent != Path(".") else versi
 
     def get(self, use_case: str, versi: str | None = None) -> ModelRecord:
         if use_case not in MODEL_LOCATIONS:
             raise KeyError(f"Use case tidak dikenal: '{use_case}'.")
 
-        if use_case == "turnover":
-            relative = versi or MODEL_LOCATIONS[use_case]
+        if versi:
+            relative = self.normalize_version(use_case, versi)
         else:
-            relative = MODEL_LOCATIONS[use_case]
+            # Versi aktif dibaca dari pin (sumber kebenaran tunggal), lalu
+            # fallback ke default per use case.
+            relative = resolve_version(use_case, self._models_dir)
 
         path = self._models_dir / relative
 
