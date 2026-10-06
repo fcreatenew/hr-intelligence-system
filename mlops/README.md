@@ -114,6 +114,38 @@ GET /monitoring/drift/alerts
 
 ---
 
+## Audit Fairness
+
+Model turnover dipakai untuk keputusan ketenagakerjaan, sehingga termasuk
+**high-risk AI** (EU AI Act Annex III; NYC Local Law 144; UU PDP 27/2022).
+Audit bias yang sebelumnya hanya ada di
+`notebooks/05_fairness_audit_turnover.ipynb` kini dipindahkan ke
+`src/monitoring/fairness.py` agar dapat diuji dan dijalankan berkala.
+
+```bash
+python -m src.cli fairness                 # audit versi aktif; exit 1 bila ada pelanggaran
+python -m src.cli fairness --version v2 --min-group-size 30
+```
+
+Atau lewat API: `POST /monitoring/fairness`.
+
+Yang dihitung per atribut (`usia` dipecah per rentang, `departemen`,
+`status_kerja`, `pendidikan`):
+
+| Metrik | Arti | Ideal |
+|---|---|---|
+| demographic parity difference | selisih selection rate antar kelompok | mendekati 0 |
+| impact ratio (four-fifths) | min/max selection rate | >= 0,80 |
+| equal opportunity difference | selisih TPR antar kelompok | mendekati 0 |
+| equalized odds difference | maks(selisih TPR, selisih FPR) | mendekati 0 |
+
+Kelompok dengan sampel di bawah `min_group_size` (default 20) tidak dipakai
+untuk menghitung disparitas agar satu kelompok mungil tidak mendikte
+kesimpulan. Dataset ini **tidak** memuat atribut gender/etnis; keterbatasan itu
+dilaporkan di `ringkasan.catatan`.
+
+---
+
 ## Data Drift
 
 Mendeteksi perubahan distribusi data.
@@ -199,6 +231,32 @@ python -m src.cli retrain --force --min-delta 0.01
 ```
 
 Atau lewat API MLOps: `POST /retraining/run`.
+
+### Penjadwalan retraining
+
+Crontab container (`mlops/docker/cron/crontab`) menjalankan tiga tugas harian:
+`monitor` (01:00), `retrain` (02:30), dan `validate` (03:00). Jalankan lewat
+`docker compose` (service `mlops-cron`) atau terapkan CronJob Kubernetes:
+
+```bash
+kubectl apply -f mlops/docker/k8s/cronjobs.yaml
+```
+
+### Rollback berbasis performa produksi
+
+Retraining bereaksi terhadap drift **input**. Untuk menangkap penurunan
+performa **output**, `src/lifecycle/performance.py` mengevaluasi ROC AUC pada
+data umpan balik berlabel (kolom `skor` dan `label_aktual`). Bila turun
+melebihi `tolerance` dibanding metrik holdout versi aktif, versi sebelumnya
+dipin kembali otomatis:
+
+```bash
+python -m src.cli performance --current ../data/feedback_turnover.csv
+python -m src.cli performance --current ../data/feedback_turnover.csv --tolerance 0.03
+```
+
+Atau lewat API: `POST /monitoring/performance`. Bila belum ada pin (tidak ada
+versi sebelumnya), hasilnya `turun_tanpa_pin` dan tidak mengubah apa pun.
 
 ## Siklus Hidup Versi (Promosi & Rollback)
 

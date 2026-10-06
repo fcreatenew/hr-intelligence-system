@@ -62,6 +62,7 @@
                     <a href="{{ route('attendances.index') }}">Absensi</a>
                     <a href="{{ route('leave-requests.index') }}">Cuti</a>
                     <a href="{{ route('leave-requests.calendar') }}">Kalender Cuti</a>
+                    <a href="{{ route('trainings.index') }}">Pelatihan</a>
                     <a href="{{ route('payroll-periods.index') }}">Payroll</a>
                     <a href="{{ route('reports.index') }}">Laporan</a>
                     <a href="{{ route('hr-intelligence.dashboard') }}">Prediksi ML</a>

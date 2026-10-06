@@ -12,6 +12,7 @@ use App\Policies\EmployeePolicy;
 use App\Policies\LeaveRequestPolicy;
 use App\Policies\PayrollPeriodPolicy;
 use App\Policies\UserPolicy;
+use App\Services\DatabaseBackupService;
 use App\Services\PayrollCalculationService;
 use App\Services\PayrollIntelligenceService;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -41,6 +42,15 @@ class AppServiceProvider extends ServiceProvider
                 baseUrl: $baseUrl,
                 timeoutSeconds: (int) config('payroll.timeout', 10),
                 enabled: $baseUrl !== '',
+            );
+        });
+
+        $this->app->singleton(DatabaseBackupService::class, function () {
+            return new DatabaseBackupService(
+                disk: (string) config('backup.disk', 'local'),
+                directory: (string) config('backup.directory', 'backups'),
+                keep: (int) config('backup.keep', 14),
+                timeout: (int) config('backup.timeout', 300),
             );
         });
     }

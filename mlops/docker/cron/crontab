@@ -1,0 +1,18 @@
+# Penjadwalan tugas siklus hidup model HR Intelligence.
+#
+# Semua perintah dijalankan dari /app/mlops (lihat docker/api/Dockerfile).
+# Waktu memakai zona container; set TZ pada service bila perlu.
+#
+# Format: menit jam hari-bulan bulan hari-minggu perintah
+
+# Pemeriksaan drift harian + kirim alert ke webhook (ALERT_WEBHOOK_URL).
+# Bila tidak ada data produksi baru, evaluasi memakai dataset training
+# (tidak ada drift) sehingga aman dijalankan tiap hari.
+0 1 * * * cd /app/mlops && python -m src.cli monitor >> /var/log/mlops/cron.log 2>&1
+
+# Retraining berbasis drift. Hanya melatih ulang bila drift terdeteksi;
+# kandidat tetap harus lolos gate dan menyamai incumbent agar dipromosikan.
+30 2 * * * cd /app/mlops && python -m src.cli retrain >> /var/log/mlops/cron.log 2>&1
+
+# Validasi seluruh model sebagai jaring pengaman (gate deploy).
+0 3 * * * cd /app/mlops && python -m src.cli validate >> /var/log/mlops/cron.log 2>&1

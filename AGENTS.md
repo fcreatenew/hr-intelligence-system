@@ -44,7 +44,12 @@ cd ai_hr_assistant && uvicorn src.main:app --port 8100   # butuh HR Intelligence
   kelima model dan **exit 1 bila ada yang gagal** (dipakai di CI).
   `python -m src.cli versions|promote vN|rollback` mengelola versi aktif
   (`models/active_version.json`); `python -m src.cli retrain [--current CSV]`
-  menjalankan drift → latih → gate → promosi/rollback. `python -m src.train
+  menjalankan drift → latih → gate → promosi/rollback; `python -m src.cli
+  monitor` mengirim alert webhook (`ALERT_WEBHOOK_URL`) bila drift terdeteksi;
+  `python -m src.cli performance --current CSV` mengevaluasi ROC AUC produksi
+  dan rollback otomatis bila turun melewati toleransi
+  (`src/lifecycle/performance.py`). Penjadwalan: `docker/cron/` +
+  `docker/k8s/cronjobs.yaml`. `python -m src.train
   --version vN` melatih turnover dari `data/` lalu langsung menjalankan gate yang
   sama. Model registry membaca `models/<dir>/model_metadata.json`;
   metrik diambil dari `metrik_holdout_test`/`metrik_evaluasi`/`metrik`, atau root
