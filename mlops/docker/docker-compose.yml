@@ -23,6 +23,7 @@ services:
     build:
       context: ../..
       dockerfile: mlops/docker/api/Dockerfile
+    image: hr-intelligence-mlops:latest
     ports:
       - "8200:8200"
     environment:
@@ -31,3 +32,18 @@ services:
     depends_on:
       hr-intelligence-api:
         condition: service_healthy
+
+  # Penjadwal: drift monitor harian, retraining berbasis drift, gate validasi.
+  # Memakai image MLOps yang sama agar artifact model & src identik.
+  mlops-cron:
+    build:
+      context: ../..
+      dockerfile: mlops/docker/cron/Dockerfile
+    image: hr-intelligence-mlops-cron:latest
+    environment:
+      HR_INTELLIGENCE_BASE_URL: http://hr-intelligence-api:8000
+      HR_INTELLIGENCE_API_KEY: ${HR_API_KEY:-dev-secret}
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}
+    depends_on:
+      mlops:
+        condition: service_started

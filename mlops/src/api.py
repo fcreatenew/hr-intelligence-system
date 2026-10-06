@@ -1,18 +1,36 @@
 from __future__ import annotations
 
 import time
+from pathlib import Path
 
 import httpx
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Response
+from pydantic import BaseModel, Field
 
 from src.config import (
+    ALERT_TIMEOUT,
+    ALERT_WEBHOOK_URL,
+    DATA_DIR,
     DRIFT_CRITICAL,
     DRIFT_WARNING,
     HR_INTELLIGENCE_API_KEY,
     HR_INTELLIGENCE_BASE_URL,
     HR_INTELLIGENCE_TIMEOUT,
 )
+from src.lifecycle import (
+    LifecycleError,
+    PerformanceMonitorConfig,
+    active_version_info,
+    list_versions,
+    promote,
+    rollback,
+    run_performance_monitor,
+    run_retraining,
+)
+from src.monitoring.fairness import FairnessConfig, run_fairness_audit
+from src.lifecycle.retraining import RetrainingConfig
+from src.monitoring.alerting import AlertDispatcher, build_alert_sender
 from src.monitoring.drift_monitor import DriftMonitor
 from src.monitoring.metrics import MetricsCollector
 from src.registry.model_registry import ModelRegistry
@@ -171,3 +189,215 @@ async def drift_alerts() -> dict:
         "jumlah": len(alerts),
         "alerts": [report.to_dict() for report in alerts],
     }
+
+
+@app.post("/monitoring/check-drift", tags=["monitoring"])
+async def check_drift(payload: DriftCheckRequest | None = None) -> dict:
+    """Evaluasi drift data produksi vs data training dan kirim alert bila perlu.
+
+    Dipakai oleh penjadwal (cron) sebagai pemeriksaan berkala. Alert dikirim ke
+    webhook bila `ALERT_WEBHOOK_URL` diisi; jika tidak, hanya dicatat sebagai
+    metrik.
+    """
+    payload = payload or DriftCheckRequest()
+
+    from src.config import DATA_DIR
+    from src.lifecycle.retraining import RetrainingConfig, reference_features
+
+    config = RetrainingConfig(data_file=payload.data)
+    referensi = reference_features(config, DATA_DIR)
+
+    if payload.current:
+        current_path = Path(payload.current)
+        if not current_path.exists():
+            raise HTTPException(
+                status_code=400,
+                detail=f"Data produksi tidak ditemukan: {current_path}",
+            )
+        current = pd.read_csv(current_path)
+    else:
+        current = pd.read_csv(DATA_DIR / payload.data)
+
+    report = drift_monitor.evaluate("turnover", referensi, current)
+
+    dispatcher = AlertDispatcher(
+        sender=build_alert_sender(payload.webhook or ALERT_WEBHOOK_URL, ALERT_TIMEOUT),
+        collector=metrics,
+    )
+    pengiriman = dispatcher.dispatch(report)
+
+    return {"drift": report.to_dict(), "alert": pengiriman}
+
+
+# ---------------------------------------------------------------------------
+# Siklus hidup model: versi aktif, promosi, rollback, retraining otomatis.
+# ---------------------------------------------------------------------------
+
+
+class PromoteRequest(BaseModel):
+    version: str = Field(..., description="Versi tujuan, mis. v2_mitigated")
+    reason: str = "promosi manual"
+
+
+class RollbackRequest(BaseModel):
+    reason: str = "rollback manual"
+
+
+class RetrainRequest(BaseModel):
+    current: str | None = Field(
+        None,
+        description="Path CSV data produksi untuk deteksi drift (opsional).",
+    )
+    data: str = "hr_turnover.csv"
+    seed: int = 42
+    force: bool = False
+    min_delta: float = 0.0
+
+
+class DriftCheckRequest(BaseModel):
+    current: str | None = Field(
+        None,
+        description="Path CSV data produksi untuk deteksi drift (opsional).",
+    )
+    data: str = "hr_turnover.csv"
+    webhook: str | None = Field(
+        None,
+        description="URL webhook alert; default dari env ALERT_WEBHOOK_URL.",
+    )
+
+
+class PerformanceCheckRequest(BaseModel):
+    current: str = Field(
+        ...,
+        description="Path CSV umpan balik berlabel (kolom skor + label_aktual).",
+    )
+    tolerance: float = 0.05
+    min_samples: int = 30
+
+
+class FairnessAuditRequest(BaseModel):
+    version: str | None = Field(None, description="Versi turnover; default versi aktif.")
+    data: str = "hr_turnover.csv"
+    threshold: float | None = None
+    min_group_size: int = 20
+    impact_ratio: float = 0.8
+
+
+@app.get("/lifecycle/{use_case}", tags=["lifecycle"])
+async def lifecycle_status(use_case: str = "turnover") -> dict:
+    """Versi aktif, versi tersedia, dan metrik versi aktif."""
+    try:
+        versi = list_versions(use_case)
+    except LifecycleError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "use_case": use_case,
+        "tersedia": versi,
+        **active_version_info(use_case),
+    }
+
+
+@app.post("/lifecycle/{use_case}/promote", tags=["lifecycle"])
+async def lifecycle_promote(use_case: str, payload: PromoteRequest) -> dict:
+    """Pin satu versi sebagai versi aktif (setelah artifact divalidasi ada)."""
+    try:
+        return promote(payload.version, use_case, reason=payload.reason)
+    except LifecycleError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/lifecycle/{use_case}/rollback", tags=["lifecycle"])
+async def lifecycle_rollback(use_case: str, payload: RollbackRequest) -> dict:
+    """Kembalikan versi aktif ke versi sebelumnya."""
+    try:
+        return rollback(use_case, reason=payload.reason)
+    except LifecycleError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/retraining/run", tags=["lifecycle"])
+async def retraining_run(payload: RetrainRequest) -> dict:
+    """Jalankan siklus retraining berbasis drift untuk turnover.
+
+    Bila `current` diisi, drift dihitung terhadap dataset training. Bila tidak,
+    data training dipakai sebagai pembanding (tidak ada drift kecuali `force`).
+    """
+    if payload.current:
+        current_path = Path(payload.current)
+        if not current_path.exists():
+            raise HTTPException(
+                status_code=400,
+                detail=f"Data produksi tidak ditemukan: {current_path}",
+            )
+        try:
+            current = pd.read_csv(current_path)
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(status_code=400, detail=f"Gagal membaca CSV: {exc}") from exc
+    else:
+        current = pd.read_csv(DATA_DIR / payload.data)
+
+    config = RetrainingConfig(
+        seed=payload.seed,
+        data_file=payload.data,
+        force=payload.force,
+        min_metric_delta=payload.min_delta,
+    )
+
+    try:
+        return run_retraining(config, current=current, collector=metrics)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/monitoring/performance", tags=["monitoring"])
+async def performance_check(payload: PerformanceCheckRequest) -> dict:
+    """Evaluasi performa produksi dan rollback otomatis bila turun.
+
+    `current` harus CSV umpan balik berlabel dengan kolom `skor` dan
+    `label_aktual`. Bila performa (ROC AUC) turun melebihi `tolerance`
+    dibanding metrik holdout versi aktif, versi sebelumnya dipin kembali.
+    """
+    current_path = Path(payload.current)
+    if not current_path.exists():
+        raise HTTPException(
+            status_code=400,
+            detail=f"Data umpan balik tidak ditemukan: {current_path}",
+        )
+
+    try:
+        current = pd.read_csv(current_path)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=400, detail=f"Gagal membaca CSV: {exc}") from exc
+
+    config = PerformanceMonitorConfig(
+        tolerance=payload.tolerance,
+        min_samples=payload.min_samples,
+    )
+
+    return run_performance_monitor(current, config=config, collector=metrics)
+
+
+@app.post("/monitoring/fairness", tags=["monitoring"])
+async def fairness_audit(payload: FairnessAuditRequest) -> dict:
+    """Audit fairness model turnover per atribut pelindung.
+
+    Menghitung demographic parity difference, impact ratio (four-fifths),
+    equal opportunity difference, dan equalized odds difference untuk atribut
+    usia/departemen/status kerja/pendidikan. Mengembalikan `ringkasan.lolos`
+    beserta daftar pelanggaran.
+    """
+    config = FairnessConfig(
+        version=payload.version,
+        data_file=payload.data,
+        threshold=payload.threshold,
+        min_group_size=payload.min_group_size,
+        impact_ratio_threshold=payload.impact_ratio,
+    )
+
+    try:
+        return run_fairness_audit(config)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except KeyError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc

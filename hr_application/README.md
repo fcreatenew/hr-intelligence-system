@@ -178,9 +178,36 @@ layanan analitik.
 |---|---|
 | `GET /reports` | Laporan headcount, turnover, dan biaya per departemen |
 | `GET /reports/export` | Ekspor rekap ke CSV (streaming, hemat memori) |
+| `GET /reports/export-pdf` | Ekspor rekap ke PDF (tanpa dependensi composer) |
 
 Rasio turnover dihitung dari karyawan yang keluar dalam rentang periode
 (memakai `termination_date` bila ada) dibagi total karyawan per departemen.
+
+### Training & Development
+
+Katalog pelatihan beserta pendaftaran karyawan dan hasilnya.
+
+| Route | Fungsi |
+|---|---|
+| `GET /trainings` | Daftar pelatihan (filter status & kategori) |
+| `GET /trainings/create` | Form pelatihan baru |
+| `POST /trainings` | Simpan pelatihan |
+| `GET /trainings/{training}` | Detail pelatihan + peserta |
+| `PUT /trainings/{training}` | Perbarui pelatihan |
+| `DELETE /trainings/{training}` | Hapus pelatihan (admin) |
+| `POST /trainings/{training}/participants` | Daftarkan satu/beberapa karyawan |
+| `PUT /participants/{participant}` | Catat hasil (status, skor, sertifikat) |
+| `DELETE /participants/{participant}` | Hapus partisipan |
+
+Status pelatihan: `draft` → `berjalan` → `selesai` (atau `dibatalkan`). Kuota
+ditegakkan saat pendaftaran; karyawan yang sudah terdaftar dilewati agar
+pendaftaran massal tetap jalan. Satu karyawan hanya boleh terdaftar sekali per
+pelatihan (dijaga unique index).
+
+**Integrasi ML:** setiap kali hasil partisipan disimpan atau partisipan dihapus,
+`App\Services\TrainingService` menghitung ulang `jumlah_training_setahun`
+karyawan dari partisipasi **berjalan/selesai** pada tahun berjalan. Kolom itu
+kini tidak lagi diisi manual di form karyawan.
 
 ### Audit Trail
 
@@ -190,10 +217,12 @@ Semua perubahan pada karyawan, absensi, cuti, dan payroll tercatat otomatis di
 
 ### Fitur ML dihitung dari data, bukan diisi manual
 
-`riwayat_absen_90hari` dan `hari_absen_setahun` sebelumnya adalah kolom yang
-diisi manual di form karyawan. Sekarang keduanya dihitung dari tabel
-`attendances` oleh `App\Services\AttendanceMetricsService`, sehingga tidak bisa
-basi atau salah isi. Form karyawan hanya menampilkan nilainya sebagai keterangan.
+`riwayat_absen_90hari`, `hari_absen_setahun`, dan `jumlah_training_setahun`
+sebelumnya adalah kolom yang diisi manual di form karyawan. Sekarang
+`riwayat_absen_90hari`/`hari_absen_setahun` dihitung dari tabel `attendances`
+oleh `App\Services\AttendanceMetricsService`, dan `jumlah_training_setahun`
+dihitung dari tabel `training_participants` oleh `App\Services\TrainingService`.
+Form karyawan hanya menampilkan nilainya sebagai keterangan.
 
 Definisinya: jumlah hari **izin + sakit + alpha** dalam 90 hari (atau 365 hari)
 terakhir. **Cuti tidak dihitung** karena sudah direncanakan dan disetujui —
@@ -270,7 +299,7 @@ mengikuti konvensi modul saat ini.
 | 1 | **Recruitment / ATS** | Lowongan, kandidat, jadwal interview, offer | Resume screening & person-job fit (`USE_CASES.md` #9) | ⬜ rencana |
 | 2 | **Onboarding / Offboarding** | Checklist onboarding, aset, exit interview | Turnover & survival (#1, #2) | 🔶 sebagian (`terminate` sudah ada) |
 | 3 | **Performance Management** | Goal/OKR, siklus review, appraisal | Prediksi kinerja & HiPo (#4, #5) | ⬜ rencana |
-| 4 | **Training & Development** | Katalog pelatihan, enrollment, sertifikasi | Job/training recommendation (#10) | ⬜ rencana |
+| 4 | **Training & Development** | Katalog pelatihan, enrollment, sertifikasi | Job/training recommendation (#10) | 🔶 sebagian (katalog + enrollment + sertifikasi; rekomendasi belum) |
 | 5 | **Compensation & Benefits** | Tunjangan, BPJS, PPh21, THR | Payroll anomaly & forecasting (#6, #7) | ⬜ rencana |
 | 6 | **Time & Attendance lanjutan** | Shift, persetujuan lembur, akrual cuti otomatis | Absensi (#3) | 🔶 sebagian (impor & rekap sudah ada) |
 | 7 | **Employee Self-Service** | Portal peran `employee`: ajukan cuti, lihat slip | — | ⬜ rencana |

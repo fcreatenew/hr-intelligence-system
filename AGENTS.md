@@ -38,10 +38,23 @@ cd ai_hr_assistant && uvicorn src.main:app --port 8100   # butuh HR Intelligence
   forecasting (statsmodels). `cd payroll_intelligence && python -m pytest tests/ -q`;
   API di port 8300.
 - **`mlops/`** — registry, validasi model (gate deploy), drift PSI, metrics,
-  dan training reproducible (`python -m src.train`).
-  `cd mlops && python -m src.cli` memvalidasi kelima model dan **exit 1 bila ada
-  yang gagal** (dipakai di CI). `python -m src.train --version vN` melatih
-  turnover dari `data/` lalu langsung menjalankan gate yang sama. Model registry membaca `models/<dir>/model_metadata.json`;
+  training reproducible (`python -m src.train`), dan siklus hidup model
+  (`src/lifecycle/`): promosi/rollback + retraining otomatis berbasis drift.
+  `cd mlops && python -m src.cli` (subcommand default `validate`) memvalidasi
+  kelima model dan **exit 1 bila ada yang gagal** (dipakai di CI).
+  `python -m src.cli versions|promote vN|rollback` mengelola versi aktif
+  (`models/active_version.json`); `python -m src.cli retrain [--current CSV]`
+  menjalankan drift → latih → gate → promosi/rollback; `python -m src.cli
+  monitor` mengirim alert webhook (`ALERT_WEBHOOK_URL`) bila drift terdeteksi;
+  `python -m src.cli performance --current CSV` mengevaluasi ROC AUC produksi
+  dan rollback otomatis bila turun melewati toleransi
+  (`src/lifecycle/performance.py`); `python -m src.cli fairness` mengaudit
+  keadilan turnover (impact ratio four-fifths, DP/EO/equalized-odds diff) dan
+  **exit 1 bila ada pelanggaran** (`src/monitoring/fairness.py`, juga tersedia
+  sebagai `POST /monitoring/fairness`). Penjadwalan: `docker/cron/` +
+  `docker/k8s/cronjobs.yaml`. `python -m src.train
+  --version vN` melatih turnover dari `data/` lalu langsung menjalankan gate yang
+  sama. Model registry membaca `models/<dir>/model_metadata.json`;
   metrik diambil dari `metrik_holdout_test`/`metrik_evaluasi`/`metrik`, atau root
   metadata untuk survival (`c_index`).
 - **`deep_learning/`** — MLP murni NumPy (tanpa PyTorch/TensorFlow) untuk turnover,

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -15,13 +16,40 @@ REPO_ROOT = BASE_DIR.parent
 MODELS_DIR = REPO_ROOT / "models"
 DATA_DIR = REPO_ROOT / "data"
 
-# Versi model turnover aktif. Artifact disimpan per versi di models/<MODEL_VERSION>/.
-# Default `v2_mitigated` adalah versi paling adil (bias termitigasi) dan
-# performanya setara v2; ganti lewat env MODEL_VERSION untuk rollback/promosi
-# (mis. "v1" atau "v2").
-MODEL_VERSION = os.getenv(
-    "MODEL_VERSION",
-    "v2_mitigated",
+# Pin versi aktif yang ditulis MLOps (`models/active_version.json`).
+ACTIVE_VERSION_FILE = "active_version.json"
+DEFAULT_MODEL_VERSION = "v2_mitigated"
+
+
+def _read_pinned_version(use_case: str = "turnover") -> str | None:
+    """Versi aktif dari pin MLOps, atau `None` bila belum ada pin."""
+    path = MODELS_DIR / ACTIVE_VERSION_FILE
+
+    if not path.exists():
+        return None
+
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+
+    if not isinstance(data, dict):
+        return None
+
+    value = data.get(use_case)
+
+    return value if isinstance(value, str) and value else None
+
+
+# Versi model turnover aktif. Urutan prioritas:
+#   1. env MODEL_VERSION (override manual, mis. saat rollback darurat);
+#   2. pin `models/active_version.json` yang ditulis MLOps (promote/retraining);
+#   3. default `v2_mitigated` (versi paling adil).
+# Artifact disimpan per versi di models/<MODEL_VERSION>/.
+MODEL_VERSION = (
+    os.getenv("MODEL_VERSION")
+    or _read_pinned_version("turnover")
+    or DEFAULT_MODEL_VERSION
 )
 
 
