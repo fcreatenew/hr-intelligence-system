@@ -1,0 +1,90 @@
+# Penjadwalan siklus hidup model via Kubernetes CronJob.
+#
+# Prasyarat: Secret `mlops-secrets` (kunci HR_INTELLIGENCE_API_KEY, opsional
+# ALERT_WEBHOOK_URL) dan image `hr-intelligence-mlops` yang sudah dibangun.
+# Terapkan: kubectl apply -f mlops/docker/k8s/cronjobs.yaml
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mlops-drift-monitor
+spec:
+  schedule: "0 1 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: monitor
+              image: hr-intelligence-mlops:latest
+              workingDir: /app/mlops
+              command: ["python", "-m", "src.cli", "monitor"]
+              envFrom:
+                - secretRef:
+                    name: mlops-secrets
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mlops-retrain
+spec:
+  # Retraining bulanan; drift PSI menentukan apakah model benar-benar dilatih.
+  schedule: "30 2 1 * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: retrain
+              image: hr-intelligence-mlops:latest
+              workingDir: /app/mlops
+              command: ["python", "-m", "src.cli", "retrain"]
+              envFrom:
+                - secretRef:
+                    name: mlops-secrets
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: mlops-performance-rollback
+spec:
+  # Evaluasi performa produksi; butuh volume berisi CSV umpan balik berlabel.
+  # Aktifkan setelah aliran label tersedia (lihat src/lifecycle/performance.py).
+  schedule: "0 4 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: performance
+              image: hr-intelligence-mlops:latest
+              workingDir: /app/mlops
+              command:
+                - python
+                - -m
+                - src.cli
+                - performance
+                - --current
+                - /app/data/feedback_turnover.csv
+              volumeMounts:
+                - name: feedback
+                  mountPath: /app/data
+              envFrom:
+                - secretRef:
+                    name: mlops-secrets
+          volumes:
+            - name: feedback
+              persistentVolumeClaim:
+                claimName: mlops-feedback

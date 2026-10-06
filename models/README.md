@@ -43,12 +43,14 @@ models/
 ├── fairness_report.json       # audit bias turnover v1 vs v2
 ├── mitigation_report.json     # hasil mitigasi bias
 ├── significance_report.json   # uji DeLong/bootstrap v1 vs v2
+├── active_version.json        # pin versi turnover aktif (dibuat oleh promote/retrain)
 └── README.md
 ```
 
 Semua artifact di atas **dilayani oleh `hr_intelligence_api`**: turnover
 (v1/v2/v2_mitigated), absensi, kinerja, anomali payroll, dan survival. Pilih versi
-turnover lewat env `MODEL_VERSION` (default `v2_mitigated`).
+turnover lewat env `MODEL_VERSION` (default `v2_mitigated`). Versi aktif juga
+dapat dipin lewat MLOps (`models/active_version.json`, lihat `mlops/README.md`).
 
 ---
 
@@ -686,15 +688,15 @@ Model turnover:
 ```text
 v1: tersedia
 v2: tersedia
+v2_mitigated: tersedia (default API)
 Algorithm v1: Logistic Regression
 Algorithm v2: Soft Voting (ensemble Logistic Regression + Random Forest)
 Artifact: tersedia
 Metadata: tersedia
 API integration: tersedia
-Model versioning: struktur awal
-Monitoring: belum tersedia
-Automated retraining: belum tersedia
-Model registry: belum tersedia
+Model versioning: tersedia (models/<versi>/ + models/active_version.json)
+Monitoring: tersedia (mlops: metrik Prometheus + drift PSI)
+Automated retraining: tersedia (mlops/src/lifecycle/retraining.py)
+Model registry: tersedia (mlops/src/registry/model_registry.py)
+Rollback: tersedia (python -m src.cli rollback)
 ```
-
-Fitur seperti model registry, automated retraining, monitoring, drift detection, dan rollback otomatis akan dikembangkan pada fase MLOps.
