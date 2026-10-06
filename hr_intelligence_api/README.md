@@ -19,10 +19,14 @@ memanggilnya lewat HTTP dan tidak memuat file model sendiri.
 | Komponen | Teknologi |
 | --- | --- |
 | Framework | FastAPI |
-| Runtime | Python 3.14 (dipin di `.python-version`, ditegakkan di CI) |
+| Runtime | Python 3.14 (CI memakai 3.14) |
 | Model | scikit-learn, lifelines (CoxPH), joblib |
 | Data | pandas, numpy, scipy |
 | Dependensi | `requirements/base.txt` (sumber tunggal) + `lifelines` |
+
+> **Perangkat: CPU-only.** Kelima model memakai scikit-learn & lifelines yang
+> tidak punya backend GPU. API ini **tidak membutuhkan GPU** — cukup CPU + RAM.
+> Lihat §4 untuk tuning CPU dan alasan kenapa GPU tidak memberi manfaat.
 
 ---
 
@@ -47,6 +51,8 @@ Konfigurasi lewat environment:
 | `MODEL_VERSION` | `v2_mitigated` | Versi artifact turnover di `models/<versi>/` |
 | `RATE_LIMIT_PER_MINUTE` | `120` | Batas request per menit per API key |
 | `MAX_BATCH_SIZE` | `5000` | Batas karyawan per request batch |
+| `HR_NUM_THREADS` | (kosong) | Batas thread BLAS/OpenMP (mis. `1`); kosong = default library |
+| `COMPUTE_DEVICE` | `cpu` | Label perangkat komputasi (dilaporkan di `/health`) |
 | `LOG_LEVEL` | `INFO` | Level logging |
 | `ENABLE_DOCS` | `false` | Aktifkan `/docs`, `/redoc`, `/openapi.json` |
 | `CORS_ALLOW_ORIGINS` | (kosong) | Origin browser yang diizinkan, dipisah koma |
@@ -77,15 +83,15 @@ batch dibatasi `MAX_BATCH_SIZE` karyawan per request.
 
 ---
 
-## 4. Use case & algoritma
+## 4. Use case, algoritma & kegunaan
 
-| Use case | Algoritma (artifact) | Hasil utama |
-| --- | --- | --- |
-| `turnover` | Soft Voting (ensemble LR + RF) | `probabilitas_keluar`, `prediksi_keluar`, `level_risiko` |
-| `absensi` | Logistic Regression | `probabilitas_absen_tinggi`, `level_risiko` |
-| `kinerja` | Logistic Regression (ordinal) | `kategori_prediksi`, `probabilitas`, `skor_ordinal` |
-| `payroll` | Isolation Forest | `skor_anomali`, `is_anomali`, `level` |
-| `survival` | Cox Proportional Hazards (lifelines) | `risiko_relatif`, `level_risiko`, `median_survival_bulan` |
+| Use case | Algoritma (artifact) | Pertanyaan yang dijawab | Hasil utama |
+| --- | --- | --- | --- |
+| `turnover` | Soft Voting (ensemble LR + RF) | Siapa yang **berisiko keluar**? | `probabilitas_keluar`, `prediksi_keluar`, `level_risiko` |
+| `absensi` | Logistic Regression | Siapa yang **berisiko absen tinggi**? | `probabilitas_absen_tinggi`, `level_risiko` |
+| `kinerja` | Logistic Regression (ordinal) | **Kategori kinerja** periode berikutnya? | `kategori_prediksi`, `probabilitas`, `skor_ordinal` |
+| `payroll` | Isolation Forest | Baris payroll mana yang **menyimpang**? | `skor_anomali`, `is_anomali`, `level` |
+| `survival` | Cox Proportional Hazards (lifelines) | **Kapan** karyawan berisiko keluar? | `risiko_relatif`, `level_risiko`, `median_survival_bulan` |
 
 > Algoritma di atas diambil dari `models/*/model_metadata.json`, bukan dikarang.
 > README lama menyebut "Gradient Boosting"/"XGBoost"; itu tidak benar — artifact
@@ -97,6 +103,67 @@ Artifact turnover punya tiga versi: `v1`, `v2`, dan `v2_mitigated`
 ```bash
 MODEL_VERSION=v1 uvicorn app.main:app   # rollback ke v1
 ```
+
+### Kegunaan pada data asli
+
+Selama ini model dilatih pada data **anonim/sintetis** (`data/*.csv`). Saat
+memakai data HR asli, perannya:
+
+- **Turnover** — skrining retensi: tandai karyawan berisiko tinggi agar HR
+  menjadwalkan 1-on-1/retensi lebih awal. Model dilatih ulang pada data asli
+  (riwayat keluar) supaya probabilitasnya bermakna.
+- **Absensi** — deteksi dini pola absen; dasarkan pada riwayat absen 30/90 hari
+  nyata. Bermanfaat untuk manajemen kehadiran dan penjadwalan shift.
+- **Kinerja** — proyeksi kategori kinerja untuk perencanaan coaching/bonus.
+  Ini **estimasi ordinal**, bukan keputusan final; metadata menegaskan "jangan
+  dipakai untuk keputusan PHK".
+- **Payroll** — audit penggajian: IsolationForest menandai baris tak lazim
+  (lembur/koreksi tak wajar) untuk ditinjau, bukan untuk memotong gaji otomatis.
+- **Survival** — perencanaan suksesi & anggaran: memperkirakan *kapan* (bukan
+  hanya *apakah*) risiko keluar terjadi, lewat median survival per karyawan.
+
+### Kualitas data menentukan kualitas model
+
+- **Target/label harus nyata** — turnover butuh status keluar, survival butuh
+  `tanggal_masuk`/`tanggal_keluar`, kinerja butuh rating historis, payroll
+  butuh baris yang sudah dilabeli anomali untuk validasi.
+- **Retraining berkala** — pakai `mlops` (`python -m src.cli retrain`/`monitor`)
+  agar drift terdeteksi dan model dipromosikan/di-rollback otomatis.
+- **Data pribadi** — jangan menyimpan PII di repo; `validate-data` menolak kolom
+  PII. Di produksi, simpan data asli di sistem HR, bukan di repo.
+- **Fairness wajib** — setiap model HR harus lewat audit keadilan
+  (`python -m src.cli fairness`), karena keputusan personalia berdampak hukum/etis.
+
+### Perangkat & tuning CPU
+
+Kelima model **murni CPU** dan tidak punya jalur GPU: scikit-learn/lifelines
+tidak menyediakan backend CUDA, dan tidak ada library GPU (torch/tensorflow/
+xgboost) di dependensi. `python:3.14-slim` sudah cukup; tidak ada `--gpus` di
+Docker/compose/k8s.
+
+Kenapa GPU tidak sepadan untuk beban ini:
+
+- **Model & data kecil** (≈1000 baris) — operasi matriksnya mikro.
+- **Latensi didominasi overhead tetap**, bukan komputasi. Hasil ukur lokal:
+  `predict_batch` 1 baris ≈ 91 ms, 1000 baris ≈ 120 ms (≈0,12 ms/baris),
+  5000 baris ≈ 156 ms (≈0,03 ms/baris). Artinya biaya per-request didominasi
+  feature engineering + overhead Python, bukan FLOP.
+- **Thread BLAS nyaris tidak berpengaruh** untuk batch kecil (113–117 ms pada
+  `HR_NUM_THREADS` = default/1/4). Yang penting justru **membatasi** thread agar
+  tidak oversubscription antar worker.
+
+Setelan yang disarankan:
+
+- **1 worker per container** dengan `HR_NUM_THREADS=1`, lalu tambah replika
+  secara horizontal (bukan menambah core/GPU per pod). Ini menjaga latensi
+  stabil dan rate limit per-proses tetap dapat diprediksi.
+- **Warm-up** sudah otomatis: `load_all_models()` dipanggil di `lifespan` startup
+  (terlihat dari log "Model '…' siap."). Tidak ada lazy-load di request pertama.
+- **Pakai endpoint batch** (`/predict/*/batch`) untuk volume besar — jauh lebih
+  efisien daripada memanggil `/predict` per karyawan.
+
+`/health` mengembalikan `compute_device` dan `thread_limit` agar konsumen bisa
+memastikan konfigurasi perangkat tanpa menebak.
 
 ---
 
@@ -200,7 +267,7 @@ hr_intelligence_api/
 │   ├── features/          # kontrak fitur (features.py)
 │   ├── schemas/           # skema Pydantic per use case
 │   └── services/          # model_service, prediction_service, risk_service
-├── tests/                 # 36 test (pytest)
+├── tests/                 # 41 test (pytest)
 └── requirements.txt       # -r ../requirements/base.txt + lifelines
 ```
 

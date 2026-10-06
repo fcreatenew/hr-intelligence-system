@@ -109,6 +109,14 @@ Versi model yang dilayani API diatur lewat env `MODEL_VERSION` (default
 cd hr_intelligence_api && MODEL_VERSION=v1 python -m uvicorn app.main:app
 ```
 
+**Perangkat = CPU-only.** Kelima model (scikit-learn & lifelines) tidak punya
+backend GPU dan tidak membutuhkan GPU. Jangan menambah `torch`/`tensorflow`/
+`--gpus` tanpa use case model besar yang jelas. Batasi thread BLAS/OpenMP lewat
+`HR_NUM_THREADS` (mis. `1`) agar tidak oversubscription antar worker; jalankan
+**1 worker per container** lalu skalakan secara horizontal. `/health`
+melaporkan `compute_device` dan `thread_limit`. Detail & alasan ada di
+`hr_intelligence_api/README.md` bagian 4.
+
 ## Toolchain CI (jangan diturunkan tanpa alasan)
 
 - **PHP CI = 8.4.** `composer.lock` mengunci `symfony/* v8.1.x` yang butuh
