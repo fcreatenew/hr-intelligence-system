@@ -236,8 +236,12 @@ ketidakhadiran.
 - ✅ Audit trail menyeluruh (karyawan, absensi, cuti, payroll)
 - ⬜ Backup & retensi data
 - ✅ Dockerfile + `docker-compose.yml` untuk `hr_application` & `hr_dashboard`
-- ⬜ Model monitoring & drift alert otomatis (memanfaatkan `mlops`)
-- ⬜ Retraining terjadwal + rollback model
+- ⬜ Model monitoring & drift alert otomatis (aturan Prometheus sudah ada; notifikasi/pengiriman alert belum)
+- ✅ Retraining terjadwal + rollback model — `mlops/src/lifecycle/` menyatukan
+  deteksi drift (PSI) → latih versi baru → gate validasi → promosi/rollback,
+  dijalankan lewat `python -m src.cli retrain` atau `POST /retraining/run`.
+  Versi aktif dipin di `models/active_version.json` (sumber kebenaran tunggal
+  untuk API dan MLOps), dengan `promote`/`rollback` sebagai operasi eksplisit.
 - ⬜ Validasi ulang pada data nyata (saat ini data tambahan masih sintetis)
 
 ---
