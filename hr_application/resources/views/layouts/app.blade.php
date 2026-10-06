@@ -63,6 +63,11 @@
                     <a href="{{ route('leave-requests.index') }}">Cuti</a>
                     <a href="{{ route('leave-requests.calendar') }}">Kalender Cuti</a>
                     <a href="{{ route('trainings.index') }}">Pelatihan</a>
+                    <a href="{{ route('job-openings.index') }}">Rekrutmen</a>
+                    <a href="{{ route('performance-goals.index') }}">Kinerja</a>
+                    <a href="{{ route('compensation-components.index') }}">Kompensasi</a>
+                    <a href="{{ route('statutory-reports.index') }}">Kepatuhan</a>
+                    <a href="{{ route('employee-documents.index') }}">Dokumen</a>
                     <a href="{{ route('payroll-periods.index') }}">Payroll</a>
                     <a href="{{ route('reports.index') }}">Laporan</a>
                     <a href="{{ route('hr-intelligence.dashboard') }}">Prediksi ML</a>

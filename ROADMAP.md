@@ -282,15 +282,15 @@ konvensi modul saat ini. Rincian tiap modul ada di
 
 | # | Modul | Isi utama | Menyambung ke ML | Status |
 |---|---|---|---|---|
-| 1 | Recruitment / ATS | Lowongan, kandidat, jadwal interview, offer | Resume screening & person-job fit (#9) | ⬜ |
+| 1 | Recruitment / ATS | Lowongan, kandidat, tahap seleksi, terima kandidat | Resume screening & person-job fit (#9) | ✅ (jadwal interview/offer lanjutan belum) |
 | 2 | Onboarding / Offboarding | Checklist onboarding, aset, exit interview | Turnover & survival (#1, #2) | 🔶 sebagian |
-| 3 | Performance Management | Goal/OKR, siklus review, appraisal | Prediksi kinerja & HiPo (#4, #5) | ⬜ |
+| 3 | Performance Management | Goal/OKR, siklus review, kategori A–D | Prediksi kinerja & HiPo (#4, #5) | ✅ |
 | 4 | Training & Development | Katalog pelatihan, enrollment, sertifikasi | Job/training recommendation (#10) | 🔶 sebagian |
-| 5 | Compensation & Benefits | Tunjangan, BPJS, PPh21, THR | Payroll anomaly & forecasting (#6, #7) | ⬜ |
+| 5 | Compensation & Benefits | Tunjangan, BPJS, PPh21, THR | Payroll anomaly & forecasting (#6, #7) | ✅ |
 | 6 | Time & Attendance lanjutan | Shift, persetujuan lembur, akrual cuti otomatis | Absensi (#3) | 🔶 sebagian |
 | 7 | Employee Self-Service | Portal peran `employee`: ajukan cuti, lihat slip | — | ⬜ |
-| 8 | Document Management | Kontrak, e-sign, retensi dokumen | — | ⬜ |
-| 9 | Compliance & Statutory Reporting | Laporan BPJS/PPh21 & regulasi ketenagakerjaan | — | ⬜ |
+| 8 | Document Management | Kontrak, retensi dokumen | — | ✅ (e-sign belum) |
+| 9 | Compliance & Statutory Reporting | Laporan BPJS/PPh21 (estimasi) & regulasi ketenagakerjaan | — | ✅ |
 
 **Kriteria selesai Fase 7:** staf HR dapat menjalankan seluruh siklus karyawan
 (rekrutmen → onboarding → kinerja → pengembangan → kompensasi → offboarding)
