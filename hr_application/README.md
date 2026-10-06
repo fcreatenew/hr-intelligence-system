@@ -209,6 +209,106 @@ pelatihan (dijaga unique index).
 karyawan dari partisipasi **berjalan/selesai** pada tahun berjalan. Kolom itu
 kini tidak lagi diisi manual di form karyawan.
 
+### Recruitment / ATS
+
+Lowongan kerja dan kandidat beserta tahap seleksinya.
+
+| Route | Fungsi |
+|---|---|
+| `GET /job-openings` | Daftar lowongan (filter status & departemen) |
+| `GET /job-openings/create` | Form lowongan baru |
+| `POST /job-openings` | Simpan lowongan |
+| `GET /job-openings/{jobOpening}` | Detail lowongan + daftar kandidat |
+| `PUT /job-openings/{jobOpening}` | Perbarui lowongan |
+| `DELETE /job-openings/{jobOpening}` | Hapus lowongan (admin) |
+| `POST /job-openings/{jobOpening}/candidates` | Tambah kandidat |
+| `GET /candidates/{candidate}/edit` | Form ubah kandidat |
+| `PUT /candidates/{candidate}` | Perbarui kandidat |
+| `DELETE /candidates/{candidate}` | Hapus kandidat (admin) |
+| `POST /candidates/{candidate}/hire` | Terima kandidat |
+
+Status lowongan: `draft` → `dibuka` → `ditutup` (atau `dibatalkan`). Tahap
+kandidat: `melamar` → `screening` → `interview` → `offer` → `diterima`
+(atau `ditolak`/`mengundurkan_diri`).
+
+**Integrasi ML:** `POST /candidates/{candidate}/hire` memanggil
+`App\Services\RecruitmentService`, yang membuat record `employees` dari data
+kandidat (departemen/jabatan dari lowongan, `status_kerja` dipetakan dari
+`employment_type`). Dengan begitu karyawan baru langsung mengalir ke fitur
+model turnover/kinerja tanpa entri ulang. Kandidat yang sudah `diterima`
+dilewati agar tidak membuat karyawan ganda.
+
+### Performance Management
+
+Sasaran kinerja (goal/OKR) dan siklus review per periode.
+
+| Route | Fungsi |
+|---|---|
+| `GET /performance-goals` | Daftar sasaran (filter periode/karyawan/status) |
+| `POST /performance-goals` | Simpan sasaran |
+| `PUT /performance-goals/{goal}` | Perbarui sasaran |
+| `DELETE /performance-goals/{goal}` | Hapus sasaran (admin) |
+| `GET /performance-reviews` | Daftar review (filter periode/kategori) |
+| `POST /performance-reviews` | Simpan review |
+| `PUT /performance-reviews/{review}` | Perbarui review |
+| `DELETE /performance-reviews/{review}` | Hapus review (admin) |
+
+Status sasaran: `draft` → `berjalan` → `selesai` (atau `dibatalkan`).
+**Kategori review (A–D) diturunkan dari rating 1–5 di server**, bukan diisi
+manual, agar konsisten. Satu karyawan hanya boleh punya satu review per
+periode (dijaga unique index dan divalidasi di form request).
+
+### Compensation & Benefits
+
+Komponen kompensasi di luar gaji pokok: tunjangan, potongan, BPJS, THR, bonus,
+dan PPh21.
+
+| Route | Fungsi |
+|---|---|
+| `GET /compensation-components` | Daftar komponen (filter tipe/karyawan) |
+| `POST /compensation-components` | Simpan komponen |
+| `PUT /compensation-components/{component}` | Perbarui komponen |
+| `DELETE /compensation-components/{component}` | Hapus komponen (admin) |
+
+Komponen berulang (`recurring`) dan rentang berlaku (`effective_date`–`end_date`)
+memudahkan menyambung ke analitik payroll. Tipe potongan/PPh21 ditandai lewat
+`isDeduction()`.
+
+### Compliance & Statutory Reporting
+
+Draft laporan BPJS/PPh21 per periode, dihitung dari data payroll.
+
+| Route | Fungsi |
+|---|---|
+| `GET /statutory-reports` | Daftar laporan + form buat laporan |
+| `POST /statutory-reports` | Buat/segarkan laporan |
+| `GET /statutory-reports/{report}` | Detail laporan |
+| `POST /statutory-reports/{report}/finalize` | Tandai final |
+| `DELETE /statutory-reports/{report}` | Hapus laporan (admin) |
+
+`App\Services\StatutoryReportService` menjumlahkan dasar perhitungan
+(gaji pokok + tunjangan) dari baris `payroll_items` periode terkait, lalu
+menerapkan tarif dari `config/statutory.php` (dapat diatur lewat env). Laporan
+bersifat **estimasi** — wajib ditinjau sebelum pelaporan resmi. Membuat
+laporan untuk tipe & periode yang sama akan menyegarkan draft, bukan
+menduplikasi (dijaga unique index).
+
+### Document Management
+
+Metadata dokumen karyawan (kontrak, sertifikat, identitas) beserta masa
+berlakunya.
+
+| Route | Fungsi |
+|---|---|
+| `GET /employee-documents` | Daftar dokumen (filter kategori/status/karyawan) |
+| `POST /employee-documents` | Simpan dokumen |
+| `PUT /employee-documents/{document}` | Perbarui dokumen |
+| `DELETE /employee-documents/{document}` | Hapus dokumen (admin) |
+
+Hanya **metadata** yang disimpan (`file_path` berupa tautan/berkas opsional);
+jangan menaruh dokumen pribadi asli di repo. `expiresSoon()` menandai dokumen
+yang kedaluwarsa ≤ 30 hari lagi agar mudah ditindaklanjuti.
+
 ### Audit Trail
 
 Semua perubahan pada karyawan, absensi, cuti, dan payroll tercatat otomatis di
@@ -286,29 +386,29 @@ detail karyawan. Prediksi lama dibersihkan sesuai
 php artisan test
 ```
 
-## Rencana Modul Proses Bisnis HR
+## Modul Proses Bisnis HR
 
 HRIS inti (Employee, Employee History, Attendance, Leave, Payroll, Reporting,
-Audit Trail, Manajemen Pengguna) sudah berjalan. Modul berikutnya adalah
-**proses bisnis HR** yang melengkapi siklus karyawan end-to-end — semuanya
-bersifat aditif di atas fondasi yang ada (route + policy + migrasi + test),
-mengikuti konvensi modul saat ini.
+Audit Trail, Manajemen Pengguna) sudah berjalan. Modul **proses bisnis HR**
+melengkapi siklus karyawan end-to-end — semuanya bersifat aditif di atas
+fondasi yang ada (route + policy + migrasi + test), mengikuti konvensi modul
+saat ini.
 
 | # | Modul | Isi utama | Menyambung ke ML | Status |
 |---|---|---|---|---|
-| 1 | **Recruitment / ATS** | Lowongan, kandidat, jadwal interview, offer | Resume screening & person-job fit (`USE_CASES.md` #9) | ⬜ rencana |
+| 1 | **Recruitment / ATS** | Lowongan, kandidat, tahap seleksi, terima kandidat | Person-job fit (`USE_CASES.md` #9) | ✅ (interview/offer lanjutan belum) |
 | 2 | **Onboarding / Offboarding** | Checklist onboarding, aset, exit interview | Turnover & survival (#1, #2) | 🔶 sebagian (`terminate` sudah ada) |
-| 3 | **Performance Management** | Goal/OKR, siklus review, appraisal | Prediksi kinerja & HiPo (#4, #5) | ⬜ rencana |
-| 4 | **Training & Development** | Katalog pelatihan, enrollment, sertifikasi | Job/training recommendation (#10) | 🔶 sebagian (katalog + enrollment + sertifikasi; rekomendasi belum) |
-| 5 | **Compensation & Benefits** | Tunjangan, BPJS, PPh21, THR | Payroll anomaly & forecasting (#6, #7) | ⬜ rencana |
+| 3 | **Performance Management** | Goal/OKR, siklus review, kategori A–D | Prediksi kinerja & HiPo (#4, #5) | ✅ |
+| 4 | **Training & Development** | Katalog pelatihan, enrollment, sertifikasi | Job/training recommendation (#10) | 🔶 sebagian (rekomendasi belum) |
+| 5 | **Compensation & Benefits** | Tunjangan, BPJS, PPh21, THR | Payroll anomaly & forecasting (#6, #7) | ✅ |
 | 6 | **Time & Attendance lanjutan** | Shift, persetujuan lembur, akrual cuti otomatis | Absensi (#3) | 🔶 sebagian (impor & rekap sudah ada) |
 | 7 | **Employee Self-Service** | Portal peran `employee`: ajukan cuti, lihat slip | — | ⬜ rencana |
-| 8 | **Document Management** | Kontrak, e-sign, retensi dokumen | — | ⬜ rencana |
-| 9 | **Compliance & Statutory Reporting** | Laporan BPJS/PPh21 & regulasi ketenagakerjaan | — | ⬜ rencana |
+| 8 | **Document Management** | Kontrak, retensi dokumen | — | ✅ (e-sign belum) |
+| 9 | **Compliance & Statutory Reporting** | Laporan BPJS/PPh21 (estimasi) | — | ✅ |
 
 Urutan fase, kriteria selesai, dan utang teknis (backup & retensi, drift alert,
 retraining terjadwal, validasi pada data nyata) ada di
-[`../ROADMAP.md`](../ROADMAP.md) (Fase 5–6).
+[`../ROADMAP.md`](../ROADMAP.md) (Fase 5–7).
 
 ## Lisensi
 
