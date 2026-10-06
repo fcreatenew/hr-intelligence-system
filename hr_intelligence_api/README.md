@@ -19,7 +19,7 @@ memanggilnya lewat HTTP dan tidak memuat file model sendiri.
 | Komponen | Teknologi |
 | --- | --- |
 | Framework | FastAPI |
-| Runtime | Python 3.12+ (CI memakai 3.13) |
+| Runtime | Python 3.14 (dipin di `.python-version`, ditegakkan di CI) |
 | Model | scikit-learn, lifelines (CoxPH), joblib |
 | Data | pandas, numpy, scipy |
 | Dependensi | `requirements/base.txt` (sumber tunggal) + `lifelines` |
