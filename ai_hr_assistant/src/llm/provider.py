@@ -3,6 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 from src.config import (
+    HF_TOKEN,  # Pastikan variabel ini sudah ada di src/config.py Anda
     LLM_MODEL,
     LLM_PROVIDER,
     LLM_TEMPERATURE,
@@ -15,7 +16,7 @@ class LLMProvider(ABC):
     """Antarmuka provider LLM.
 
     Agent bergantung pada antarmuka ini, bukan pada SDK tertentu, sehingga
-    provider (mock/OpenAI/self-hosted) bisa ditukar tanpa mengubah alur.
+    provider (mock/OpenAI/hf/self-hosted) bisa ditukar tanpa mengubah alur.
     """
 
     name: str = "base"
@@ -26,12 +27,7 @@ class LLMProvider(ABC):
 
 
 class MockLLM(LLMProvider):
-    """Provider tanpa jaringan.
-
-    Tidak menghasilkan kalimat bebas: agent memakai mode ini untuk menyusun
-    jawaban deterministik dari konteks retrieval + hasil tool. Berguna untuk
-    test dan demo offline.
-    """
+    """Provider tanpa jaringan."""
 
     name = "mock"
 
@@ -45,7 +41,7 @@ class OpenAILLM(LLMProvider):
     def __init__(self, model: str = LLM_MODEL, temperature: float = LLM_TEMPERATURE):
         try:
             from openai import OpenAI  # type: ignore
-        except ImportError as exc:  # pragma: no cover - bergantung paket opsional
+        except ImportError as exc:
             raise RuntimeError(
                 "LLM_PROVIDER=openai membutuhkan paket 'openai'. "
                 "Jalankan: pip install openai"
@@ -75,6 +71,38 @@ class OpenAILLM(LLMProvider):
         return (response.choices[0].message.content or "").strip()
 
 
+class HuggingFaceLLM(LLMProvider):
+    name = "hf"
+
+    def __init__(self, model: str = LLM_MODEL, temperature: float = LLM_TEMPERATURE):
+        try:
+            from huggingface_hub import InferenceClient  # type: ignore
+        except ImportError as exc:
+            raise RuntimeError(
+                "LLM_PROVIDER=hf membutuhkan paket 'huggingface_hub'. "
+                "Jalankan: pip install huggingface_hub"
+            ) from exc
+
+        if not HF_TOKEN:
+            raise RuntimeError("API key server belum dikonfigurasi (HF_TOKEN kosong).")
+
+        self._client = InferenceClient(api_key=HF_TOKEN)
+        self._model = model
+        self._temperature = temperature
+
+    def complete(self, system_prompt: str, user_prompt: str) -> str:
+        response = self._client.chat.completions.create(
+            model=self._model,
+            temperature=self._temperature,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        )
+
+        return (response.choices[0].message.content or "").strip()
+
+
 def get_llm(provider: str | None = None) -> LLMProvider:
     provider = (provider or LLM_PROVIDER).lower()
 
@@ -84,6 +112,9 @@ def get_llm(provider: str | None = None) -> LLMProvider:
     if provider == "openai":
         return OpenAILLM()
 
+    if provider in {"hf", "huggingface"}:
+        return HuggingFaceLLM()
+
     raise ValueError(
-        f"Provider LLM tidak dikenal: '{provider}'. Gunakan 'mock' atau 'openai'."
+        f"Provider LLM tidak dikenal: '{provider}'. Gunakan 'mock', 'openai', atau 'hf'."
     )
