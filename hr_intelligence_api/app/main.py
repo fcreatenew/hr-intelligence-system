@@ -3,6 +3,11 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 
+# Batasi thread BLAS/OpenMP sebelum NumPy/scikit-learn diimpor.
+from app.core.runtime import configure_thread_limits
+
+THREAD_LIMIT = configure_thread_limits()
+
 from fastapi import FastAPI
 
 from app.api.router import api_router
@@ -22,6 +27,9 @@ logger = logging.getLogger("hr_intelligence.api")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if THREAD_LIMIT is not None:
+        logger.info("Batas thread runtime: %d (CPU-only).", THREAD_LIMIT)
+
     status = load_all_models()
 
     for use_case, result in status.items():

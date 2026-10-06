@@ -112,6 +112,14 @@ MAX_BATCH_SIZE = int(
 )
 
 
+# Kelima model (scikit-learn & lifelines) murni CPU dan tidak punya backend
+# GPU. Nilai ini diteruskan ke /health agar konsumen tidak menebak.
+COMPUTE_DEVICE = os.getenv(
+    "COMPUTE_DEVICE",
+    "cpu",
+)
+
+
 LOG_LEVEL = os.getenv(
     "LOG_LEVEL",
     "INFO",

@@ -11,3 +11,5 @@ class HealthResponse(BaseModel):
     model_name: Optional[str] = None
     model_trained_at: Optional[str] = None
     models: dict[str, bool] = {}
+    compute_device: str = "cpu"
+    thread_limit: Optional[int] = None
