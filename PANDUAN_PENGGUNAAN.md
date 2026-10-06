@@ -81,16 +81,26 @@ Modul lain menjadi konsumen, sehingga model cukup dilatih di satu tempat.
 
 | Kebutuhan | Versi disarankan | Dipakai oleh |
 | --- | --- | --- |
-| Python | 3.11+ | semua modul Python |
+| Python | 3.14 | semua modul Python |
 | Node.js + npm | 18+ | `hr_dashboard` |
 | PHP + Composer | 8.2+ / 2.x | `hr_application` |
 
 Cek cepat:
 
 ```bash
-python --version
+python --version   # 3.14.x
 node --version
 php --version
+```
+
+Versi Python yang dipakai repo ini dipin di `.python-version` (root) dan
+ditegakkan di CI lewat langkah "Assert Python 3.14". Untuk membuat venv lokal
+dengan versi yang sama:
+
+```bash
+python3.14 -m venv .venv && source .venv/bin/activate
+# atau, bila memakai uv:
+uv venv --python 3.14
 ```
 
 Install dependensi per modul (masing-masing punya `requirements.txt` sendiri):

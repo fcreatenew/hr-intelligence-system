@@ -122,6 +122,12 @@ cd hr_intelligence_api && MODEL_VERSION=v1 python -m uvicorn app.main:app
   `<modul>/requirements.txt` memakai `-r ../requirements/base.txt` dan hanya
   menambah dependensi khusus modul. Jangan menulis pin versi berbeda per modul
   (mis. scikit-learn) — inilah yang dulu menyebabkan drift.
+- **Runtime Python = 3.14.** Dipin di `.python-version`, ditegakkan di CI
+  (`python-version: "3.14"` + langkah `Assert Python 3.14`) dan di tiap
+  `Dockerfile` (`FROM python:3.14-slim`). Semua pin `base.txt` punya wheel
+  `cp314` atau `py3-none-any`, jadi tidak perlu build dari sumber. Jangan
+  menurunkan ke <3.14 tanpa alasan; `numpy==2.5.3`/`scipy==1.18.1` sendiri sudah
+  mensyaratkan `>=3.12`.
 - **`pandas` di `requirements/base.txt` harus `<3.0`** (dipakai 2.3.3).
   `lifelines==0.30.3` (model survival CoxPH) mensyaratkan `pandas<3.0`.
 - **Verifikasi perubahan dependensi** dengan

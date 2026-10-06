@@ -281,6 +281,7 @@ hr-intelligence-system/
 ├── MODEL_RESULTS.md
 ├── PANDUAN_PENGGUNAAN.md
 ├── PANDUAN_PENGGUNAAN.pdf
+├── .python-version                   # Python 3.14 (runtime seluruh modul Python)
 │
 ├── data/
 │   ├── README.md
@@ -440,6 +441,11 @@ cd hr-intelligence-system
 ```
 
 Setiap project memiliki environment dan cara menjalankan masing-masing.
+
+**Prasyarat versi:** modul Python memakai **Python 3.14** (dipin di
+`.python-version`, ditegakkan di CI dan Dockerfile), `hr_dashboard` memakai
+Node.js 24, dan `hr_application` memakai PHP 8.4. Detail per komponen ada di
+`PANDUAN_PENGGUNAAN.md` bagian 3.
 
 Mulai dari dokumentasi project yang ingin dikembangkan:
 
