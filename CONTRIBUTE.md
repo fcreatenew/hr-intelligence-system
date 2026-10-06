@@ -124,7 +124,9 @@ Redis
 
 Untuk modul Python, versi kanonik ada di `requirements/base.txt` (sumber tunggal).
 `<modul>/requirements.txt` memakai `-r ../requirements/base.txt` dan hanya
-menambah dependensi khusus modul. Untuk Laravel, gunakan `composer.json` /
+menambah dependensi khusus modul. Runtime yang dipakai adalah **Python 3.14**
+(dipin di `.python-version`, ditegakkan di CI dan Dockerfile) — buat venv dengan
+versi itu sebelum memasang dependensi. Untuk Laravel, gunakan `composer.json` /
 `composer.lock`.
 
 ---
