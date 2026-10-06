@@ -1,5 +1,7 @@
 from fastapi import APIRouter
 
+from app.core.config import COMPUTE_DEVICE
+from app.core.runtime import active_thread_limit
 from app.schemas.health import HealthResponse
 from app.services.model_service import model_services
 
@@ -40,4 +42,6 @@ async def health():
             turnover.trained_at if turnover and turnover.is_loaded else None
         ),
         models=loaded,
+        compute_device=COMPUTE_DEVICE,
+        thread_limit=active_thread_limit(),
     )
