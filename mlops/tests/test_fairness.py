@@ -180,3 +180,86 @@ def test_api_fairness_endpoint():
     assert body["samples"] > 0
     assert "ringkasan" in body
     assert "usia" in body["atribut"]
+
+
+# ---------------------------------------------------------------------------
+# Gate regresi fairness
+# ---------------------------------------------------------------------------
+
+
+def _hasil_dengan_ratio(atribut: str, ratio: float, lolos: bool) -> dict:
+    return {
+        "versi": "v2_mitigated",
+        "atribut": {atribut: {"impact_ratio": ratio, "pelanggaran": [] if lolos else ["x"]}},
+        "ringkasan": {"pelanggaran": [] if lolos else [f"{atribut}: x"]},
+    }
+
+
+def test_gate_skips_without_baseline():
+    from src.monitoring.fairness_gate import evaluate_gate
+
+    keputusan = evaluate_gate(_hasil_dengan_ratio("usia", 0.5, lolos=False), None)
+
+    assert keputusan["lulus"] is True
+    assert keputusan["ada_baseline"] is False
+
+
+def test_gate_detects_impact_ratio_regression():
+    from src.monitoring.fairness_gate import evaluate_gate, build_baseline
+
+    baseline = build_baseline(_hasil_dengan_ratio("usia", 0.80, lolos=True))
+    sekarang = _hasil_dengan_ratio("usia", 0.70, lolos=True)
+
+    keputusan = evaluate_gate(sekarang, baseline)
+
+    assert keputusan["lulus"] is False
+    assert keputusan["regresi"][0]["jenis"] == "impact_ratio_turun"
+
+
+def test_gate_allows_within_tolerance():
+    from src.monitoring.fairness_gate import evaluate_gate, build_baseline
+
+    baseline = build_baseline(_hasil_dengan_ratio("usia", 0.80, lolos=True))
+    sekarang = _hasil_dengan_ratio("usia", 0.79, lolos=True)
+
+    keputusan = evaluate_gate(sekarang, baseline, None)
+
+    assert keputusan["lulus"] is True
+
+
+def test_gate_flags_new_violation():
+    from src.monitoring.fairness_gate import evaluate_gate, build_baseline
+
+    baseline = build_baseline(_hasil_dengan_ratio("departemen", 0.85, lolos=True))
+    sekarang = _hasil_dengan_ratio("departemen", 0.82, lolos=False)
+
+    keputusan = evaluate_gate(sekarang, baseline)
+
+    assert keputusan["lulus"] is False
+    assert any(r["jenis"] == "pelanggaran_baru" for r in keputusan["regresi"])
+
+
+def test_gate_passes_when_improved():
+    from src.monitoring.fairness_gate import evaluate_gate, build_baseline
+
+    baseline = build_baseline(_hasil_dengan_ratio("usia", 0.60, lolos=False))
+    sekarang = _hasil_dengan_ratio("usia", 0.85, lolos=True)
+
+    keputusan = evaluate_gate(sekarang, baseline)
+
+    assert keputusan["lulus"] is True
+    assert keputusan["regresi"] == []
+
+
+def test_save_and_load_baseline_round_trip(tmp_path: Path):
+    from src.monitoring.fairness_gate import load_baseline, save_baseline
+
+    path = tmp_path / "fairness_baseline.json"
+    hasil = run_fairness_audit(FairnessConfig(min_group_size=5), df=_turnover_frame())
+
+    save_baseline(hasil, path)
+    baseline = load_baseline(path)
+
+    assert baseline is not None
+    assert "usia" in baseline["atribut"]
+    assert "impact_ratio" in baseline["atribut"]["usia"]

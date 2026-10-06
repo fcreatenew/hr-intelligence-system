@@ -41,16 +41,18 @@ models/
 ├── survival_attrition/v1/     # survival — Cox Proportional Hazards
 │
 ├── fairness_report.json       # audit bias turnover v1 vs v2
+├── fairness_baseline.json     # baseline gate regresi fairness (MLOps CI)
 ├── mitigation_report.json     # hasil mitigasi bias
 ├── significance_report.json   # uji DeLong/bootstrap v1 vs v2
-├── active_version.json        # pin versi turnover aktif (dibuat oleh promote/retrain)
+├── active_version.json        # pin versi aktif semua use case (promote/retrain)
 └── README.md
 ```
 
 Semua artifact di atas **dilayani oleh `hr_intelligence_api`**: turnover
-(v1/v2/v2_mitigated), absensi, kinerja, anomali payroll, dan survival. Pilih versi
-turnover lewat env `MODEL_VERSION` (default `v2_mitigated`). Versi aktif juga
-dapat dipin lewat MLOps (`models/active_version.json`, lihat `mlops/README.md`).
+(v1/v2/v2_mitigated), absensi, kinerja, anomali payroll, dan survival. Versi
+aktif dipin lewat MLOps (`models/active_version.json`, lihat `mlops/README.md`)
+dan dibaca API saat startup. Turnover masih menghormati env `MODEL_VERSION`
+(default `v2_mitigated`) sebagai override darurat; use case lain mengikuti pin.
 
 ---
 

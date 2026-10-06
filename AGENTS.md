@@ -42,8 +42,9 @@ cd ai_hr_assistant && uvicorn src.main:app --port 8100   # butuh HR Intelligence
   (`src/lifecycle/`): promosi/rollback + retraining otomatis berbasis drift.
   `cd mlops && python -m src.cli` (subcommand default `validate`) memvalidasi
   kelima model dan **exit 1 bila ada yang gagal** (dipakai di CI).
-  `python -m src.cli versions|promote vN|rollback` mengelola versi aktif
-  (`models/active_version.json`); `python -m src.cli retrain [--current CSV]`
+  `python -m src.cli versions|promote vN|rollback [--use-case <uc>]` mengelola
+  versi aktif **semua use case** (`models/active_version.json`; pin = path relatif,
+  mis. `performance/v2`); `python -m src.cli retrain [--current CSV]`
   menjalankan drift → latih → gate → promosi/rollback; `python -m src.cli
   monitor` mengirim alert webhook (`ALERT_WEBHOOK_URL`) bila drift terdeteksi;
   `python -m src.cli performance --current CSV` mengevaluasi ROC AUC produksi
@@ -51,7 +52,13 @@ cd ai_hr_assistant && uvicorn src.main:app --port 8100   # butuh HR Intelligence
   (`src/lifecycle/performance.py`); `python -m src.cli fairness` mengaudit
   keadilan turnover (impact ratio four-fifths, DP/EO/equalized-odds diff) dan
   **exit 1 bila ada pelanggaran** (`src/monitoring/fairness.py`, juga tersedia
-  sebagai `POST /monitoring/fairness`). Penjadwalan: `docker/cron/` +
+  sebagai `POST /monitoring/fairness`); `python -m src.cli fairness-gate`
+  mencegah **regresi** keadilan di CI (baseline `models/fairness_baseline.json`,
+  `src/monitoring/fairness_gate.py`); `python -m src.cli feedback [--export CSV]`
+  mengelola umpan balik produksi (`src/monitoring/feedback.py`, `POST /feedback`);
+  `python -m src.cli validate-data <csv>` memvalidasi dataset mentah (kontrak,
+  rentang, kategori, target, **tolak PII**) sebelum data nyata dipakai
+  (`src/validation/data_validation.py`). Penjadwalan: `docker/cron/` +
   `docker/k8s/cronjobs.yaml`. `python -m src.train
   --version vN` melatih turnover dari `data/` lalu langsung menjalankan gate yang
   sama. Model registry membaca `models/<dir>/model_metadata.json`;

@@ -70,9 +70,15 @@ jobs:
       - name: Validate registered models
         working-directory: mlops
         run: python -m src.cli
+      - name: Validate raw dataset (data intake)
+        working-directory: mlops
+        run: python -m src.cli validate-data hr_turnover.csv
       - name: Train turnover (reproducible) and validate
         working-directory: mlops
         run: python -m src.train --version v_ci --seed 42
+      - name: Fairness regression gate
+        working-directory: mlops
+        run: python -m src.cli fairness-gate
 
   hr-application:
     name: hr_application (php artisan test)
