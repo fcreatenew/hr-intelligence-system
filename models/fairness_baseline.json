@@ -1,0 +1,22 @@
+{
+  "versi": "v2_mitigated",
+  "threshold": 0.31,
+  "atribut": {
+    "usia": {
+      "impact_ratio": 0.6052,
+      "lolos": false
+    },
+    "departemen": {
+      "impact_ratio": 0.7762,
+      "lolos": false
+    },
+    "status_kerja": {
+      "impact_ratio": 0.8478,
+      "lolos": true
+    },
+    "pendidikan": {
+      "impact_ratio": 0.8758,
+      "lolos": true
+    }
+  }
+}

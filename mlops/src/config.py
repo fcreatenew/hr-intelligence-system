@@ -23,6 +23,18 @@ ACTIVE_VERSION_FILE = "active_version.json"
 # Versi turnover yang dipakai bila belum ada pin. Sama dengan default API.
 DEFAULT_TURNOVER_VERSION = "v2_mitigated"
 
+# Direktori default (relatif terhadap `models/`) untuk tiap use case. Ini peta
+# yang dipakai registry; nilainya menjadi *fallback* ketika belum ada pin.
+# Nilai ini identik dengan `hr_intelligence_api` agar keduanya menunjuk artifact
+# yang sama (satu sumber kebenaran: pin + default ini).
+DEFAULT_MODEL_LOCATIONS: dict[str, str] = {
+    "turnover": DEFAULT_TURNOVER_VERSION,
+    "absensi": "absenteeism/v1",
+    "kinerja": "performance/v1",
+    "payroll": "payroll_anomaly/v1",
+    "survival": "survival_attrition/v1",
+}
+
 
 def read_pinned_version(
     models_dir: Path = MODELS_DIR,
@@ -30,8 +42,11 @@ def read_pinned_version(
 ) -> str | None:
     """Versi aktif yang dipin di `models/active_version.json`, atau `None`.
 
-    Fungsi ini sengaja diletakkan di `config` (lapisan paling bawah) agar
-    registry dan lifecycle dapat memakainya tanpa impor melingkar.
+    Nilai pin adalah **path relatif** di bawah `models/` (mis. `v2` untuk
+    turnover atau `performance/v2` untuk kinerja), sehingga satu mekanisme
+    berlaku untuk semua use case. Fungsi ini sengaja diletakkan di `config`
+    (lapisan paling bawah) agar registry dan lifecycle dapat memakainya tanpa
+    impor melingkar.
     """
     path = models_dir / ACTIVE_VERSION_FILE
 
