@@ -65,41 +65,59 @@ APP_DESCRIPTION = (
 # Registry use case model.
 #
 # Setiap use case punya satu artifact di models/<dir>/<versi>/ dan endpoint
-# sendiri di /predict/<key>. Turnover memakai MODEL_VERSION (env) agar
-# rollback v1/v2 tetap bisa; use case lain punya versi tetap di registry.
+# sendiri di /predict/<key>. Versi aktif dibaca dari pin MLOps
+# (`models/active_version.json`); turnover masih menghormati env MODEL_VERSION
+# untuk rollback darurat.
 # ---------------------------------------------------------------------------
+DEFAULT_MODEL_DIRS: dict[str, str] = {
+    "turnover": DEFAULT_MODEL_VERSION,
+    "absensi": "absenteeism/v1",
+    "kinerja": "performance/v1",
+    "payroll": "payroll_anomaly/v1",
+    "survival": "survival_attrition/v1",
+}
+
+
+def _resolve_model_dir(use_case: str) -> str:
+    """Path artifact aktif: env (turnover) → pin MLOps → default."""
+    if use_case == "turnover":
+        return MODEL_VERSION
+
+    return _read_pinned_version(use_case) or DEFAULT_MODEL_DIRS[use_case]
+
+
 USE_CASE_REGISTRY: dict[str, dict] = {
     "turnover": {
         "label": "Turnover karyawan",
-        "model_dir": MODEL_VERSION,
+        "model_dir": _resolve_model_dir("turnover"),
         "model_file": "turnover_model.joblib",
         "metadata_file": "model_metadata.json",
         "predict_path": "/predict",
     },
     "absensi": {
         "label": "Absensi tinggi",
-        "model_dir": "absenteeism/v1",
+        "model_dir": _resolve_model_dir("absensi"),
         "model_file": "absenteeism_model.joblib",
         "metadata_file": "model_metadata.json",
         "predict_path": "/predict/absensi",
     },
     "kinerja": {
         "label": "Kategori kinerja",
-        "model_dir": "performance/v1",
+        "model_dir": _resolve_model_dir("kinerja"),
         "model_file": "performance_model.joblib",
         "metadata_file": "model_metadata.json",
         "predict_path": "/predict/kinerja",
     },
     "payroll": {
         "label": "Anomali payroll",
-        "model_dir": "payroll_anomaly/v1",
+        "model_dir": _resolve_model_dir("payroll"),
         "model_file": "payroll_anomaly_model.joblib",
         "metadata_file": "model_metadata.json",
         "predict_path": "/predict/payroll",
     },
     "survival": {
         "label": "Survival attrition",
-        "model_dir": "survival_attrition/v1",
+        "model_dir": _resolve_model_dir("survival"),
         "model_file": "cox_model.pkl",
         "metadata_file": "model_metadata.json",
         "predict_path": "/predict/survival",

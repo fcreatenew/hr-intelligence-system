@@ -49,9 +49,14 @@ def test_list_versions_returns_numbered_versions(sandbox):
     assert list_versions("turnover") == list(TURNOVER_VERSIONS)
 
 
-def test_list_versions_rejects_single_version_use_case(sandbox):
+def test_list_versions_works_for_all_use_cases(sandbox):
+    # Setelah generalisasi, use case non-turnover juga melaporkan versinya.
+    assert list_versions("absensi") == ["v1"]
+
+
+def test_list_versions_rejects_unknown_use_case():
     with pytest.raises(LifecycleError):
-        list_versions("absensi")
+        list_versions("tidak_ada")
 
 
 def test_resolve_active_version_defaults_without_pin(sandbox):
@@ -214,6 +219,67 @@ def test_registry_explicit_version_overrides_pin(sandbox):
     assert ModelRegistry(models).get("turnover", versi="v2").versi == "v2"
 
 
+# ---------------------------------------------------------------------------
+# Versioning untuk use case non-turnover (generalisasi)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture()
+def sandbox_kinerja(tmp_path: Path) -> Path:
+    """Salinan artifact kinerja (satu versi) untuk uji versioning generik."""
+    models = tmp_path / "models"
+    models.mkdir()
+
+    shutil.copytree(MODELS_DIR / "performance" / "v1", models / "performance" / "v1")
+
+    return models
+
+
+def test_list_versions_for_non_turnover(sandbox_kinerja):
+    assert list_versions("kinerja", registry=ModelRegistry(sandbox_kinerja)) == ["v1"]
+
+
+def test_promote_non_turnover_use_case(sandbox_kinerja):
+    models = sandbox_kinerja
+
+    hasil = promote("v1", "kinerja", models_dir=models, reason="uji kinerja")
+
+    assert hasil["aktif"] == "performance/v1"
+    assert resolve_active_version("kinerja", models_dir=models) == "performance/v1"
+    assert ModelRegistry(models).get("kinerja").versi == "v1"
+
+
+def test_rollback_non_turnover_use_case(sandbox_kinerja):
+    models = sandbox_kinerja
+
+    promote("v1", "kinerja", models_dir=models, reason="uji")
+    kembali = rollback("kinerja", models_dir=models, reason="uji rollback")
+
+    assert kembali["aktif"] == "performance/v1"
+
+
+def test_next_version_for_non_turnover(sandbox_kinerja):
+    assert next_version(sandbox_kinerja, "kinerja") == "v2"
+
+
+def test_unknown_use_case_promote_is_rejected(sandbox_kinerja):
+    with pytest.raises(LifecycleError):
+        promote("v1", "tidak_ada", models_dir=sandbox_kinerja)
+
+
+def test_legacy_string_pin_still_rolls_back(sandbox):
+    """Pin format lama (`sebelumnya` string) tetap bisa di-rollback."""
+    models, _ = sandbox
+    (models / "active_version.json").write_text(
+        json.dumps({"turnover": "v2", "sebelumnya": "v1"}),
+        encoding="utf-8",
+    )
+
+    kembali = rollback("turnover", models_dir=models)
+
+    assert kembali["aktif"] == "v1"
+
+
 def test_api_lifecycle_status_and_guardrails():
     from fastapi.testclient import TestClient
 
@@ -226,8 +292,13 @@ def test_api_lifecycle_status_and_guardrails():
     assert status.json()["use_case"] == "turnover"
     assert status.json()["aktif"]
 
-    tolak = client.get("/lifecycle/absensi")
-    assert tolak.status_code == 400
+    # Use case non-turnover kini juga punya endpoint lifecycle.
+    absensi = client.get("/lifecycle/absensi")
+    assert absensi.status_code == 200
+    assert absensi.json()["aktif"] == "absenteeism/v1"
+
+    tidak_ada = client.get("/lifecycle/tidak_ada")
+    assert tidak_ada.status_code == 400
 
     tidak_perlu = client.post("/retraining/run", json={})
     assert tidak_perlu.status_code == 200

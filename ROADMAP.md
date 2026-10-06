@@ -250,13 +250,25 @@ ketidakhadiran.
   dijalankan lewat `python -m src.cli retrain` atau `POST /retraining/run`.
   Versi aktif dipin di `models/active_version.json` (sumber kebenaran tunggal
   untuk API dan MLOps), dengan `promote`/`rollback` sebagai operasi eksplisit.
+  **Versioning berlaku untuk semua use case** (bukan hanya turnover):
+  `promote/rollback --use-case kinerja` dan seterusnya; API HR Intelligence
+  membaca pin yang sama.
   **Penjadwalan** tersedia lewat crontab container (`mlops/docker/cron/`) dan
   Kubernetes CronJob (`mlops/docker/k8s/cronjobs.yaml`). **Rollback berbasis
   performa produksi** ada di `mlops/src/lifecycle/performance.py`: bila ROC AUC
   pada data umpan balik turun melebihi toleransi, versi sebelumnya dipin kembali
   (`python -m src.cli performance --current <csv>` atau
-  `POST /monitoring/performance`).
-- ⬜ Validasi ulang pada data nyata (saat ini data tambahan masih sintetis)
+  `POST /monitoring/performance`). **Aliran umpan balik produksi**
+  (`mlops/src/monitoring/feedback.py`, `POST /feedback`) menyediakan data
+  berlabel yang selama ini menjadi penghambat rollback berbasis performa.
+- ✅ Gate regresi fairness di CI — `mlops/src/monitoring/fairness_gate.py`
+  membandingkan audit saat ini dengan baseline (`models/fairness_baseline.json`)
+  dan gagal bila keadilan memburuk (`python -m src.cli fairness-gate`).
+- ✅ Validasi asupan data — `mlops/src/validation/data_validation.py`
+  memeriksa kontrak kolom, rentang, kategori, target, dan **menolak kolom PII**
+  sebelum data nyata dipakai (`python -m src.cli validate-data <csv>`).
+- 🔶 Validasi ulang pada data nyata (saat ini data tambahan masih sintetis) —
+  jalur asupan data + umpan balik sudah siap; menunggu data nyata anonim.
 
 ---
 
@@ -296,9 +308,9 @@ Daftar ini jujur menyebut hal yang belum beres, agar tidak hilang dari pandangan
 | # | Utang | Dampak | Rencana |
 |---|---|---|---|
 | 1 | ~~Belum ada halaman login~~ | Sudah selesai di Fase 2.2 | Selesai |
-| 2 | Data absensi/kinerja/payroll/survival sintetis | Metrik terlalu optimistis | Fase 6 |
+| 2 | Data absensi/kinerja/payroll/survival sintetis | Metrik terlalu optimistis | Fase 6 — validator asupan data (`validate-data`) + jalur umpan balik produksi (`POST /feedback`) siap; menunggu data nyata anonim |
 | 3 | ~~`v2_mitigated` belum jadi default~~ | Sudah jadi default `MODEL_VERSION` | Selesai |
-| 4 | Audit fairness masih in-sample | Belum dapat dijadikan dasar keputusan | Fase 6 — audit kini dapat dijalankan & diuji (`mlops/src/monitoring/fairness.py`, CLI `fairness`, `POST /monitoring/fairness`); sifat in-sample menunggu data nyata |
+| 4 | Audit fairness masih in-sample | Belum dapat dijadikan dasar keputusan | Fase 6 — audit dapat dijalankan & diuji (`mlops/src/monitoring/fairness.py`), kini ada **gate regresi fairness** di CI (`fairness-gate` + `models/fairness_baseline.json`); sifat in-sample menunggu data nyata |
 | 5 | ~~Belum ada Dockerfile/CI `hr_application`~~ | Sudah ada CI + Dockerfile + `docker-compose.yml` | Selesai |
 | 6 | ~~Halaman prediksi ML masih JSON~~ | Sudah ada halaman HTML `/admin/hr-intelligence` | Selesai |
 | 7 | ~~Tidak ada audit trail karyawan~~ | Jejak audit otomatis untuk karyawan, absensi, cuti, payroll | Selesai |

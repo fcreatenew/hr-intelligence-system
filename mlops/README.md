@@ -129,6 +129,24 @@ python -m src.cli fairness --version v2 --min-group-size 30
 
 Atau lewat API: `POST /monitoring/fairness`.
 
+### Gate regresi fairness (CI)
+
+Karena dataset sintetis saat ini memang masih punya disparitas, gate fairness
+di CI dibuat **regression-aware**: yang dicegah adalah **perburukan** keadilan,
+bukan keberadaan pelanggaran itu sendiri. Gate membandingkan audit saat ini
+dengan baseline tersimpan (`models/fairness_baseline.json`) dan **exit 1** bila:
+
+1. impact ratio sebuah atribut turun lebih dari `--tolerance` (default 0.02); atau
+2. atribut yang sebelumnya lolos four-fifths kini melanggar.
+
+```bash
+python -m src.cli fairness-gate                      # jalankan gate (dipakai CI)
+python -m src.cli fairness-gate --update-baseline    # tetapkan ulang baseline
+```
+
+Gate dijalankan otomatis di job `model-validation` CI. Perbarui baseline hanya
+setelah meninjau perubahan keadilan secara sadar.
+
 Yang dihitung per atribut (`usia` dipecah per rentang, `departemen`,
 `status_kerja`, `pendidikan`):
 
@@ -258,21 +276,66 @@ python -m src.cli performance --current ../data/feedback_turnover.csv --toleranc
 Atau lewat API: `POST /monitoring/performance`. Bila belum ada pin (tidak ada
 versi sebelumnya), hasilnya `turun_tanpa_pin` dan tidak mengubah apa pun.
 
-## Siklus Hidup Versi (Promosi & Rollback)
+### Umpan balik produksi (prediksi + label)
 
-Versi turnover yang aktif dipin di `models/active_version.json` — sumber
-kebenaran tunggal yang dibaca MLOps dan (lewat env `MODEL_VERSION`) API.
+Monitoring performa butuh pasangan prediksi–label nyata. `src/monitoring/feedback.py`
+menyimpannya ke satu berkas JSONL append-only, lalu mengekspornya sebagai CSV
+yang otomatis memuat kolom kanonik `skor` dan `label_aktual`, sehingga bisa
+langsung dipakai `performance`/`retrain`:
 
 ```bash
-python -m src.cli versions                 # versi tersedia + versi aktif
-python -m src.cli promote v2_mitigated     # pin versi aktif
-python -m src.cli rollback                 # kembali ke versi sebelumnya
+python -m src.cli feedback                                   # ringkasan umpan balik
+python -m src.cli feedback --export ../data/feedback_turnover.csv
+python -m src.cli feedback --clear
 ```
 
-API MLOps menyediakan padanannya: `GET /lifecycle/turnover`,
+Sistem HR / job ETL mengirim label lewat API MLOps:
+
+```bash
+curl -X POST http://127.0.0.1:8400/feedback \
+  -H 'Content-Type: application/json' \
+  -d '{"prediction":{"employee_id":"EMP1","usia":30},
+       "actual":{"target_turnover":1}}'
+```
+
+Endpoint lain: `GET /feedback`, `POST /feedback/export`.
+
+## Validasi Asupan Data
+
+Sebelum data nyata/anonim dipakai training, validasi kontraknya dengan
+`src/validation/data_validation.py`. Validator memakai ulang
+`RAW_COLUMNS_REQUIRED` dari pipeline training sehingga tidak pernah menyimpang,
+dan **menolak kolom berpotensi PII** (nama, NIK, email, dst.):
+
+```bash
+python -m src.cli validate-data hr_turnover.csv       # exit 1 bila ada masalah
+python -m src.cli validate-data data_baru.csv --min-rows 500
+```
+
+Yang diperiksa: jumlah baris minimum, kolom wajib, PII, rasio nilai kosong,
+rentang numerik, domain kategori, dan target biner. Langkah ini ikut berjalan di
+CI.
+
+## Siklus Hidup Versi (Promosi & Rollback)
+
+Versi aktif **semua use case** dipin di `models/active_version.json` — sumber
+kebenaran tunggal yang dibaca MLOps dan API HR Intelligence. Nilai pin adalah
+path relatif di bawah `models/` (mis. `v2` untuk turnover, `performance/v2`
+untuk kinerja).
+
+```bash
+python -m src.cli versions                       # versi tersedia + versi aktif
+python -m src.cli versions --use-case kinerja
+python -m src.cli promote v2_mitigated           # pin versi aktif turnover
+python -m src.cli promote v2 --use-case kinerja  # pin versi aktif use case lain
+python -m src.cli rollback                       # kembali ke versi sebelumnya
+```
+
+API MLOps menyediakan padanannya: `GET /lifecycle/{use_case}`,
 `POST /lifecycle/{use_case}/promote`, `POST /lifecycle/{use_case}/rollback`.
 Promosi memverifikasi artifact ada dan punya metrik sebelum dipin, sehingga
-versi rusak tidak bisa dijadikan aktif.
+versi rusak tidak bisa dijadikan aktif. API HR Intelligence membaca pin yang
+sama, jadi promosi/rollback langsung berlaku tanpa mengubah konfigurasi API.
 
 ---
 
@@ -290,6 +353,10 @@ mlops/
 │   ├── validation/model_validator.py # gate kelayakan deploy
 │   ├── lifecycle/model_lifecycle.py  # pin versi aktif, promosi, rollback
 │   ├── lifecycle/retraining.py       # orkestrasi drift → latih → gate → promosi
+│   ├── validation/data_validation.py # validasi dataset mentah (kontrak + PII)
+│   ├── monitoring/fairness.py        # audit fairness per atribut
+│   ├── monitoring/fairness_gate.py   # gate regresi fairness (CI)
+│   ├── monitoring/feedback.py        # simpan/ekspor prediksi + label produksi
 │   ├── monitoring/drift.py           # PSI + deteksi drift per fitur
 │   ├── monitoring/metrics.py         # MetricsCollector (format Prometheus)
 │   ├── monitoring/drift_monitor.py   # DriftMonitor: metrik + alert + riwayat

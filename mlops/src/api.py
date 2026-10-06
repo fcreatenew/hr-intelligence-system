@@ -29,6 +29,7 @@ from src.lifecycle import (
     run_retraining,
 )
 from src.monitoring.fairness import FairnessConfig, run_fairness_audit
+from src.monitoring.feedback import FeedbackStore
 from src.lifecycle.retraining import RetrainingConfig
 from src.monitoring.alerting import AlertDispatcher, build_alert_sender
 from src.monitoring.drift_monitor import DriftMonitor
@@ -243,6 +244,18 @@ class RollbackRequest(BaseModel):
     reason: str = "rollback manual"
 
 
+class FeedbackEntryRequest(BaseModel):
+    prediction: dict = Field(..., description="Fitur mentah + skor/probabilitas prediksi")
+    actual: dict = Field(..., description="Label sebenarnya, mis. {'target_turnover': 1}")
+    use_case: str = "turnover"
+    version: str | None = None
+
+
+class FeedbackExportRequest(BaseModel):
+    destination: str = Field(..., description="Path CSV tujuan ekspor")
+    use_case: str = "turnover"
+
+
 class RetrainRequest(BaseModel):
     current: str | None = Field(
         None,
@@ -401,3 +414,61 @@ async def fairness_audit(payload: FairnessAuditRequest) -> dict:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except KeyError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
+# Umpan balik produksi (prediksi + label sebenarnya)
+# ---------------------------------------------------------------------------
+
+feedback_store = FeedbackStore()
+
+
+@app.post("/feedback", tags=["monitoring"])
+async def record_feedback(payload: FeedbackEntryRequest) -> dict:
+    """Simpan pasangan prediksi–label sebenarnya untuk monitoring performa.
+
+    Dipakai sistem HR / job ETL untuk mengirim label aktual (mis. karyawan
+    benar-benar keluar) agar `run_performance_monitor` punya data.
+    """
+    try:
+        entry = feedback_store.record(
+            payload.prediction,
+            payload.actual,
+            use_case=payload.use_case,
+            version=payload.version,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {"tersimpan": True, "total": len(feedback_store.entries(payload.use_case)), "entri": entry}
+
+
+@app.get("/feedback", tags=["monitoring"])
+async def feedback_summary(use_case: str = "turnover") -> dict:
+    """Ringkasan umpan balik tersimpan untuk sebuah use case."""
+    entries = feedback_store.entries(use_case)
+    df = feedback_store.to_dataframe(use_case)
+
+    return {
+        "use_case": use_case,
+        "total": len(entries),
+        "kolom": list(df.columns),
+        "siap_dievaluasi": len(df) > 0,
+    }
+
+
+@app.post("/feedback/export", tags=["monitoring"])
+async def feedback_export(payload: FeedbackExportRequest) -> dict:
+    """Ekspor umpan balik ke CSV agar bisa dipakai monitoring performa/drift."""
+    destination = Path(payload.destination)
+    df = feedback_store.to_dataframe(payload.use_case)
+
+    if df.empty:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Tidak ada umpan balik untuk use case '{payload.use_case}'.",
+        )
+
+    feedback_store.export_csv(destination, payload.use_case)
+
+    return {"diekspor": str(destination), "baris": len(df), "kolom": list(df.columns)}
