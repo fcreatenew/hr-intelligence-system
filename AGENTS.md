@@ -67,6 +67,16 @@ cd ai_hr_assistant && uvicorn src.main:app --port 8100   # butuh HR Intelligence
 - **`deep_learning/`** — MLP murni NumPy (tanpa PyTorch/TensorFlow) untuk turnover,
   plus baseline klasik. Kontrak fitur turnover **dipakai ulang dari**
   `hr_intelligence_api/app/features/features.py`. `cd deep_learning && python -m src.cli compare`.
+- **`hr_application/`** — Laravel (HRIS, konsumen API ML). `php artisan test`
+  (SQLite in-memory, `RefreshDatabase`). Selain HRIS inti, tersedia modul
+  **Fase 7**: Recruitment/ATS (`JobOpening`/`Candidate` + `RecruitmentService`),
+  Performance (`PerformanceGoal`/`PerformanceReview`), Compensation
+  (`CompensationComponent`), Documents (`EmployeeDocument`), dan Compliance
+  (`StatutoryReport` + `StatutoryReportService`, tarif di `config/statutory.php`).
+  Konvensinya: tiap modul = migrasi + model (`HasFactory`/`RecordsAudit`) +
+  policy (daftar di `AppServiceProvider`) + form request + controller + Blade di
+  `resources/views/<modul>/` + test feature. Hanya `admin` yang boleh menghapus;
+  `admin`/`hr-manager` boleh membuat/mengubah.
 - **`hr_dashboard/`** — React + Vite. Default `VITE_DATA_MODE=demo` (fixtures lokal);
   set `live` untuk memakai API. Proxy dev: `/api` → 8000, `/payroll-api` → 8300
   (prefix `/payroll-api` agar tidak bentrok dengan route SPA `/payroll`).
