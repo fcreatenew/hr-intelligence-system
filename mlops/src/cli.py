@@ -22,6 +22,11 @@ from src.lifecycle.retraining import RetrainingConfig
 from src.monitoring.alerting import AlertDispatcher, build_alert_sender
 from src.monitoring.drift_monitor import DriftMonitor
 from src.monitoring.fairness import FairnessConfig, run_fairness_audit
+from src.monitoring.fairness_gate import (
+    FairnessGateConfig,
+    run_fairness_gate,
+    save_baseline,
+)
 from src.registry.model_registry import ModelRegistry
 from src.validation.model_validator import validate_all
 
@@ -51,14 +56,15 @@ def _cmd_validate(_: argparse.Namespace) -> int:
 
 
 def _cmd_versions(args: argparse.Namespace) -> int:
+    use_case = getattr(args, "use_case", "turnover")
     registry = ModelRegistry()
-    versi = list_versions("turnover", registry=registry)
-    aktif = resolve_active_version("turnover", registry)
+    versi = list_versions(use_case, registry=registry)
+    aktif = resolve_active_version(use_case, registry)
 
-    print(f"Versi turnover tersedia : {', '.join(versi) or '-'}")
+    print(f"Versi {use_case} tersedia : {', '.join(versi) or '-'}")
     print(f"Versi aktif             : {aktif}")
 
-    info = active_version_info("turnover")
+    info = active_version_info(use_case)
     if info.get("metrik"):
         nama, nilai = info["metrik"]
         print(f"Metrik versi aktif      : {nama}={nilai}")
@@ -68,28 +74,30 @@ def _cmd_versions(args: argparse.Namespace) -> int:
 
 
 def _cmd_promote(args: argparse.Namespace) -> int:
+    use_case = getattr(args, "use_case", "turnover")
     try:
-        hasil = promote(args.version, reason=args.reason)
+        hasil = promote(args.version, use_case, reason=args.reason)
     except LifecycleError as exc:
         print(f"Gagal promosi: {exc}")
         return 1
 
     print(
-        f"Promosi: {hasil['sebelumnya']} -> {hasil['aktif']} "
+        f"Promosi [{use_case}]: {hasil['sebelumnya']} -> {hasil['aktif']} "
         f"({hasil['alasan']})"
     )
     return 0
 
 
 def _cmd_rollback(args: argparse.Namespace) -> int:
+    use_case = getattr(args, "use_case", "turnover")
     try:
-        hasil = rollback(reason=args.reason)
+        hasil = rollback(use_case, reason=args.reason)
     except LifecycleError as exc:
         print(f"Gagal rollback: {exc}")
         return 1
 
     print(
-        f"Rollback: {hasil['sebelumnya']} -> {hasil['aktif']} "
+        f"Rollback [{use_case}]: {hasil['sebelumnya']} -> {hasil['aktif']} "
         f"({hasil['alasan']})"
     )
     return 0
@@ -191,6 +199,93 @@ def _cmd_fairness(args: argparse.Namespace) -> int:
     return 0 if ringkasan["lolos"] else 1
 
 
+def _cmd_fairness_gate(args: argparse.Namespace) -> int:
+    """Gate regresi fairness untuk CI (bandingkan ke baseline tersimpan)."""
+    from src.config import MODELS_DIR
+
+    config = FairnessConfig(version=args.version, data_file=args.data)
+    hasil = run_fairness_audit(config)
+
+    baseline_path = Path(args.baseline) if args.baseline else MODELS_DIR / "fairness_baseline.json"
+
+    if args.update_baseline:
+        payload = save_baseline(hasil, baseline_path)
+        print(f"Baseline fairness diperbarui: {baseline_path}")
+        print(f"Versi acuan: {payload['versi']}")
+        return 0
+
+    keputusan = run_fairness_gate(
+        hasil,
+        FairnessGateConfig(tolerance=args.tolerance, baseline_path=baseline_path),
+    )
+
+    print(f"Versi model    : {hasil['versi']}")
+    print(f"Baseline       : {keputusan['baseline_path']}")
+    print(f"Status         : {'LULUS' if keputusan['lulus'] else 'GAGAL'}")
+    print(f"Alasan         : {keputusan['alasan']}")
+
+    for regresi in keputusan["regresi"]:
+        print(
+            f"  - {regresi['atribut']}: {regresi['jenis']} "
+            f"({regresi['baseline']} -> {regresi['sekarang']})"
+        )
+
+    return 0 if keputusan["lulus"] else 1
+
+
+def _cmd_validate_data(args: argparse.Namespace) -> int:
+    """Validasi dataset mentah sebelum training/retraining (data nyata)."""
+    from src.validation.data_validation import DataValidationConfig, validate_dataset
+
+    config = DataValidationConfig(min_rows=args.min_rows)
+    try:
+        hasil = validate_dataset(args.dataset, config)
+    except FileNotFoundError as exc:
+        print(f"Gagal: {exc}")
+        return 1
+
+    ringkasan = hasil["ringkasan"]
+    print(f"Dataset        : {args.dataset}")
+    print(f"Baris/kolom    : {ringkasan['baris']}/{ringkasan['kolom']}")
+    print(f"Status         : {'LULUS' if hasil['lulus'] else 'GAGAL'}")
+
+    for masalah in hasil["masalah"]:
+        print(f"  - [{masalah['jenis']}] {masalah['detail']}")
+
+    return 0 if hasil["lulus"] else 1
+
+
+def _cmd_feedback(args: argparse.Namespace) -> int:
+    """Ringkas/ekspor/hapus umpan balik produksi (prediksi + label)."""
+    from src.monitoring.feedback import FeedbackStore
+
+    store = FeedbackStore()
+    use_case = getattr(args, "use_case", "turnover")
+
+    if args.clear:
+        jumlah = store.clear(use_case)
+        print(f"Umpan balik '{use_case}' dihapus: {jumlah} entri.")
+        return 0
+
+    entries = store.entries(use_case)
+
+    if args.export:
+        if not entries:
+            print(f"Tidak ada umpan balik untuk '{use_case}'.")
+            return 1
+        destination = store.export_csv(Path(args.export), use_case)
+        print(f"Umpan balik '{use_case}' diekspor ke {destination} ({len(entries)} baris).")
+        return 0
+
+    df = store.to_dataframe(use_case)
+    print(f"Use case       : {use_case}")
+    print(f"Total entri    : {len(entries)}")
+    print(f"Kolom          : {', '.join(df.columns) if not df.empty else '-'}")
+    print(f"Siap evaluasi  : {'ya' if not df.empty else 'belum'}")
+
+    return 0
+
+
 def _cmd_performance(args: argparse.Namespace) -> int:
     """Evaluasi performa produksi; rollback otomatis bila turun."""
     current_path = Path(args.current)
@@ -226,13 +321,31 @@ def build_parser() -> argparse.ArgumentParser:
 
     sub.add_parser("validate", help="validasi seluruh model (default)")
 
-    sub.add_parser("versions", help="daftar versi turnover + versi aktif")
+    versions_p = sub.add_parser("versions", help="daftar versi + versi aktif per use case")
+    versions_p.add_argument(
+        "--use-case",
+        default="turnover",
+        dest="use_case",
+        help="use case (turnover|absensi|kinerja|payroll|survival)",
+    )
 
-    promote_p = sub.add_parser("promote", help="pin versi turnover sebagai aktif")
+    promote_p = sub.add_parser("promote", help="pin versi sebagai aktif")
     promote_p.add_argument("version", help="versi tujuan, mis. v2_mitigated")
+    promote_p.add_argument(
+        "--use-case",
+        default="turnover",
+        dest="use_case",
+        help="use case (default turnover)",
+    )
     promote_p.add_argument("--reason", default="promosi manual")
 
     rollback_p = sub.add_parser("rollback", help="kembali ke versi sebelumnya")
+    rollback_p.add_argument(
+        "--use-case",
+        default="turnover",
+        dest="use_case",
+        help="use case (default turnover)",
+    )
     rollback_p.add_argument("--reason", default="rollback manual")
 
     retrain_p = sub.add_parser("retrain", help="retraining turnover berbasis drift")
@@ -273,6 +386,32 @@ def build_parser() -> argparse.ArgumentParser:
         help="ambang four-fifths (default 0.8)",
     )
 
+    gate_p = sub.add_parser("fairness-gate", help="gate regresi fairness untuk CI")
+    gate_p.add_argument("--version", help="versi turnover (default: versi aktif)")
+    gate_p.add_argument("--data", default="hr_turnover.csv", help="berkas dataset")
+    gate_p.add_argument("--baseline", help="path baseline (default models/fairness_baseline.json)")
+    gate_p.add_argument(
+        "--tolerance",
+        type=float,
+        default=0.02,
+        help="penurunan impact ratio yang masih ditoleransi (default 0.02)",
+    )
+    gate_p.add_argument(
+        "--update-baseline",
+        action="store_true",
+        dest="update_baseline",
+        help="tulis ulang baseline dari hasil audit saat ini",
+    )
+
+    feedback_p = sub.add_parser("feedback", help="ringkas/ekspor umpan balik produksi")
+    feedback_p.add_argument("--use-case", default="turnover", dest="use_case")
+    feedback_p.add_argument("--export", help="path CSV tujuan ekspor")
+    feedback_p.add_argument("--clear", action="store_true", help="hapus umpan balik")
+
+    data_p = sub.add_parser("validate-data", help="validasi dataset mentah (data nyata)")
+    data_p.add_argument("dataset", help="path CSV dataset (relatif ke data/ bila bukan absolut)")
+    data_p.add_argument("--min-rows", type=int, default=100, dest="min_rows")
+
     return parser
 
 
@@ -291,6 +430,9 @@ def main(argv: list[str] | None = None) -> int:
         "monitor": _cmd_monitor,
         "performance": _cmd_performance,
         "fairness": _cmd_fairness,
+        "fairness-gate": _cmd_fairness_gate,
+        "feedback": _cmd_feedback,
+        "validate-data": _cmd_validate_data,
     }
 
     return handlers[command](args)

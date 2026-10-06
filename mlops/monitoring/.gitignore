@@ -1,0 +1,3 @@
+# Umpan balik produksi bersifat runtime (berisi data operasional), jangan
+# di-commit. Contoh format ada di README.
+feedback.jsonl
