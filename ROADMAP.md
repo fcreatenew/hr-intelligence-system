@@ -91,7 +91,7 @@ Fase 3  Operasional HR (Attendance/Leave) ✅ selesai
 Fase 4  Payroll run                      ✅ selesai
 Fase 5  Pelaporan & administrasi         🔶 sebagian
 Fase 6  Hardening produksi               🔶 sebagian
-Fase 7  Modul proses bisnis HR           ⬜ rencana
+Fase 7  Modul proses bisnis HR           🔶 sebagian
 ```
 
 ---
@@ -217,7 +217,8 @@ gaji identik dengan `payroll_intelligence` dan fitur model anomali payroll.
 # 9. Fase 5 — Pelaporan & Administrasi 🔶
 
 - ✅ Laporan headcount, turnover, biaya per departemen (`ReportController`)
-- ✅ Ekspor CSV (PDF belum)
+- ✅ Ekspor CSV + PDF (`ReportController::export`/`exportPdf`; PDF memakai
+  penulis minimalis `App\Support\Pdf\SimplePdfWriter` tanpa dependensi composer)
 - ✅ Manajemen pengguna & peran dari UI
 - ✅ Halaman hasil prediksi ML di UI (bukan JSON lagi)
 
@@ -234,19 +235,44 @@ ketidakhadiran.
 - ✅ Halaman login
 - ✅ Rate limiting login (5/menit per email+IP) & endpoint admin HR Intelligence (30/menit per pengguna)
 - ✅ Audit trail menyeluruh (karyawan, absensi, cuti, payroll)
-- ⬜ Backup & retensi data
+- ✅ Backup & retensi data — `php artisan db:backup` (dump gzip ke
+  `storage/backups`) dan `php artisan data:prune` (hapus data lebih tua dari
+  `HR_INTELLIGENCE_RETENTION_DAYS`), dijadwalkan harian di `routes/console.php`.
+  Layanan: `App\Services\DatabaseBackupService`, konfigurasi `config/backup.php`.
 - ✅ Dockerfile + `docker-compose.yml` untuk `hr_application` & `hr_dashboard`
-- ⬜ Model monitoring & drift alert otomatis (aturan Prometheus sudah ada; notifikasi/pengiriman alert belum)
+- ✅ Model monitoring & drift alert otomatis — aturan Prometheus sudah ada;
+  pengiriman alert lewat `mlops/src/monitoring/alerting.py` (`AlertDispatcher`
+  + webhook), dijalankan dengan `python -m src.cli monitor` atau
+  `POST /monitoring/check-drift`. Riwayat alert tersedia di
+  `GET /monitoring/drift/alerts`.
 - ✅ Retraining terjadwal + rollback model — `mlops/src/lifecycle/` menyatukan
   deteksi drift (PSI) → latih versi baru → gate validasi → promosi/rollback,
   dijalankan lewat `python -m src.cli retrain` atau `POST /retraining/run`.
   Versi aktif dipin di `models/active_version.json` (sumber kebenaran tunggal
   untuk API dan MLOps), dengan `promote`/`rollback` sebagai operasi eksplisit.
-- ⬜ Validasi ulang pada data nyata (saat ini data tambahan masih sintetis)
+  **Versioning berlaku untuk semua use case** (bukan hanya turnover):
+  `promote/rollback --use-case kinerja` dan seterusnya; API HR Intelligence
+  membaca pin yang sama.
+  **Penjadwalan** tersedia lewat crontab container (`mlops/docker/cron/`) dan
+  Kubernetes CronJob (`mlops/docker/k8s/cronjobs.yaml`). **Rollback berbasis
+  performa produksi** ada di `mlops/src/lifecycle/performance.py`: bila ROC AUC
+  pada data umpan balik turun melebihi toleransi, versi sebelumnya dipin kembali
+  (`python -m src.cli performance --current <csv>` atau
+  `POST /monitoring/performance`). **Aliran umpan balik produksi**
+  (`mlops/src/monitoring/feedback.py`, `POST /feedback`) menyediakan data
+  berlabel yang selama ini menjadi penghambat rollback berbasis performa.
+- ✅ Gate regresi fairness di CI — `mlops/src/monitoring/fairness_gate.py`
+  membandingkan audit saat ini dengan baseline (`models/fairness_baseline.json`)
+  dan gagal bila keadilan memburuk (`python -m src.cli fairness-gate`).
+- ✅ Validasi asupan data — `mlops/src/validation/data_validation.py`
+  memeriksa kontrak kolom, rentang, kategori, target, dan **menolak kolom PII**
+  sebelum data nyata dipakai (`python -m src.cli validate-data <csv>`).
+- 🔶 Validasi ulang pada data nyata (saat ini data tambahan masih sintetis) —
+  jalur asupan data + umpan balik sudah siap; menunggu data nyata anonim.
 
 ---
 
-# 10b. Fase 7 — Modul Proses Bisnis HR ⬜
+# 10b. Fase 7 — Modul Proses Bisnis HR 🔶 sebagian
 
 Fase ini melengkapi `hr_application` dari "HRIS inti" menjadi HRIS yang
 mencakup **siklus karyawan end-to-end** (hire-to-retire). Semua modul bersifat
@@ -256,15 +282,15 @@ konvensi modul saat ini. Rincian tiap modul ada di
 
 | # | Modul | Isi utama | Menyambung ke ML | Status |
 |---|---|---|---|---|
-| 1 | Recruitment / ATS | Lowongan, kandidat, jadwal interview, offer | Resume screening & person-job fit (#9) | ⬜ |
+| 1 | Recruitment / ATS | Lowongan, kandidat, tahap seleksi, terima kandidat | Resume screening & person-job fit (#9) | ✅ (jadwal interview/offer lanjutan belum) |
 | 2 | Onboarding / Offboarding | Checklist onboarding, aset, exit interview | Turnover & survival (#1, #2) | 🔶 sebagian |
-| 3 | Performance Management | Goal/OKR, siklus review, appraisal | Prediksi kinerja & HiPo (#4, #5) | ⬜ |
-| 4 | Training & Development | Katalog pelatihan, enrollment, sertifikasi | Job/training recommendation (#10) | ⬜ |
-| 5 | Compensation & Benefits | Tunjangan, BPJS, PPh21, THR | Payroll anomaly & forecasting (#6, #7) | ⬜ |
+| 3 | Performance Management | Goal/OKR, siklus review, kategori A–D | Prediksi kinerja & HiPo (#4, #5) | ✅ |
+| 4 | Training & Development | Katalog pelatihan, enrollment, sertifikasi | Job/training recommendation (#10) | 🔶 sebagian |
+| 5 | Compensation & Benefits | Tunjangan, BPJS, PPh21, THR | Payroll anomaly & forecasting (#6, #7) | ✅ |
 | 6 | Time & Attendance lanjutan | Shift, persetujuan lembur, akrual cuti otomatis | Absensi (#3) | 🔶 sebagian |
 | 7 | Employee Self-Service | Portal peran `employee`: ajukan cuti, lihat slip | — | ⬜ |
-| 8 | Document Management | Kontrak, e-sign, retensi dokumen | — | ⬜ |
-| 9 | Compliance & Statutory Reporting | Laporan BPJS/PPh21 & regulasi ketenagakerjaan | — | ⬜ |
+| 8 | Document Management | Kontrak, retensi dokumen | — | ✅ (e-sign belum) |
+| 9 | Compliance & Statutory Reporting | Laporan BPJS/PPh21 (estimasi) & regulasi ketenagakerjaan | — | ✅ |
 
 **Kriteria selesai Fase 7:** staf HR dapat menjalankan seluruh siklus karyawan
 (rekrutmen → onboarding → kinerja → pengembangan → kompensasi → offboarding)
@@ -282,9 +308,9 @@ Daftar ini jujur menyebut hal yang belum beres, agar tidak hilang dari pandangan
 | # | Utang | Dampak | Rencana |
 |---|---|---|---|
 | 1 | ~~Belum ada halaman login~~ | Sudah selesai di Fase 2.2 | Selesai |
-| 2 | Data absensi/kinerja/payroll/survival sintetis | Metrik terlalu optimistis | Fase 6 |
+| 2 | Data absensi/kinerja/payroll/survival sintetis | Metrik terlalu optimistis | Fase 6 — validator asupan data (`validate-data`) + jalur umpan balik produksi (`POST /feedback`) siap; menunggu data nyata anonim |
 | 3 | ~~`v2_mitigated` belum jadi default~~ | Sudah jadi default `MODEL_VERSION` | Selesai |
-| 4 | Audit fairness masih in-sample | Belum dapat dijadikan dasar keputusan | Fase 6 |
+| 4 | Audit fairness masih in-sample | Belum dapat dijadikan dasar keputusan | Fase 6 — audit dapat dijalankan & diuji (`mlops/src/monitoring/fairness.py`), kini ada **gate regresi fairness** di CI (`fairness-gate` + `models/fairness_baseline.json`); sifat in-sample menunggu data nyata |
 | 5 | ~~Belum ada Dockerfile/CI `hr_application`~~ | Sudah ada CI + Dockerfile + `docker-compose.yml` | Selesai |
 | 6 | ~~Halaman prediksi ML masih JSON~~ | Sudah ada halaman HTML `/admin/hr-intelligence` | Selesai |
 | 7 | ~~Tidak ada audit trail karyawan~~ | Jejak audit otomatis untuk karyawan, absensi, cuti, payroll | Selesai |

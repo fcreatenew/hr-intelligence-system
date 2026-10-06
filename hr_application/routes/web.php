@@ -5,12 +5,21 @@ use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\ProfileController;
+use App\Http\Controllers\CandidateController;
+use App\Http\Controllers\CompensationComponentController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\EmployeeDocumentController;
+use App\Http\Controllers\JobOpeningController;
 use App\Http\Controllers\LeaveCalendarController;
 use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\PayrollPeriodController;
 use App\Http\Controllers\PayrollSlipController;
+use App\Http\Controllers\PerformanceGoalController;
+use App\Http\Controllers\PerformanceReviewController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\StatutoryReportController;
+use App\Http\Controllers\TrainingController;
+use App\Http\Controllers\TrainingParticipantController;
 use App\Http\Controllers\UserController;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
@@ -65,8 +74,36 @@ Route::middleware('auth')->group(function () {
     Route::get('payroll-periods/{payroll_period}/items/{item}/slip', [PayrollSlipController::class, 'show'])->name('payroll-periods.slip');
     Route::resource('payroll-periods', PayrollPeriodController::class)->only(['index', 'store', 'show', 'destroy']);
 
+    Route::post('trainings/{training}/participants', [TrainingParticipantController::class, 'store'])->name('trainings.participants.store');
+    Route::put('participants/{participant}', [TrainingParticipantController::class, 'update'])->name('participants.update');
+    Route::delete('participants/{participant}', [TrainingParticipantController::class, 'destroy'])->name('participants.destroy');
+    Route::resource('trainings', TrainingController::class);
+
+    // Recruitment / ATS.
+    Route::post('job-openings/{job_opening}/candidates', [CandidateController::class, 'store'])->name('job-openings.candidates.store');
+    Route::post('candidates/{candidate}/hire', [CandidateController::class, 'hire'])->name('candidates.hire');
+    Route::get('candidates/{candidate}/edit', [CandidateController::class, 'edit'])->name('candidates.edit');
+    Route::put('candidates/{candidate}', [CandidateController::class, 'update'])->name('candidates.update');
+    Route::delete('candidates/{candidate}', [CandidateController::class, 'destroy'])->name('candidates.destroy');
+    Route::resource('job-openings', JobOpeningController::class);
+
+    // Performance management (goal/OKR + siklus review).
+    Route::resource('performance-goals', PerformanceGoalController::class)->except(['show']);
+    Route::resource('performance-reviews', PerformanceReviewController::class)->except(['show']);
+
+    // Compensation & benefits.
+    Route::resource('compensation-components', CompensationComponentController::class)->except(['show']);
+
+    // Compliance & statutory reporting.
+    Route::post('statutory-reports/{statutory_report}/finalize', [StatutoryReportController::class, 'finalize'])->name('statutory-reports.finalize');
+    Route::resource('statutory-reports', StatutoryReportController::class)->only(['index', 'store', 'show', 'destroy']);
+
+    // Document management.
+    Route::resource('employee-documents', EmployeeDocumentController::class)->except(['show']);
+
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('reports/export-pdf', [ReportController::class, 'exportPdf'])->name('reports.export-pdf');
 
     Route::get('admin/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
 
