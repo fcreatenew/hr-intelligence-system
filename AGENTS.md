@@ -48,7 +48,10 @@ cd ai_hr_assistant && uvicorn src.main:app --port 8100   # butuh HR Intelligence
   monitor` mengirim alert webhook (`ALERT_WEBHOOK_URL`) bila drift terdeteksi;
   `python -m src.cli performance --current CSV` mengevaluasi ROC AUC produksi
   dan rollback otomatis bila turun melewati toleransi
-  (`src/lifecycle/performance.py`). Penjadwalan: `docker/cron/` +
+  (`src/lifecycle/performance.py`); `python -m src.cli fairness` mengaudit
+  keadilan turnover (impact ratio four-fifths, DP/EO/equalized-odds diff) dan
+  **exit 1 bila ada pelanggaran** (`src/monitoring/fairness.py`, juga tersedia
+  sebagai `POST /monitoring/fairness`). Penjadwalan: `docker/cron/` +
   `docker/k8s/cronjobs.yaml`. `python -m src.train
   --version vN` melatih turnover dari `data/` lalu langsung menjalankan gate yang
   sama. Model registry membaca `models/<dir>/model_metadata.json`;
