@@ -160,6 +160,62 @@ Retraining
 New model version
 ```
 
+Retraining otomatis sudah tersedia di `src/lifecycle/retraining.py` dan
+menyatukan komponen yang ada menjadi satu keputusan yang dapat diaudit:
+
+```text
+data produksi
+     │  DriftMonitor.evaluate (PSI)
+     ▼
+drift terdeteksi? ── tidak ──▶ selesai (versi aktif tidak berubah)
+     │ ya
+     ▼
+latih versi baru (src.train) di models/<vN>/
+     │
+     ▼
+gate validate_record ── gagal ──▶ tolak, versi aktif tetap
+     │ lulus
+     ▼
+metrik kandidat ≥ metrik incumbent?
+     │ ya                    │ tidak
+     ▼                       ▼
+promosikan (pin)          tolak, versi aktif tetap
+```
+
+Kandidat yang ditolak tetap tersimpan sebagai artifact versi baru
+(append-only) agar dapat diperiksa; yang berubah hanyalah pin versi aktif.
+
+Jalankan lewat CLI:
+
+```bash
+# Bandingkan data produksi terhadap data training; latih & promosikan bila perlu
+python -m src.cli retrain --current ../data/produksi_turnover.csv
+
+# Paksa latih walau drift tidak terdeteksi (mis. retraining berkala)
+python -m src.cli retrain --force
+
+# Hanya promosikan bila kandidat minimal +0.01 lebih baik dari incumbent
+python -m src.cli retrain --force --min-delta 0.01
+```
+
+Atau lewat API MLOps: `POST /retraining/run`.
+
+## Siklus Hidup Versi (Promosi & Rollback)
+
+Versi turnover yang aktif dipin di `models/active_version.json` — sumber
+kebenaran tunggal yang dibaca MLOps dan (lewat env `MODEL_VERSION`) API.
+
+```bash
+python -m src.cli versions                 # versi tersedia + versi aktif
+python -m src.cli promote v2_mitigated     # pin versi aktif
+python -m src.cli rollback                 # kembali ke versi sebelumnya
+```
+
+API MLOps menyediakan padanannya: `GET /lifecycle/turnover`,
+`POST /lifecycle/{use_case}/promote`, `POST /lifecycle/{use_case}/rollback`.
+Promosi memverifikasi artifact ada dan punya metrik sebelum dipin, sehingga
+versi rusak tidak bisa dijadikan aktif.
+
 ---
 
 # Struktur Project
@@ -174,12 +230,14 @@ mlops/
 │   ├── config.py                 # path model/data, ambang drift & AUC
 │   ├── registry/model_registry.py    # registry berbasis model_metadata.json
 │   ├── validation/model_validator.py # gate kelayakan deploy
+│   ├── lifecycle/model_lifecycle.py  # pin versi aktif, promosi, rollback
+│   ├── lifecycle/retraining.py       # orkestrasi drift → latih → gate → promosi
 │   ├── monitoring/drift.py           # PSI + deteksi drift per fitur
 │   ├── monitoring/metrics.py         # MetricsCollector (format Prometheus)
 │   ├── monitoring/drift_monitor.py   # DriftMonitor: metrik + alert + riwayat
 │   ├── train/pipeline.py         # training turnover yang reproducible
 │   ├── api.py                    # FastAPI
-│   └── cli.py                    # validasi semua model (exit 1 bila gagal)
+│   └── cli.py                    # validate / versions / promote / rollback / retrain
 │
 ├── docker/
 │   ├── api/Dockerfile            # image MLOps
@@ -258,8 +316,13 @@ dianggap layak deploy. Pemeriksaan:
 - Akurasi wajar (≥ 0.5) bila tersedia.
 
 ```bash
-cd mlops && python -m src.cli   # exit 1 bila ada model yang gagal
+cd mlops && python -m src.cli validate   # exit 1 bila ada model yang gagal
 ```
+
+`validate` adalah subcommand default, sehingga `python -m src.cli` tetap
+berperilaku sama seperti sebelumnya (dipakai di CI). Subcommand lain:
+`versions`, `promote`, `rollback`, dan `retrain` — lihat bagian
+[Retraining](#retraining) dan [Siklus Hidup Versi](#siklus-hidup-versi-promosi--rollback).
 
 ---
 

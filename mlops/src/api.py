@@ -1,18 +1,30 @@
 from __future__ import annotations
 
 import time
+from pathlib import Path
 
 import httpx
 import pandas as pd
 from fastapi import FastAPI, HTTPException, Response
+from pydantic import BaseModel, Field
 
 from src.config import (
+    DATA_DIR,
     DRIFT_CRITICAL,
     DRIFT_WARNING,
     HR_INTELLIGENCE_API_KEY,
     HR_INTELLIGENCE_BASE_URL,
     HR_INTELLIGENCE_TIMEOUT,
 )
+from src.lifecycle import (
+    LifecycleError,
+    active_version_info,
+    list_versions,
+    promote,
+    rollback,
+    run_retraining,
+)
+from src.lifecycle.retraining import RetrainingConfig
 from src.monitoring.drift_monitor import DriftMonitor
 from src.monitoring.metrics import MetricsCollector
 from src.registry.model_registry import ModelRegistry
@@ -171,3 +183,95 @@ async def drift_alerts() -> dict:
         "jumlah": len(alerts),
         "alerts": [report.to_dict() for report in alerts],
     }
+
+
+# ---------------------------------------------------------------------------
+# Siklus hidup model: versi aktif, promosi, rollback, retraining otomatis.
+# ---------------------------------------------------------------------------
+
+
+class PromoteRequest(BaseModel):
+    version: str = Field(..., description="Versi tujuan, mis. v2_mitigated")
+    reason: str = "promosi manual"
+
+
+class RollbackRequest(BaseModel):
+    reason: str = "rollback manual"
+
+
+class RetrainRequest(BaseModel):
+    current: str | None = Field(
+        None,
+        description="Path CSV data produksi untuk deteksi drift (opsional).",
+    )
+    data: str = "hr_turnover.csv"
+    seed: int = 42
+    force: bool = False
+    min_delta: float = 0.0
+
+
+@app.get("/lifecycle/{use_case}", tags=["lifecycle"])
+async def lifecycle_status(use_case: str = "turnover") -> dict:
+    """Versi aktif, versi tersedia, dan metrik versi aktif."""
+    try:
+        versi = list_versions(use_case)
+    except LifecycleError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    return {
+        "use_case": use_case,
+        "tersedia": versi,
+        **active_version_info(use_case),
+    }
+
+
+@app.post("/lifecycle/{use_case}/promote", tags=["lifecycle"])
+async def lifecycle_promote(use_case: str, payload: PromoteRequest) -> dict:
+    """Pin satu versi sebagai versi aktif (setelah artifact divalidasi ada)."""
+    try:
+        return promote(payload.version, use_case, reason=payload.reason)
+    except LifecycleError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/lifecycle/{use_case}/rollback", tags=["lifecycle"])
+async def lifecycle_rollback(use_case: str, payload: RollbackRequest) -> dict:
+    """Kembalikan versi aktif ke versi sebelumnya."""
+    try:
+        return rollback(use_case, reason=payload.reason)
+    except LifecycleError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/retraining/run", tags=["lifecycle"])
+async def retraining_run(payload: RetrainRequest) -> dict:
+    """Jalankan siklus retraining berbasis drift untuk turnover.
+
+    Bila `current` diisi, drift dihitung terhadap dataset training. Bila tidak,
+    data training dipakai sebagai pembanding (tidak ada drift kecuali `force`).
+    """
+    if payload.current:
+        current_path = Path(payload.current)
+        if not current_path.exists():
+            raise HTTPException(
+                status_code=400,
+                detail=f"Data produksi tidak ditemukan: {current_path}",
+            )
+        try:
+            current = pd.read_csv(current_path)
+        except Exception as exc:  # noqa: BLE001
+            raise HTTPException(status_code=400, detail=f"Gagal membaca CSV: {exc}") from exc
+    else:
+        current = pd.read_csv(DATA_DIR / payload.data)
+
+    config = RetrainingConfig(
+        seed=payload.seed,
+        data_file=payload.data,
+        force=payload.force,
+        min_metric_delta=payload.min_delta,
+    )
+
+    try:
+        return run_retraining(config, current=current, collector=metrics)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc

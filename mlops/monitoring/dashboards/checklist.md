@@ -18,6 +18,8 @@
 - [ ] Drift kritis memicu evaluasi ulang model
 
 ## Retraining
-- [ ] Trigger: drift kritis, penurunan metrik, atau jadwal berkala
-- [ ] Versi model baru dicatat di `models/` dengan metadata lengkap
-- [ ] Model baru melewati validasi sebelum dijadikan versi aktif
+- [x] Trigger: drift kritis, penurunan metrik, atau jadwal berkala
+- [x] Versi model baru dicatat di `models/` dengan metadata lengkap
+- [x] Model baru melewati validasi sebelum dijadikan versi aktif
+- [x] Rollback tersedia (`python -m src.cli rollback` / `POST /lifecycle/{use_case}/rollback`)
+- [ ] Notifikasi/pengiriman alert (aturan Prometheus ada, pengirim belum)
