@@ -16,17 +16,20 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from src.config import MODELS_DIR
+from src.config import (
+    ACTIVE_VERSION_FILE,
+    DEFAULT_TURNOVER_VERSION,
+    MODELS_DIR,
+    read_pinned_version,
+)
 from src.registry.model_registry import ModelRegistry
 
 
 # Use case yang mendukung banyak versi sekaligus rollback.
 MULTI_VERSION_USE_CASES: tuple[str, ...] = ("turnover",)
 
-ACTIVE_VERSION_FILE = "active_version.json"
-
 # Dipakai bila belum ada pin sama sekali; sama dengan default API.
-DEFAULT_ACTIVE_VERSION = "v2_mitigated"
+DEFAULT_ACTIVE_VERSION = DEFAULT_TURNOVER_VERSION
 
 
 class LifecycleError(RuntimeError):
@@ -56,7 +59,7 @@ def read_active_version(
     models_dir: Path = MODELS_DIR,
 ) -> str | None:
     """Versi aktif yang di-pin, atau `None` bila belum pernah dipin."""
-    return _read_pin_file(models_dir).get(use_case)
+    return read_pinned_version(models_dir, use_case)
 
 
 def _write_pin(

@@ -8,14 +8,20 @@ import pandas as pd
 
 from src.lifecycle import (
     LifecycleError,
+    PerformanceMonitorConfig,
     active_version_info,
     list_versions,
     promote,
+    reference_features,
     resolve_active_version,
     rollback,
+    run_performance_monitor,
     run_retraining,
 )
 from src.lifecycle.retraining import RetrainingConfig
+from src.monitoring.alerting import AlertDispatcher, build_alert_sender
+from src.monitoring.drift_monitor import DriftMonitor
+from src.monitoring.fairness import FairnessConfig, run_fairness_audit
 from src.registry.model_registry import ModelRegistry
 from src.validation.model_validator import validate_all
 
@@ -126,6 +132,91 @@ def _cmd_retrain(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_monitor(args: argparse.Namespace) -> int:
+    """Evaluasi drift dan kirim alert bila terdeteksi."""
+    from src.config import DATA_DIR
+
+    current_path = Path(args.current) if args.current else DATA_DIR / args.data
+    current = pd.read_csv(current_path)
+
+    config = RetrainingConfig(
+        data_file=args.data,
+        drift_warning=args.warning,
+        drift_critical=args.critical,
+    )
+    referensi = reference_features(config, DATA_DIR)
+
+    monitor = DriftMonitor(warning=args.warning, critical=args.critical)
+    report = monitor.evaluate("turnover", referensi, current)
+
+    dispatcher = AlertDispatcher(sender=build_alert_sender(args.webhook))
+    hasil = dispatcher.dispatch(report)
+
+    print(f"Drift maksimum : {report.max_psi} ({report.level})")
+    print(f"Drift terdeteksi: {report.drift_terdeteksi}")
+    print(f"Alert terkirim : {hasil['terkirim']} ({hasil.get('alasan', 'ok')})")
+
+    return 0
+
+
+def _cmd_fairness(args: argparse.Namespace) -> int:
+    """Audit fairness model turnover per atribut pelindung."""
+    config = FairnessConfig(
+        version=args.version,
+        data_file=args.data,
+        threshold=args.threshold,
+        min_group_size=args.min_group_size,
+        impact_ratio_threshold=args.impact_ratio,
+    )
+
+    hasil = run_fairness_audit(config)
+    ringkasan = hasil["ringkasan"]
+
+    print(f"Versi model    : {hasil['versi']} ({hasil['model']})")
+    print(f"Threshold      : {hasil['threshold']}")
+    print(f"Sampel         : {hasil['samples']}")
+
+    for atribut, audit in hasil["atribut"].items():
+        ratio = audit["impact_ratio"]
+        ratio_txt = "-" if ratio is None else f"{ratio}"
+        print(
+            f"  {atribut:<14} DP diff={audit['demographic_parity_diff']} "
+            f"impact ratio={ratio_txt} EO diff={audit['equal_opportunity_diff']}"
+        )
+
+    print(f"Status         : {'LOLOS' if ringkasan['lolos'] else 'PELANGGARAN'}")
+    for pesan in ringkasan["pelanggaran"]:
+        print(f"  - {pesan}")
+
+    return 0 if ringkasan["lolos"] else 1
+
+
+def _cmd_performance(args: argparse.Namespace) -> int:
+    """Evaluasi performa produksi; rollback otomatis bila turun."""
+    current_path = Path(args.current)
+
+    if not current_path.exists():
+        print(f"Data umpan balik tidak ditemukan: {current_path}")
+        return 1
+
+    current = pd.read_csv(current_path)
+    config = PerformanceMonitorConfig(tolerance=args.tolerance, min_samples=args.min_samples)
+
+    hasil = run_performance_monitor(current, config=config)
+    performa = hasil["performa"]
+
+    print(f"Status performa   : {performa['status']}")
+    print(f"ROC AUC produksi  : {performa['roc_auc_produksi']}")
+    print(f"ROC AUC referensi : {performa['roc_auc_referensi']}")
+    print(f"Versi aktif       : {hasil['versi_aktif']}")
+    if hasil.get("rollback"):
+        print(f"Rollback ke       : {hasil['rollback']['aktif']}")
+    if hasil.get("alasan"):
+        print(f"Alasan            : {hasil['alasan']}")
+
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m src.cli",
@@ -157,6 +248,31 @@ def build_parser() -> argparse.ArgumentParser:
         help="selisih metrik minimal untuk mempromosikan kandidat",
     )
 
+    monitor_p = sub.add_parser("monitor", help="evaluasi drift + kirim alert webhook")
+    monitor_p.add_argument("--current", help="CSV data produksi (default: dataset training)")
+    monitor_p.add_argument("--data", default="hr_turnover.csv")
+    monitor_p.add_argument("--webhook", default=None, help="URL webhook alert (default dari env)")
+    monitor_p.add_argument("--warning", type=float, default=0.1)
+    monitor_p.add_argument("--critical", type=float, default=0.2)
+
+    perf_p = sub.add_parser("performance", help="evaluasi performa produksi + rollback otomatis")
+    perf_p.add_argument("--current", required=True, help="CSV umpan balik berlabel")
+    perf_p.add_argument("--tolerance", type=float, default=0.05)
+    perf_p.add_argument("--min-samples", type=int, default=30, dest="min_samples")
+
+    fair_p = sub.add_parser("fairness", help="audit fairness turnover per atribut pelindung")
+    fair_p.add_argument("--version", help="versi turnover (default: versi aktif)")
+    fair_p.add_argument("--data", default="hr_turnover.csv", help="berkas dataset")
+    fair_p.add_argument("--threshold", type=float, default=None, help="ambang keputusan")
+    fair_p.add_argument("--min-group-size", type=int, default=20, dest="min_group_size")
+    fair_p.add_argument(
+        "--impact-ratio",
+        type=float,
+        default=0.8,
+        dest="impact_ratio",
+        help="ambang four-fifths (default 0.8)",
+    )
+
     return parser
 
 
@@ -172,6 +288,9 @@ def main(argv: list[str] | None = None) -> int:
         "promote": _cmd_promote,
         "rollback": _cmd_rollback,
         "retrain": _cmd_retrain,
+        "monitor": _cmd_monitor,
+        "performance": _cmd_performance,
+        "fairness": _cmd_fairness,
     }
 
     return handlers[command](args)

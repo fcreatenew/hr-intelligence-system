@@ -11,7 +11,8 @@
             </p>
         </div>
         <span style="flex:1"></span>
-        <a href="{{ route('reports.export', ['from' => $filters['from'], 'to' => $filters['to']]) }}" class="btn">Ekspor CSV</a>
+        <a href="{{ route('reports.export', ['from' => $filters['from'], 'to' => $filters['to']]) }}" class="btn secondary">Ekspor CSV</a>
+        <a href="{{ route('reports.export-pdf', ['from' => $filters['from'], 'to' => $filters['to']]) }}" class="btn">Ekspor PDF</a>
     </div>
 
     <form method="GET" action="{{ route('reports.index') }}" class="card" style="margin:18px 0">

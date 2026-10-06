@@ -21,6 +21,7 @@ from src.lifecycle import (
     run_retraining,
 )
 from src.lifecycle.retraining import RetrainingConfig
+from src.registry.model_registry import ModelRegistry
 
 
 TURNOVER_VERSIONS = ("v1", "v2", "v2_mitigated")
@@ -194,6 +195,23 @@ def test_next_version_ignores_non_numbered_versions(sandbox):
     models, _ = sandbox
 
     assert next_version(models, "turnover") == "v3"
+
+
+def test_registry_resolves_pinned_turnover_version(sandbox):
+    models, _ = sandbox
+
+    assert ModelRegistry(models).get("turnover").versi == "v2_mitigated"
+
+    promote("v1", models_dir=models)
+
+    assert ModelRegistry(models).get("turnover").versi == "v1"
+
+
+def test_registry_explicit_version_overrides_pin(sandbox):
+    models, _ = sandbox
+    promote("v1", models_dir=models)
+
+    assert ModelRegistry(models).get("turnover", versi="v2").versi == "v2"
 
 
 def test_api_lifecycle_status_and_guardrails():

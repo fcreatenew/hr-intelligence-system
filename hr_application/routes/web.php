@@ -11,6 +11,8 @@ use App\Http\Controllers\LeaveRequestController;
 use App\Http\Controllers\PayrollPeriodController;
 use App\Http\Controllers\PayrollSlipController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\TrainingController;
+use App\Http\Controllers\TrainingParticipantController;
 use App\Http\Controllers\UserController;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
@@ -65,8 +67,14 @@ Route::middleware('auth')->group(function () {
     Route::get('payroll-periods/{payroll_period}/items/{item}/slip', [PayrollSlipController::class, 'show'])->name('payroll-periods.slip');
     Route::resource('payroll-periods', PayrollPeriodController::class)->only(['index', 'store', 'show', 'destroy']);
 
+    Route::post('trainings/{training}/participants', [TrainingParticipantController::class, 'store'])->name('trainings.participants.store');
+    Route::put('participants/{participant}', [TrainingParticipantController::class, 'update'])->name('participants.update');
+    Route::delete('participants/{participant}', [TrainingParticipantController::class, 'destroy'])->name('participants.destroy');
+    Route::resource('trainings', TrainingController::class);
+
     Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('reports/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('reports/export-pdf', [ReportController::class, 'exportPdf'])->name('reports.export-pdf');
 
     Route::get('admin/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
 

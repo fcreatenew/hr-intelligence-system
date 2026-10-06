@@ -4,13 +4,15 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from src.config import MODELS_DIR
+from src.config import MODELS_DIR, resolve_turnover_version
 
 
 # Peta use case -> direktori model. Turnover punya beberapa versi di
 # models/v1, models/v2, models/v2_mitigated; use case lain di subdirektori.
+# Versi turnover **aktif** ditentukan `models/active_version.json` (lihat
+# `resolve_turnover_version`), bukan nilai di peta ini.
 MODEL_LOCATIONS: dict[str, str] = {
-    "turnover": "v2",
+    "turnover": "v2_mitigated",
     "absensi": "absenteeism/v1",
     "kinerja": "performance/v1",
     "payroll": "payroll_anomaly/v1",
@@ -100,7 +102,9 @@ class ModelRegistry:
             raise KeyError(f"Use case tidak dikenal: '{use_case}'.")
 
         if use_case == "turnover":
-            relative = versi or MODEL_LOCATIONS[use_case]
+            # Versi aktif dibaca dari pin (sumber kebenaran tunggal), kecuali
+            # pemanggil meminta versi tertentu secara eksplisit.
+            relative = versi or resolve_turnover_version(self._models_dir)
         else:
             relative = MODEL_LOCATIONS[use_case]
 
