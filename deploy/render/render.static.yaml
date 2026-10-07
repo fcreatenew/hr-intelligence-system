@@ -1,0 +1,164 @@
+# Blueprint Render — VARIAN STATIC SITE untuk dashboard.
+#
+# Ini alternatif dari `render.yaml` di root repo. Bedanya:
+#   - root render.yaml  : dashboard = Docker (nginx reverse proxy, satu origin,
+#                         tanpa CORS, tanpa cold start untuk aset statis).
+#   - file ini          : dashboard = Static Site (tanpa container, gratis,
+#                         lebih cepat build) tetapi browser memanggil API
+#                         langsung, sehingga CORS WAJIB diaktifkan di hr-api.
+#
+# Cara pakai: salin file ini ke root repo sebagai `render.yaml` (ganti yang
+# default), lalu Render Dashboard -> New + -> Blueprint.
+#
+# JANGAN menjalankan kedua blueprint di akun yang sama tanpa mengganti nama
+# service: Render mencocokkan service berdasarkan `name`, sehingga `hr-api`
+# akan saling menimpa.
+#
+# Dokumen lengkap: deploy/DEPLOY.md
+
+services:
+  # ---------------------------------------------------------------------
+  # API model ML (FastAPI).
+  # ---------------------------------------------------------------------
+  - type: web
+    name: hr-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./hr_intelligence_api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: MODEL_VERSION
+        value: v2_mitigated
+      - key: HR_API_KEY
+        generateValue: true
+      # WAJIB pada varian ini: browser memanggil API lintas origin.
+      # Diisi manual dengan URL dashboard-static setelah deploy pertama
+      # (mis. https://dashboard-static.onrender.com). Tidak diisi otomatis
+      # lewat fromService karena akan membentuk siklus: dashboard-static juga
+      # mereferensikan hr-api.
+      # Untuk demo sekali pakai boleh sementara "*", jangan untuk produksi.
+      - key: CORS_ALLOW_ORIGINS
+        sync: false
+      - key: HR_NUM_THREADS
+        value: "1"
+
+  # ---------------------------------------------------------------------
+  # Payroll Intelligence (FastAPI).
+  # ---------------------------------------------------------------------
+  - type: web
+    name: payroll-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./payroll_intelligence/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: HR_NUM_THREADS
+        value: "1"
+
+  # ---------------------------------------------------------------------
+  # AI HR Assistant (FastAPI), demo offline.
+  # ---------------------------------------------------------------------
+  - type: web
+    name: hr-assistant
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./ai_hr_assistant/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: LLM_PROVIDER
+        value: mock
+      - key: EMBEDDING_BACKEND
+        value: lsa
+      - key: ASSISTANT_API_KEY
+        generateValue: true
+      - key: HR_INTELLIGENCE_BASE_URL
+        fromService:
+          name: hr-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: HR_INTELLIGENCE_API_KEY
+        fromService:
+          name: hr-api
+          type: web
+          envVarKey: HR_API_KEY
+      - key: HR_NUM_THREADS
+        value: "1"
+
+  # ---------------------------------------------------------------------
+  # HRIS Laravel (SQLite ephemeral).
+  # ---------------------------------------------------------------------
+  - type: web
+    name: hr-app
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./hr_application/Dockerfile
+    dockerContext: ./hr_application
+    healthCheckPath: /up
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      # WAJIB diisi manual: `php artisan key:generate --show` (base64:...).
+      - key: APP_KEY
+        sync: false
+      - key: DB_CONNECTION
+        value: sqlite
+      - key: HR_INTELLIGENCE_BASE_URL
+        fromService:
+          name: hr-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: HR_INTELLIGENCE_API_KEY
+        fromService:
+          name: hr-api
+          type: web
+          envVarKey: HR_API_KEY
+      - key: PAYROLL_INTELLIGENCE_BASE_URL
+        fromService:
+          name: payroll-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+
+  # ---------------------------------------------------------------------
+  # Dashboard React sebagai STATIC SITE (tanpa Docker/nginx).
+  # Vite membakar env saat build; URL API diambil dari service di atas.
+  # ---------------------------------------------------------------------
+  - type: web
+    name: dashboard-static
+    runtime: static
+    buildCommand: cd hr_dashboard && npm ci && npm run build
+    staticPublishPath: ./hr_dashboard/dist
+    autoDeploy: true
+    envVars:
+      - key: VITE_DATA_MODE
+        value: live
+      - key: VITE_HR_API_BASE
+        fromService:
+          name: hr-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: VITE_PAYROLL_API_BASE
+        fromService:
+          name: payroll-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      # Kosong: pengguna memasukkan API key lewat halaman login.
+      - key: VITE_HR_API_KEY
+        value: ""
+    routes:
+      # SPA fallback.
+      - type: rewrite
+        source: /*
+        destination: /index.html

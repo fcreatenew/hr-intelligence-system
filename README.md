@@ -479,6 +479,24 @@ HR_API_KEY=<secret> docker compose up --build
 Compose, sehingga prediksi dan skor anomali berjalan tanpa konfigurasi manual.
 `APP_KEY` untuk Laravel diisi lewat environment (`APP_KEY=base64:...`).
 
+Dashboard memakai nginx sebagai reverse proxy. Upstream API dapat diatur lewat
+`HR_API_UPSTREAM` dan `PAYROLL_API_UPSTREAM` (lihat
+`hr_dashboard/nginx.conf.template`); defaultnya sudah cocok untuk Compose.
+
+## Demo & Deploy Gratis
+
+Untuk menampilkan demo di layanan gratis (Render, Cloudflare Pages, Koyeb,
+Oracle Cloud, Hugging Face Hub), lihat:
+
+* [`deploy/DEPLOY.md`](./deploy/DEPLOY.md) — panduan lengkap + `render.yaml`
+* [`hf/space/`](./hf/space) — halaman showcase untuk Hugging Face Space (statis)
+* [`scripts/upload_to_hf.py`](./scripts/upload_to_hf.py) — unggah model/dataset ke HF Hub
+
+Ringkas: model & dataset ke **Hugging Face Hub**, dashboard ke **Cloudflare
+Pages** (mode `demo` tanpa backend) atau Render, API Python & Laravel ke
+**Render** free web service, dan stack penuh always-on via **Oracle Cloud
+Always Free** (`deploy/oracle-cloud/`).
+
 Untuk kontribusi, baca:
 
 [`CONTRIBUTE.md`](./CONTRIBUTE.md)

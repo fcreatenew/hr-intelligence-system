@@ -60,6 +60,10 @@ services:
       args:
         # Mode `live` agar dashboard memanggil API lewat proxy nginx.
         VITE_DATA_MODE: live
+    environment:
+      # Upstream nginx diproses envsubst saat start (lihat nginx.conf.template).
+      HR_API_UPSTREAM: http://hr-api:8000
+      PAYROLL_API_UPSTREAM: http://payroll-api:8300
     ports:
       - "8081:80"
     depends_on:

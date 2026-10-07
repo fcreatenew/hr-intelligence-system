@@ -1,0 +1,20 @@
+# Override docker-compose untuk Oracle Cloud Always Free (satu VM).
+#
+# Pakai bersama compose utama:
+#   docker compose -f docker-compose.yml -f deploy/oracle-cloud/docker-compose.override.yml up -d --build
+#
+# Tujuan: hanya dashboard & assistant yang diekspos ke localhost VM; Caddy di
+# host menjadi reverse proxy + HTTPS. Service lain (hr-api, payroll-api, hr-app)
+# tetap internal dan diakses lewat jaringan compose (nama service), persis
+# seperti docker-compose.yml.
+#
+# `!override` mengganti seluruh daftar ports (bukan menambah), agar mapping
+# 0.0.0.0 dari compose utama tidak ikut terbuka ke internet.
+services:
+  dashboard:
+    ports: !override
+      - "127.0.0.1:8081:80"
+
+  assistant:
+    ports: !override
+      - "127.0.0.1:8100:8100"
