@@ -145,6 +145,24 @@ melaporkan `compute_device` dan `thread_limit`. Detail & alasan ada di
 - **`hr_dashboard` lint** memakai ESLint 9 flat config (`eslint.config.js`).
   ESLint 9 tidak membaca `.eslintrc`, dan flag `--ext` sudah dihapus.
 
+## Demo & deploy gratis
+
+- **`deploy/DEPLOY.md`** — panduan demo gratis + **`render.yaml`** (root) berisi
+  blueprint 5 service Render. Env contoh per service di `deploy/env/`.
+- **HF Hub**: `scripts/upload_to_hf.py --target model|dataset|space` (staging
+  otomatis; `--dry-run` untuk inspeksi). Kartu di `hf/model_card.md`,
+  `hf/dataset_card.md`; Space statis di `hf/space/`.
+  **Penting:** HF kini hanya *Static Space* yang gratis; Gradio/Docker Space
+  butuh PRO. Model & dataset repo tetap gratis.
+- **Oracle Cloud Always Free**: `deploy/oracle-cloud/` (override compose +
+  Caddyfile + `setup.sh`). Stack penuh always-on, tanpa cold start.
+- **Koyeb**: `deploy/koyeb/README.md`.
+- **`hr_dashboard/nginx.conf.template`** — upstream nginx diisi `envsubst` saat
+  start (`HR_API_UPSTREAM`, `PAYROLL_API_UPSTREAM`); default tetap cocok untuk
+  docker-compose. Jangan hardcode nama host di sini.
+- Di PaaS tidak ada jaringan privat antar-service: isi URL publik (di Render
+  otomatis lewat `fromService: RENDER_EXTERNAL_URL`), jangan `http://hr-api:8000`.
+
 ## Konvensi
 
 - **Bahasa dokumentasi:** Indonesia.
@@ -163,3 +181,7 @@ melaporkan `compute_device` dan `thread_limit`. Detail & alasan ada di
 - `hr_intelligence_api/app/services/model_service.py` â€” `model_version` properti (bukan nama algoritma).
 - `hr_intelligence_api/app/core/exceptions.py` â€” handler 422 harus tetap JSON-serializable.
 - `models/v2/model_metadata.json` â€” `versi_model` dipakai API untuk laporan versi.
+- `hr_intelligence_api/Dockerfile` menyalin `models/` ke `/models` dan
+  `payroll_intelligence/Dockerfile` menyalin `data/` ke `/data`. Ini yang membuat
+  image mandiri di PaaS (compose hanya menambah volume read-only). Jangan
+  hapus baris `COPY` itu tanpa mengganti sumber artifact.

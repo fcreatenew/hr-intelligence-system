@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HR Intelligence System — Demo</title>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --card: #151b2e;
+        --line: #26304a;
+        --text: #e8ecf7;
+        --muted: #9aa6c4;
+        --accent: #7c8cff;
+        --accent2: #4fd1c5;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: radial-gradient(1200px 600px at 20% -10%, #1b2444 0%, var(--bg) 55%);
+        color: var(--text);
+        font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      .wrap { max-width: 1040px; margin: 0 auto; padding: 48px 20px 72px; }
+      header h1 { margin: 0 0 8px; font-size: 34px; letter-spacing: -0.5px; }
+      header p { margin: 0; color: var(--muted); max-width: 720px; }
+      .badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0 0; }
+      .badge {
+        font-size: 12.5px; color: var(--muted);
+        border: 1px solid var(--line); border-radius: 999px;
+        padding: 4px 12px; background: rgba(255,255,255,0.02);
+      }
+      h2 { margin: 44px 0 16px; font-size: 20px; }
+      .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+      .card {
+        background: var(--card); border: 1px solid var(--line);
+        border-radius: 14px; padding: 18px 18px 16px;
+      }
+      .card h3 { margin: 0 0 4px; font-size: 16px; }
+      .card .algo { color: var(--muted); font-size: 13px; margin: 0 0 12px; }
+      .metric { display: flex; justify-content: space-between; padding: 6px 0; border-top: 1px dashed var(--line); font-size: 14px; }
+      .metric span:last-child { color: var(--accent2); font-variant-numeric: tabular-nums; }
+      .links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+      a.btn {
+        display: inline-block; text-decoration: none; color: var(--text);
+        border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px;
+        background: linear-gradient(180deg, rgba(124,140,255,0.16), rgba(124,140,255,0.05));
+      }
+      a.btn:hover { border-color: var(--accent); }
+      a.btn.off {
+        opacity: 0.45; pointer-events: none;
+        background: rgba(255,255,255,0.02);
+      }
+      .note { color: var(--muted); font-size: 13.5px; }
+      pre {
+        background: #0e1426; border: 1px solid var(--line); border-radius: 12px;
+        padding: 14px 16px; overflow: auto; font-size: 13px; color: #cfe0ff;
+      }
+      footer { margin-top: 48px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 20px; }
+      code { color: var(--accent2); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>HR Intelligence System</h1>
+        <p>
+          Kumpulan model Machine Learning untuk kebutuhan HR: turnover, absensi,
+          kinerja, anomali payroll, dan survival attrition. Halaman ini adalah
+          ringkasan statis; server demo berjalan terpisah.
+        </p>
+        <div class="badges">
+          <span class="badge">5 model</span>
+          <span class="badge">CPU-only</span>
+          <span class="badge">scikit-learn + lifelines</span>
+          <span class="badge">data sintetis/anonim</span>
+          <span class="badge">audit fairness</span>
+        </div>
+      </header>
+
+      <h2>Model</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>Turnover karyawan</h3>
+          <p class="algo">Soft Voting ensemble (LR + Random Forest) — <code>v2_mitigated</code></p>
+          <div class="metric"><span>ROC AUC (holdout)</span><span>0.699</span></div>
+          <div class="metric"><span>PR AUC</span><span>0.622</span></div>
+          <div class="metric"><span>Threshold</span><span>0.31</span></div>
+          <div class="metric"><span>Mitigasi bias</span><span>reweighting</span></div>
+        </div>
+        <div class="card">
+          <h3>Absensi tinggi</h3>
+          <p class="algo">Logistic Regression</p>
+          <div class="metric"><span>Versi</span><span>v1</span></div>
+          <div class="metric"><span>Target</span><span>absen tinggi</span></div>
+        </div>
+        <div class="card">
+          <h3>Kategori kinerja</h3>
+          <p class="algo">Logistic Regression (ordinal)</p>
+          <div class="metric"><span>Versi</span><span>v1</span></div>
+          <div class="metric"><span>Target</span><span>kategori kinerja</span></div>
+        </div>
+        <div class="card">
+          <h3>Anomali payroll</h3>
+          <p class="algo">Isolation Forest (unsupervised)</p>
+          <div class="metric"><span>ROC AUC</span><span>0.978</span></div>
+          <div class="metric"><span>PR AUC</span><span>0.871</span></div>
+          <div class="metric"><span>Kontaminasi</span><span>0.04</span></div>
+        </div>
+        <div class="card">
+          <h3>Survival attrition</h3>
+          <p class="algo">Cox Proportional Hazards</p>
+          <div class="metric"><span>Metrik</span><span>C-index</span></div>
+          <div class="metric"><span>Versi</span><span>v1</span></div>
+        </div>
+      </div>
+
+      <h2>Server demo</h2>
+      <p class="note" id="demo-note">
+        Demo interaktif dijalankan di platform lain (Render/Koyeb/Oracle Cloud).
+      </p>
+      <div class="links" id="demo-links">
+        <a class="btn off" data-link="dashboard" href="#">Dashboard (React)</a>
+        <a class="btn off" data-link="hr_api" href="#">HR Intelligence API (/docs)</a>
+        <a class="btn off" data-link="payroll_api" href="#">Payroll Intelligence API</a>
+        <a class="btn off" data-link="assistant" href="#">AI HR Assistant</a>
+        <a class="btn" data-link="source_code" href="https://github.com/fcreatenew/hr-intelligence-system">Source code (GitHub)</a>
+      </div>
+
+      <h2>Kontrak API (contoh)</h2>
+      <pre>curl -X POST "https://hr-api.example.com/predict" \
+  -H "X-API-Key: $HR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "usia": 32,
+    "masa_kerja_bulan": 40,
+    "jam_lembur_bulanan": 12,
+    "gaji_bulanan": 12000000,
+    "tanggal_masuk": "2022-01-10",
+    "tanggal_promosi": "2024-06-01",
+    "departemen": "IT",
+    "status_kerja": "Tetap",
+    "pendidikan": "S1"
+  }'</pre>
+
+      <footer>
+        Semua model CPU-only. Data sintetis/anonim. Lisensi MIT.
+        Model artifact & metadata tersedia di repo model Hugging Face.
+      </footer>
+    </div>
+
+    <script>
+      // Tautan demo diisi dari config.json agar tidak perlu menyunting HTML.
+      // Isi nilai di config.json setelah deployment selesai; tautan yang masih
+      // kosong tetap nonaktif (tidak mengarah ke halaman mati).
+      fetch('./config.json', { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : {}))
+        .then((cfg) => {
+          let any = false;
+          document.querySelectorAll('[data-link]').forEach((el) => {
+            const url = cfg[el.dataset.link];
+            if (url) {
+              el.href = url;
+              el.classList.remove('off');
+              any = true;
+            }
+          });
+          if (any) {
+            document.getElementById('demo-note').textContent =
+              'Demo interaktif (server mungkin tidur saat idle — request pertama bisa lambat).';
+          }
+        })
+        .catch(() => {});
+    </script>
+  </body>
+</html>

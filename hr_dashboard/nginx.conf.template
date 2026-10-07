@@ -2,8 +2,14 @@
 #
 # Dashboard mode `live` memanggil `/api` dan `/payroll-api` (lihat
 # src/services/api.js). Di dev proxy ditangani Vite; di container diteruskan
-# nginx ke service backend. Nama host `hr-api` & `payroll-api` mengikuti
-# docker-compose.yml.
+# nginx ke service backend.
+#
+# Nama host TIDAK hardcoded: file ini adalah template yang diproses
+# `envsubst` saat container start (entrypoint resmi image nginx membaca
+# /etc/nginx/templates/*.template). Default docker-compose lokal:
+#   HR_API_UPSTREAM=http://hr-api:8000
+#   PAYROLL_API_UPSTREAM=http://payroll-api:8300
+# Di PaaS, keduanya diisi URL publik service masing-masing (lihat render.yaml).
 server {
     listen 80;
     server_name _;
@@ -13,13 +19,13 @@ server {
 
     # HR Intelligence API (prediksi model ML).
     location /api/ {
-        proxy_pass http://hr-api:8000/;
+        proxy_pass ${HR_API_UPSTREAM}/;
         proxy_set_header Host $host;
     }
 
     # Payroll Intelligence API (analitik payroll).
     location /payroll-api/ {
-        proxy_pass http://payroll-api:8300/;
+        proxy_pass ${PAYROLL_API_UPSTREAM}/;
         proxy_set_header Host $host;
     }
 

@@ -19,6 +19,11 @@ RUN pip install --no-cache-dir -r requirements.txt \
 
 COPY hr_intelligence_api/ ./
 
+# Artifact model dibaca dari MODELS_DIR = REPO_ROOT/"models" = /models di dalam
+# image (lihat app/core/config.py). Disalin ke path absolut agar image mandiri
+# dan tetap berjalan di PaaS tanpa volume mount seperti docker-compose.
+COPY models/ /models/
+
 EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

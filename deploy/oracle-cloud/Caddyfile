@@ -1,0 +1,22 @@
+# Caddyfile — reverse proxy + HTTPS otomatis untuk demo di Oracle Cloud.
+#
+# Caddy menerbitkan sertifikat Let's Encrypt otomatis, jadi butuh domain yang
+# sudah diarahkan (A record) ke IP publik VM. Ganti `demo.example.com`.
+#
+# Jalankan Caddy di HOST (bukan di dalam compose). Caddy meneruskan ke port
+# localhost yang dipublikasikan oleh override compose.
+#
+#   sudo caddy run --config deploy/oracle-cloud/Caddyfile
+
+demo.example.com {
+	encode gzip
+
+	# AI HR Assistant di sub-path /assistant.
+	handle_path /assistant/* {
+		reverse_proxy 127.0.0.1:8100
+	}
+
+	# Dashboard (nginx) sebagai default; ia mem-proxy /api & /payroll-api
+	# ke service internal.
+	reverse_proxy 127.0.0.1:8081
+}
