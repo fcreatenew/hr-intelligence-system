@@ -121,8 +121,10 @@ Jalankan dari **root repo** (notebook mencari `data/*.csv` relatif ke cwd):
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install pandas numpy scikit-learn scipy joblib matplotlib seaborn \
-            xgboost lightgbm catboost shap jupyter
+# Versi kanonik ada di requirements/base.txt (sumber tunggal).
+pip install -r requirements/base.txt
+# Tambahan khusus notebook (tidak dipakai runtime API).
+pip install matplotlib seaborn xgboost lightgbm catboost shap jupyter
 jupyter notebook notebooks/train_model_alternatives.ipynb
 ```
 
@@ -136,7 +138,5 @@ jupyter notebook notebooks/train_model_alternatives.ipynb
 Katalog use case ML lain untuk HR (beserta data & metode yang dibutuhkan) ada di
 [`../USE_CASES.md`](../USE_CASES.md). Kandidat notebook lanjutan antara lain:
 
-- `03_performance_prediction.ipynb`
-- `04_payroll_anomaly_detection.ipynb`
-- `06_survival_attrition.ipynb`
 - `09_resume_screening.ipynb`
+- `10_attrition_nlp.ipynb`

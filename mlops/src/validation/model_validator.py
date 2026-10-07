@@ -4,7 +4,7 @@ from src.config import MIN_ROC_AUC
 from src.registry.model_registry import ModelRecord
 
 
-def _primary_metric(metrics: dict) -> tuple[str, float] | None:
+def primary_metric(metrics: dict) -> tuple[str, float] | None:
     """Pilih metrik kualitas utama sesuai jenis model.
 
     ROC AUC dipakai bila ada; model ordinal multi-kelas (kinerja) memakai
@@ -29,7 +29,7 @@ def validate_record(
     ambang. Ambang dibandingkan dengan metrik utama sesuai jenis model.
     """
     checks: list[dict] = []
-    primary = _primary_metric(record.metrics)
+    primary = primary_metric(record.metrics)
     unsupervised = "isolation" in record.model_type.lower() or "unsupervised" in (
         record.target or ""
     ).lower()

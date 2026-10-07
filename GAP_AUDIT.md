@@ -111,6 +111,24 @@ reproducible sebagai fondasi, tetapi bukan penjadwalan/alert.
 
 Riwayat jabatan/departemen/gaji, mutasi & promosi, linimasa per karyawan.
 
+## 4.6b Fase 7 — modul proses bisnis HR 🔶 sebagian
+
+Empat modul Fase 7 kini tersedia di `hr_application` (route + policy +
+migrasi + form request + test):
+
+- **Recruitment / ATS** — lowongan + kandidat; terima kandidat membuat record
+  `employees` (`RecruitmentService`) sehingga mengalir ke fitur ML.
+- **Performance Management** — goal/OKR + review per periode; kategori A–D
+  diturunkan dari rating di server.
+- **Compensation & Benefits** — komponen tunjangan/potongan/BPJS/THR/bonus/PPh21.
+- **Document Management** — metadata dokumen + deteksi kedaluwarsa ≤ 30 hari.
+- **Compliance & Statutory Reporting** — draft laporan BPJS/PPh21 (estimasi)
+  dari baris payroll, dengan tarif di `config/statutory.php`.
+
+Belum tersentuh: jadwal interview/offer & resume screening (butuh model
+`USE_CASES.md` #9), checklist onboarding & aset, rekomendasi pelatihan,
+Employee Self-Service (peran `employee`), dan e-sign dokumen.
+
 ## 4.7 Kualitas data & metrik ⬜
 
 - Data absensi/kinerja/payroll/survival masih **sintetis** → metrik terlalu

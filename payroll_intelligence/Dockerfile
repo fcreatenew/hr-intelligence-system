@@ -1,15 +1,18 @@
 # Payroll Intelligence (FastAPI) — analitik & skor anomali payroll.
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-COPY requirements.txt ./
+# Konteks build = root repo (lihat docker-compose.yml). Kode berjalan di
+# /app = folder modul, sehingga REPO_ROOT = "/" dan data ter-mount di /data.
+COPY requirements/ ../requirements/
+COPY payroll_intelligence/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY payroll_intelligence/ ./
 
 EXPOSE 8300
 

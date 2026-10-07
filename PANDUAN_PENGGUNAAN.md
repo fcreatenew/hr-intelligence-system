@@ -81,16 +81,26 @@ Modul lain menjadi konsumen, sehingga model cukup dilatih di satu tempat.
 
 | Kebutuhan | Versi disarankan | Dipakai oleh |
 | --- | --- | --- |
-| Python | 3.11+ | semua modul Python |
+| Python | 3.14 | semua modul Python |
 | Node.js + npm | 18+ | `hr_dashboard` |
 | PHP + Composer | 8.2+ / 2.x | `hr_application` |
 
 Cek cepat:
 
 ```bash
-python --version
+python --version   # 3.14.x
 node --version
 php --version
+```
+
+Versi Python yang dipakai repo ini dipin di `.python-version` (root) dan
+ditegakkan di CI lewat langkah "Assert Python 3.14". Untuk membuat venv lokal
+dengan versi yang sama:
+
+```bash
+python3.14 -m venv .venv && source .venv/bin/activate
+# atau, bila memakai uv:
+uv venv --python 3.14
 ```
 
 Install dependensi per modul (masing-masing punya `requirements.txt` sendiri):
@@ -596,6 +606,36 @@ npm install && npm run build
 php artisan serve --port=8080    # hindari bentrok dengan HR Intelligence API
 ```
 
+### Modul proses bisnis HR
+
+Selain HRIS inti (karyawan, absensi, cuti, payroll, pelatihan), aplikasi
+menyediakan modul proses bisnis HR yang dapat diakses dari menu atas setelah
+login:
+
+| Menu | Kegunaan |
+| --- | --- |
+| **Rekrutmen** | Lowongan kerja + kandidat; terima kandidat menjadi karyawan |
+| **Kinerja** | Sasaran (goal/OKR) + review per periode (kategori A–D otomatis) |
+| **Kompensasi** | Komponen tunjangan/potongan/BPJS/THR/bonus/PPh21 per karyawan |
+| **Kepatuhan** | Draft laporan statutori BPJS/PPh21 dari data payroll periode |
+| **Dokumen** | Metadata dokumen karyawan (kontrak, sertifikat, identitas) + masa berlaku |
+
+**Rekrutmen → karyawan.** Buka **Rekrutmen**, buat lowongan, tambahkan
+kandidat, lalu tekan **Terima** pada kandidat yang lolos. Sistem membuat record
+karyawan baru (departemen & jabatan mengikuti lowongan, `status_kerja`
+dipetakan dari jenis kontrak), sehingga data langsung tersedia untuk prediksi
+ML tanpa entri ulang.
+
+**Kepatuhan.** Pilih jenis laporan (BPJS Kesehatan, BPJS Ketenagakerjaan, atau
+PPh21) dan periode `YYYY-MM`, lalu **Buat laporan**. Angka dihitung dari baris
+payroll periode tersebut memakai tarif di `config/statutory.php`. Nilai bersifat
+**estimasi** — tinjau sebelum pelaporan resmi, lalu tandai **Final** agar tidak
+terhitung ulang tanpa sengaja.
+
+**Peran.** `admin` dan `hr-manager` boleh membuat/mengubah data; hanya `admin`
+yang boleh menghapus. Semua aksi divalidasi lewat policy di server, bukan hanya
+disembunyikan di tampilan.
+
 ---
 
 ## 12. Contoh alur end-to-end
@@ -648,10 +688,13 @@ cd ../ai_hr_assistant    && python -m pytest tests/ -q   # 43 passed
 cd ../deep_learning      && python -m pytest tests/ -q   # 17 passed
 cd ../payroll_intelligence && python -m pytest tests/ -q # 11 passed
 cd ../mlops              && python -m pytest tests/ -q   # 11 passed
+cd ../hr_application     && php artisan test             # 216 passed
 ```
 
 Test `ai_hr_assistant` memakai `MockLLM` dan `httpx.MockTransport`, sehingga
-tidak membutuhkan jaringan maupun backend yang hidup.
+tidak membutuhkan jaringan maupun backend yang hidup. Test `hr_application`
+memakai SQLite in-memory (`RefreshDatabase`) dan tidak memanggil HR Intelligence
+API sungguhan.
 
 ---
 

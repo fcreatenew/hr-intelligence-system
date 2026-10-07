@@ -84,10 +84,12 @@ Setiap komponen memiliki source code, dependency, testing, dan dokumentasi masin
 ## `hr_application/`
 
 Aplikasi HRIS (Human Resource Information System) berbasis **Laravel / PHP**.
+Aplikasi bisnis untuk staf HR sekaligus konsumen layanan ML
+(`hr_intelligence_api` dan `payroll_intelligence`).
 
-> **Status: HRIS inti sudah berjalan.** Employee Management, Attendance, dan
-> Leave sudah dapat dipakai staf HR; Payroll dan Reporting menyusul — lihat
-> [`ROADMAP.md`](./ROADMAP.md) untuk urutannya.
+> **Status: HRIS inti sudah berjalan.** Siklus karyawan inti — Employee
+> Management, Employee History, Attendance, Leave, Payroll, Reporting, Audit
+> Trail, dan Manajemen Pengguna — sudah dapat dipakai staf HR.
 
 Sudah berjalan:
 
@@ -95,18 +97,33 @@ Sudah berjalan:
 * Pemetaan record karyawan → input model (`EmployeeFeatureMapper`)
 * Prediksi batch terjadwal (bulanan/mingguan/kuartalan)
 * Penyimpanan & penelusuran hasil prediksi
-* Login/logout dengan peran `admin` dan `hr-manager`
-* **Employee Management** — CRUD, pencarian, filter, paginasi, riwayat prediksi
-* **Attendance** — pencatatan harian + rekap per periode
-* **Leave** — pengajuan, persetujuan, dan saldo cuti
+* Autentikasi, profil, reset kata sandi, peran `admin` & `hr-manager`
+* **Employee Management** — CRUD, pencarian, filter, paginasi, terminasi
+* **Employee History** — linimasa mutasi/jabatan/gaji/status
+* **Attendance** — pencatatan harian, rekap periode, impor CSV mesin absensi
+* **Leave** — pengajuan, persetujuan, saldo cuti, kalender tim
+* **Payroll** — periode, perhitungan dari absensi, finalisasi, slip, ekspor
+* **Reporting** — headcount, turnover, biaya per departemen + ekspor CSV
+* **Audit Trail** & **Manajemen Pengguna**
 * Fitur absensi model dihitung dari data absensi, bukan diisi manual
 
-Rencana modul proses bisnis HR:
+Rencana modul proses bisnis HR (melengkapi siklus karyawan end-to-end):
 
-* Payroll
-* Employee History
-* HR Administration
-* Reporting
+| # | Modul | Menyambung ke ML |
+|---|---|---|
+| 1 | Recruitment / ATS | Resume screening & person-job fit |
+| 2 | Onboarding / Offboarding | Turnover & survival |
+| 3 | Performance Management | Prediksi kinerja & HiPo |
+| 4 | Training & Development | Rekomendasi pelatihan |
+| 5 | Compensation & Benefits | Anomali & forecasting payroll |
+| 6 | Time & Attendance lanjutan | Prediksi absensi |
+| 7 | Employee Self-Service | — |
+| 8 | Document Management | — |
+| 9 | Compliance & Statutory Reporting | — |
+
+Detail tiap modul, rumus payroll, dan jadwal prediksi ada di
+[`hr_application/README.md`](./hr_application/README.md); urutan fase & kriteria
+selesai di [`ROADMAP.md`](./ROADMAP.md).
 
 **Teknologi:** Laravel / PHP
 
@@ -264,6 +281,7 @@ hr-intelligence-system/
 ├── MODEL_RESULTS.md
 ├── PANDUAN_PENGGUNAAN.md
 ├── PANDUAN_PENGGUNAAN.pdf
+├── .python-version                   # Python 3.14 (runtime seluruh modul Python)
 │
 ├── data/
 │   ├── README.md
@@ -272,6 +290,10 @@ hr-intelligence-system/
 │   ├── hr_performance.csv          # sintetis
 │   ├── hr_payroll.csv              # sintetis
 │   └── hr_attrition_survival.csv   # sintetis
+│
+├── requirements/
+│   ├── base.txt                     # sumber tunggal versi dependensi Python
+│   └── README.md
 │
 ├── scripts/
 │   ├── generate_absenteeism_data.py
@@ -310,7 +332,7 @@ hr-intelligence-system/
 │   ├── README.md
 │   ├── app/
 │   ├── tests/
-│   ├── requirements.txt
+│   ├── requirements.txt             # -r ../requirements/base.txt
 │   └── .env.example
 │
 ├── hr_application/
@@ -362,7 +384,7 @@ diekspos lewat API dan dapat dipanggil dari `hr_application` maupun
 
 | # | Use case | Endpoint | Model | Versi | Metrik utama |
 |---|----------|----------|-------|-------|--------------|
-| 1 | Turnover | `POST /predict` | Soft Voting (ensemble LR + RF) | v2 | ROC-AUC 0,6993 |
+| 1 | Turnover | `POST /predict` | Soft Voting (ensemble LR + RF) | v2_mitigated | ROC-AUC 0,6993 |
 | 2 | Absensi | `POST /predict/absensi` | Logistic Regression | v1 | ROC-AUC 0,8287 |
 | 3 | Kinerja | `POST /predict/kinerja` | Logistic Regression (ordinal) | v1 | macro-F1 0,6357 |
 | 4 | Payroll anomaly | `POST /predict/payroll` | Isolation Forest | v1 | PR-AUC 0,8709 |
@@ -419,6 +441,11 @@ cd hr-intelligence-system
 ```
 
 Setiap project memiliki environment dan cara menjalankan masing-masing.
+
+**Prasyarat versi:** modul Python memakai **Python 3.14** (dipin di
+`.python-version`, ditegakkan di CI dan Dockerfile), `hr_dashboard` memakai
+Node.js 24, dan `hr_application` memakai PHP 8.4. Detail per komponen ada di
+`PANDUAN_PENGGUNAAN.md` bagian 3.
 
 Mulai dari dokumentasi project yang ingin dikembangkan:
 
