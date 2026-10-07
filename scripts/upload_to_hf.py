@@ -129,22 +129,27 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
-    try:
-        from huggingface_hub import HfApi
-    except ImportError:
-        print("Paket 'huggingface_hub' belum terpasang. Jalankan: pip install huggingface_hub")
-        return 1
-
-    api = HfApi()
+    api = None
+    if not args.dry_run:
+        try:
+            from huggingface_hub import HfApi
+        except ImportError:
+            print("Paket 'huggingface_hub' belum terpasang. Jalankan: pip install huggingface_hub")
+            return 1
+        api = HfApi()
 
     repo_id = args.repo
     if not repo_id:
-        try:
-            username = api.whoami()["name"]
-        except Exception as exc:  # noqa: BLE001
-            print(f"Tidak bisa membaca identitas HF (HF_TOKEN belum diset?): {exc}")
-            return 1
-        repo_id = _default_repo(args.target, username)
+        if api is None:
+            # dry-run tanpa --repo: tidak perlu identitas HF.
+            repo_id = _default_repo(args.target, "<user>")
+        else:
+            try:
+                username = api.whoami()["name"]
+            except Exception as exc:  # noqa: BLE001
+                print(f"Tidak bisa membaca identitas HF (HF_TOKEN belum diset?): {exc}")
+                return 1
+            repo_id = _default_repo(args.target, username)
 
     with tempfile.TemporaryDirectory() as tmp:
         staging = Path(tmp)
