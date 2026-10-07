@@ -1,811 +1,204 @@
-# HR Application
+# HR Intelligence API
 
-Aplikasi Human Resources berbasis **Laravel 13** untuk mengelola proses bisnis dan operasional HR.
+Service **FastAPI** untuk melayani prediksi lima use case Machine Learning HR:
+turnover, absensi, kinerja, anomali payroll, dan survival attrition.
 
-Aplikasi ini menangani pengelolaan data karyawan, absensi, payroll, dashboard HR, reporting, serta integrasi dengan layanan analitik dan Machine Learning.
+API ini adalah **satu-satunya tempat model ML dijalankan**. Modul lain
+(`hr_application`, `hr_dashboard`, `ai_hr_assistant`, `payroll_intelligence`)
+memanggilnya lewat HTTP dan tidak memuat file model sendiri.
 
----
-
-## 1. Technology Stack
-
-| Component        | Technology          |
-| ---------------- | ------------------- |
-| Framework        | Laravel 13          |
-| PHP              | 8.4                 |
-| Database         | PostgreSQL          |
-| Frontend         | Blade / JavaScript  |
-| API Client       | Laravel HTTP Client |
-| Cache            | Redis               |
-| Queue            | Redis               |
-| Web Server       | Nginx               |
-| Containerization | Docker              |
+> Dokumen ini menggantikan README lama yang keliru (isinya README aplikasi
+> Laravel). Panduan operasional seluruh sistem ada di
+> [`../PANDUAN_PENGGUNAAN.md`](../PANDUAN_PENGGUNAAN.md); konvensi repo ada di
+> [`../AGENTS.md`](../AGENTS.md).
 
 ---
 
-## 2. Requirements
+## 1. Teknologi
 
-Pastikan environment sudah memiliki:
+| Komponen | Teknologi |
+| --- | --- |
+| Framework | FastAPI |
+| Runtime | Python 3.14 (CI memakai 3.14) |
+| Model | scikit-learn, lifelines (CoxPH), joblib |
+| Data | pandas, numpy, scipy |
+| Dependensi | `requirements/base.txt` (sumber tunggal) + `lifelines` |
 
-```text
-PHP >= 8.3
-Composer
-Node.js
-NPM
-PostgreSQL
-Redis
-```
-
-Direkomendasikan:
-
-```text
-PHP 8.4
-Laravel 13
-PostgreSQL
-Redis
-```
+> **Perangkat: CPU-only.** Kelima model memakai scikit-learn & lifelines yang
+> tidak punya backend GPU. API ini **tidak membutuhkan GPU** — cukup CPU + RAM.
+> Lihat §4 untuk tuning CPU dan alasan kenapa GPU tidak memberi manfaat.
 
 ---
 
-## 3. Installation
-
-Install dependency Laravel:
+## 2. Menjalankan
 
 ```bash
-composer install
+cd hr_intelligence_api
+pip install -r requirements.txt
+
+HR_API_KEY=dev-secret uvicorn app.main:app --port 8000
 ```
 
-Install frontend dependency:
+Saat start, log menampilkan status pemuatan tiap model. Dokumentasi interaktif
+nonaktif secara default; aktifkan dengan `ENABLE_DOCS=true` lalu buka
+<http://127.0.0.1:8000/docs> (lihat §7).
 
-```bash
-npm install
-```
+Konfigurasi lewat environment:
 
-Copy environment:
-
-```bash
-cp .env.example .env
-```
-
-Generate application key:
-
-```bash
-php artisan key:generate
-```
+| Variabel | Default | Arti |
+| --- | --- | --- |
+| `HR_API_KEY` | (kosong) | API key wajib; bila kosong semua request gagal 500 |
+| `MODEL_VERSION` | `v2_mitigated` | Versi artifact turnover di `models/<versi>/` |
+| `RATE_LIMIT_PER_MINUTE` | `120` | Batas request per menit per API key |
+| `MAX_BATCH_SIZE` | `5000` | Batas karyawan per request batch |
+| `HR_NUM_THREADS` | (kosong) | Batas thread BLAS/OpenMP (mis. `1`); kosong = default library |
+| `COMPUTE_DEVICE` | `cpu` | Label perangkat komputasi (dilaporkan di `/health`) |
+| `LOG_LEVEL` | `INFO` | Level logging |
+| `ENABLE_DOCS` | `false` | Aktifkan `/docs`, `/redoc`, `/openapi.json` |
+| `CORS_ALLOW_ORIGINS` | (kosong) | Origin browser yang diizinkan, dipisah koma |
 
 ---
 
-## 4. Environment Configuration
+## 3. Endpoint
 
-Contoh konfigurasi:
+| Method | Path | Auth | Keterangan |
+| --- | --- | --- | --- |
+| `GET` | `/health` | — | Status + jumlah model termuat |
+| `GET` | `/model` | `X-API-Key` | Daftar use case |
+| `GET` | `/model/{use_case}/info` | `X-API-Key` | Metadata, metrik, versi model |
+| `GET` | `/model/info` | `X-API-Key` | Info model turnover (kompatibel lama) |
+| `POST` | `/predict` | `X-API-Key` | Turnover (satu karyawan) |
+| `POST` | `/predict/batch` | `X-API-Key` | Turnover (banyak karyawan) |
+| `POST` | `/predict/absensi` | `X-API-Key` | Absen tinggi |
+| `POST` | `/predict/absensi/batch` | `X-API-Key` | Batch absensi |
+| `POST` | `/predict/kinerja` | `X-API-Key` | Kategori kinerja |
+| `POST` | `/predict/kinerja/batch` | `X-API-Key` | Batch kinerja |
+| `POST` | `/predict/payroll` | `X-API-Key` | Anomali payroll |
+| `POST` | `/predict/payroll/batch` | `X-API-Key` | Batch payroll |
+| `POST` | `/predict/survival` | `X-API-Key` | Survival attrition |
+| `POST` | `/predict/survival/batch` | `X-API-Key` | Batch survival |
 
-```env
-APP_NAME="HR Application"
-APP_ENV=local
-APP_DEBUG=true
-APP_URL=http://localhost
-
-DB_CONNECTION=pgsql
-DB_HOST=127.0.0.1
-DB_PORT=5432
-DB_DATABASE=hr_database
-DB_USERNAME=postgres
-DB_PASSWORD=
-
-CACHE_STORE=redis
-QUEUE_CONNECTION=redis
-```
-
-### HR Intelligence API
-
-Jika menggunakan layanan Machine Learning:
-
-```env
-HR_INTELLIGENCE_API_URL=http://127.0.0.1:8000
-HR_INTELLIGENCE_API_KEY=
-```
-
-API key harus disimpan di `.env` dan tidak boleh ditulis langsung di source code.
+Semua endpoint prediksi & `/model*` memerlukan header `X-API-Key`. Endpoint
+batch dibatasi `MAX_BATCH_SIZE` karyawan per request.
 
 ---
 
-## 5. Database
+## 4. Use case, algoritma & kegunaan
 
-Jalankan migration:
+| Use case | Algoritma (artifact) | Pertanyaan yang dijawab | Hasil utama |
+| --- | --- | --- | --- |
+| `turnover` | Soft Voting (ensemble LR + RF) | Siapa yang **berisiko keluar**? | `probabilitas_keluar`, `prediksi_keluar`, `level_risiko` |
+| `absensi` | Logistic Regression | Siapa yang **berisiko absen tinggi**? | `probabilitas_absen_tinggi`, `level_risiko` |
+| `kinerja` | Logistic Regression (ordinal) | **Kategori kinerja** periode berikutnya? | `kategori_prediksi`, `probabilitas`, `skor_ordinal` |
+| `payroll` | Isolation Forest | Baris payroll mana yang **menyimpang**? | `skor_anomali`, `is_anomali`, `level` |
+| `survival` | Cox Proportional Hazards (lifelines) | **Kapan** karyawan berisiko keluar? | `risiko_relatif`, `level_risiko`, `median_survival_bulan` |
+
+> Algoritma di atas diambil dari `models/*/model_metadata.json`, bukan dikarang.
+> README lama menyebut "Gradient Boosting"/"XGBoost"; itu tidak benar — artifact
+> yang dilayani adalah Logistic Regression.
+
+Artifact turnover punya tiga versi: `v1`, `v2`, dan `v2_mitigated`
+(default, versi paling adil). Ganti lewat `MODEL_VERSION`:
 
 ```bash
-php artisan migrate
+MODEL_VERSION=v1 uvicorn app.main:app   # rollback ke v1
 ```
 
-Jika membutuhkan seed data:
+### Kegunaan pada data asli
 
-```bash
-php artisan db:seed
-```
+Selama ini model dilatih pada data **anonim/sintetis** (`data/*.csv`). Saat
+memakai data HR asli, perannya:
 
-Atau:
+- **Turnover** — skrining retensi: tandai karyawan berisiko tinggi agar HR
+  menjadwalkan 1-on-1/retensi lebih awal. Model dilatih ulang pada data asli
+  (riwayat keluar) supaya probabilitasnya bermakna.
+- **Absensi** — deteksi dini pola absen; dasarkan pada riwayat absen 30/90 hari
+  nyata. Bermanfaat untuk manajemen kehadiran dan penjadwalan shift.
+- **Kinerja** — proyeksi kategori kinerja untuk perencanaan coaching/bonus.
+  Ini **estimasi ordinal**, bukan keputusan final; metadata menegaskan "jangan
+  dipakai untuk keputusan PHK".
+- **Payroll** — audit penggajian: IsolationForest menandai baris tak lazim
+  (lembur/koreksi tak wajar) untuk ditinjau, bukan untuk memotong gaji otomatis.
+- **Survival** — perencanaan suksesi & anggaran: memperkirakan *kapan* (bukan
+  hanya *apakah*) risiko keluar terjadi, lewat median survival per karyawan.
 
-```bash
-php artisan migrate --seed
-```
+### Kualitas data menentukan kualitas model
+
+- **Target/label harus nyata** — turnover butuh status keluar, survival butuh
+  `tanggal_masuk`/`tanggal_keluar`, kinerja butuh rating historis, payroll
+  butuh baris yang sudah dilabeli anomali untuk validasi.
+- **Retraining berkala** — pakai `mlops` (`python -m src.cli retrain`/`monitor`)
+  agar drift terdeteksi dan model dipromosikan/di-rollback otomatis.
+- **Data pribadi** — jangan menyimpan PII di repo; `validate-data` menolak kolom
+  PII. Di produksi, simpan data asli di sistem HR, bukan di repo.
+- **Fairness wajib** — setiap model HR harus lewat audit keadilan
+  (`python -m src.cli fairness`), karena keputusan personalia berdampak hukum/etis.
+
+### Perangkat & tuning CPU
+
+Kelima model **murni CPU** dan tidak punya jalur GPU: scikit-learn/lifelines
+tidak menyediakan backend CUDA, dan tidak ada library GPU (torch/tensorflow/
+xgboost) di dependensi. `python:3.14-slim` sudah cukup; tidak ada `--gpus` di
+Docker/compose/k8s.
+
+Kenapa GPU tidak sepadan untuk beban ini:
+
+- **Model & data kecil** (≈1000 baris) — operasi matriksnya mikro.
+- **Latensi didominasi overhead tetap**, bukan komputasi. Hasil ukur lokal:
+  `predict_batch` 1 baris ≈ 91 ms, 1000 baris ≈ 120 ms (≈0,12 ms/baris),
+  5000 baris ≈ 156 ms (≈0,03 ms/baris). Artinya biaya per-request didominasi
+  feature engineering + overhead Python, bukan FLOP.
+- **Thread BLAS nyaris tidak berpengaruh** untuk batch kecil (113–117 ms pada
+  `HR_NUM_THREADS` = default/1/4). Yang penting justru **membatasi** thread agar
+  tidak oversubscription antar worker.
+
+Setelan yang disarankan:
+
+- **1 worker per container** dengan `HR_NUM_THREADS=1`, lalu tambah replika
+  secara horizontal (bukan menambah core/GPU per pod). Ini menjaga latensi
+  stabil dan rate limit per-proses tetap dapat diprediksi.
+- **Warm-up** sudah otomatis: `load_all_models()` dipanggil di `lifespan` startup
+  (terlihat dari log "Model '…' siap."). Tidak ada lazy-load di request pertama.
+- **Pakai endpoint batch** (`/predict/*/batch`) untuk volume besar — jauh lebih
+  efisien daripada memanggil `/predict` per karyawan.
+
+`/health` mengembalikan `compute_device` dan `thread_limit` agar konsumen bisa
+memastikan konfigurasi perangkat tanpa menebak.
 
 ---
 
-## 6. Running Application
+## 5. Contoh
 
-Jalankan Laravel:
-
-```bash
-php artisan serve
-```
-
-Aplikasi dapat diakses melalui:
-
-```text
-http://127.0.0.1:8000
-```
-
-Untuk development frontend:
+### Turnover
 
 ```bash
-npm run dev
-```
-
-Untuk production build:
-
-```bash
-npm run build
-```
-
----
-
-## 7. Application Modules
-
-Modul utama aplikasi:
-
-### Employee Management
-
-Mengelola:
-
-* data karyawan
-* identitas karyawan
-* status kerja
-* departemen
-* jabatan
-* riwayat karyawan
-
-### Attendance
-
-Mengelola:
-
-* absensi
-* jadwal kerja
-* kehadiran
-* keterlambatan
-* lembur
-* rekap absensi
-
-### Payroll
-
-Mengelola:
-
-* payroll
-* gaji
-* tunjangan
-* potongan
-* lembur
-* konfigurasi payroll
-* generate payroll
-* payroll report
-
-### HR Analytics
-
-Mengelola:
-
-* employee analytics
-* turnover analysis
-* employee risk
-* department analysis
-* HR metrics
-
-### Reporting
-
-Menghasilkan:
-
-* HR report
-* employee report
-* attendance report
-* payroll report
-* analytics report
-
----
-
-## 8. Machine Learning Integration
-
-Aplikasi dapat menggunakan HR Intelligence API untuk melakukan prediksi Machine Learning.
-
-Contoh request:
-
-```text
-Laravel
-   ↓
-POST /predict
-   ↓
-HR Intelligence API
-   ↓
-Prediction
-   ↓
-Laravel
-```
-
-Contoh data:
-
-```json
-{
-    "employee_id": 1001,
-    "usia": 30,
-    "masa_kerja_bulan": 48,
-    "jam_lembur_bulanan": 25,
-    "gaji_bulanan": 7500000,
-    "tanggal_masuk": "2021-01-10",
-    "tanggal_promosi": "2024-01-10",
-    "departemen": "IT",
-    "status_kerja": "tetap",
+curl -X POST http://127.0.0.1:8000/predict \
+  -H "X-API-Key: $HR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "employee_id": "EMP0001",
+    "usia": 38,
+    "masa_kerja_bulan": 172,
+    "jam_lembur_bulanan": 2,
+    "gaji_bulanan": 14514816,
+    "tanggal_masuk": "2010-08-12",
+    "tanggal_promosi": "2015-07-28",
+    "departemen": "Marketing",
+    "status_kerja": "Tetap",
     "pendidikan": "S1"
-}
+  }'
 ```
-
-Contoh hasil:
 
 ```json
 {
-    "employee_id": 1001,
-    "probabilitas_keluar": 0.68,
-    "prediksi_keluar": 1,
-    "level_risiko": "Tinggi"
+  "employee_id": "EMP0001",
+  "probabilitas_keluar": 0.68,
+  "prediksi_keluar": 1,
+  "level_risiko": "Tinggi"
 }
 ```
 
----
-
-## 9. API Client
-
-Gunakan Laravel HTTP Client untuk komunikasi dengan API.
-
-Contoh konfigurasi pada `config/services.php`:
-
-```php
-'hr_intelligence' => [
-    'url' => env('HR_INTELLIGENCE_API_URL'),
-    'api_key' => env('HR_INTELLIGENCE_API_KEY'),
-],
-```
-
-Contoh request:
-
-```php
-use Illuminate\Support\Facades\Http;
-
-$response = Http::withHeaders([
-    'X-API-Key' => config('services.hr_intelligence.api_key'),
-])
-    ->timeout(10)
-    ->post(
-        config('services.hr_intelligence.url') . '/predict',
-        $employeeData
-    );
-
-$result = $response->json();
-```
-
-Untuk menjaga maintainability, komunikasi dengan API sebaiknya ditempatkan pada service khusus.
-
-Contoh:
-
-```text
-app/
-└── Services/
-    └── HrIntelligence/
-        ├── HrIntelligenceClient.php
-        └── TurnoverPredictionService.php
-```
-
----
-
-## 10. Turnover Prediction
-
-Turnover prediction digunakan untuk memperkirakan kemungkinan seorang karyawan keluar.
-
-Contoh hasil:
-
-```text
-Probability : 0.68
-Prediction  : 1
-Risk Level  : Tinggi
-```
-
-Risk level (T = `threshold` model, yaitu batas `prediction`):
-
-```text
-< T/2
-Rendah
-
-T/2 - < T
-Sedang
-
->= T
-Tinggi
-```
-
-Ambang `Tinggi` sengaja sama dengan threshold model, bukan 0.50 tetap, agar
-`Risk Level: Tinggi` selalu konsisten dengan `Prediction: 1`. Untuk model
-turnover aktif (`v2_mitigated`, threshold 0.31) batasnya menjadi `< 0.155`
-Rendah, `0.155 - < 0.31` Sedang, dan `>= 0.31` Tinggi.
-
-Laravel menggunakan hasil dari API dan tidak menjalankan file model Machine Learning secara langsung.
-
----
-
-## 11. Batch Prediction
-
-Untuk melakukan prediction terhadap banyak karyawan, aplikasi dapat menggunakan endpoint batch.
-
-```text
-POST /predict/batch
-```
-
-Contoh penggunaan:
-
-```text
-Employee 1
-Employee 2
-Employee 3
-...
-Employee N
-```
-
-Batch prediction cocok untuk:
-
-* periodic analysis
-* HR dashboard
-* turnover monitoring
-* scheduled prediction
-* refresh employee risk
-
-Untuk proses yang membutuhkan waktu lama, gunakan Laravel Queue.
-
----
-
-## 12. Queue
-
-Proses asynchronous dapat menggunakan Laravel Queue.
-
-Contoh:
-
-```text
-Request
-   ↓
-Laravel
-   ↓
-Dispatch Job
-   ↓
-Redis Queue
-   ↓
-Process Job
-```
-
-Contoh job:
-
-```text
-GenerateTurnoverPrediction
-```
-
-Queue dapat digunakan untuk:
-
-* batch prediction
-* generate payroll
-* report generation
-* data processing
-* scheduled analysis
-
----
-
-## 13. Authentication & Authorization
-
-Authentication digunakan untuk mengatur akses pengguna.
-
-Contoh role:
-
-```text
-Admin
-HR
-Manager
-Employee
-```
-
-Authorization digunakan untuk menentukan fitur yang dapat diakses masing-masing role.
-
-Contoh:
-
-```text
-Admin
-- User Management
-- Employee Management
-- Configuration
-
-HR
-- Employee
-- Attendance
-- Payroll
-- Analytics
-- Reports
-
-Manager
-- Team
-- Analytics
-- Reports
-
-Employee
-- Profile
-- Personal Information
-```
-
----
-
-## 14. Security
-
-### Environment Variables
-
-Secret dan credential harus disimpan pada `.env`.
-
-Jangan:
-
-```php
-$apiKey = 'secret-key';
-```
-
-Gunakan:
-
-```php
-env('HR_INTELLIGENCE_API_KEY')
-```
-
-atau konfigurasi melalui:
-
-```php
-config('services.hr_intelligence.api_key')
-```
-
-### HTTPS
-
-Production harus menggunakan HTTPS.
-
-### Validation
-
-Semua input dari user harus divalidasi sebelum diproses.
-
-### API Authentication
-
-Request ke HR Intelligence API harus menggunakan API key yang disimpan secara aman.
-
----
-
-## 15. Error Handling
-
-Aplikasi harus menangani kondisi seperti:
-
-```text
-Connection Timeout
-API Unavailable
-HTTP 401
-HTTP 404
-HTTP 429
-HTTP 500
-Invalid Response
-```
-
-User sebaiknya mendapatkan pesan yang mudah dipahami.
-
-Contoh:
-
-```text
-Layanan analitik sedang tidak tersedia.
-Silakan coba kembali beberapa saat lagi.
-```
-
-Detail teknis disimpan pada application log.
-
----
-
-## 16. Logging
-
-Logging digunakan untuk debugging dan monitoring.
-
-Contoh:
-
-```text
-Prediction request started
-Prediction request completed
-Prediction API timeout
-Prediction API unavailable
-```
-
-Jangan mencatat:
-
-```text
-API key
-Password
-Access token
-Secret
-```
-
-ke dalam log.
-
----
-
-## 17. Testing
-
-Jalankan seluruh test:
-
-```bash
-php artisan test
-```
-
-Test dapat dibagi menjadi:
-
-```text
-tests/
-├── Feature/
-└── Unit/
-```
-
-Contoh:
-
-```text
-Feature
-├── AuthenticationTest
-├── EmployeeTest
-└── TurnoverPredictionTest
-
-Unit
-└── Services
-    └── TurnoverPredictionServiceTest
-```
-
-Untuk testing integrasi API, Laravel HTTP Client dapat menggunakan `Http::fake()`.
-
----
-
-## 18. Development Workflow
-
-Workflow pengembangan:
-
-```text
-Develop
-   ↓
-Migration
-   ↓
-Business Logic
-   ↓
-Validation
-   ↓
-Service
-   ↓
-Controller
-   ↓
-UI
-   ↓
-Testing
-```
-
-Untuk fitur Machine Learning:
-
-```text
-Employee Data
-   ↓
-Laravel Service
-   ↓
-HR Intelligence API
-   ↓
-Prediction
-   ↓
-Save Result
-   ↓
-Dashboard
-```
-
----
-
-## 19. Code Organization
-
-Gunakan prinsip **Separation of Concerns**.
-
-Controller:
-
-```text
-Request
-   ↓
-Controller
-   ↓
-Service
-```
-
-Business logic sebaiknya tidak menumpuk di Controller.
-
-Contoh:
-
-```text
-app/
-├── Http/
-│   ├── Controllers/
-│   └── Requests/
-│
-├── Models/
-│
-└── Services/
-```
-
-Controller bertanggung jawab terhadap HTTP request/response.
-
-Service bertanggung jawab terhadap business logic.
-
-Model bertanggung jawab terhadap representasi dan akses data.
-
----
-
-## 20. Performance
-
-Untuk meningkatkan performa:
-
-* gunakan database indexing
-* gunakan eager loading
-* gunakan pagination
-* gunakan caching
-* gunakan Redis
-* gunakan queue untuk proses berat
-* hindari query berulang
-* gunakan batch processing untuk data besar
-
-Untuk proses asynchronous:
-
-```text
-Laravel Queue
-    ↓
-Redis
-    ↓
-Worker
-```
-
-Worker dapat dijalankan dengan:
-
-```bash
-php artisan queue:work
-```
-
----
-
-## 21. Production
-
-Sebelum production:
-
-```bash
-composer install --no-dev --optimize-autoloader
-```
-
-Cache configuration:
-
-```bash
-php artisan config:cache
-```
-
-Cache routes:
-
-```bash
-php artisan route:cache
-```
-
-Cache views:
-
-```bash
-php artisan view:cache
-```
-
-Build frontend:
-
-```bash
-npm run build
-```
-
-Pastikan:
-
-```env
-APP_ENV=production
-APP_DEBUG=false
-```
-
----
-
-## 22. Docker
-
-Aplikasi dapat dijalankan menggunakan Docker.
-
-Contoh service:
-
-```text
-Laravel
-PostgreSQL
-Redis
-Nginx
-```
-
-Development:
-
-```text
-Browser
-   ↓
-Nginx
-   ↓
-Laravel
-   ├── PostgreSQL
-   └── Redis
-```
-
----
-
-## 23. Maintenance
-
-Beberapa hal yang perlu diperhatikan:
-
-* migration harus terdokumentasi
-* perubahan database harus melalui migration
-* business logic tidak diletakkan seluruhnya di controller
-* API credential tidak disimpan di repository
-* test harus diperbarui ketika fitur berubah
-* dependency harus diperbarui secara berkala
-* log production harus dimonitor
-
----
-
-## 24. Development Status
-
-```text
-Application
-├── Authentication       [Planned]
-├── User Management      [Planned]
-├── Employee Management  [Planned]
-├── Attendance           [Planned]
-├── Payroll              [Planned]
-├── HR Analytics         [Planned]
-├── Turnover Prediction  [Planned]
-└── Reporting            [Planned]
-```
-
----
-
-## 25. Multi-Model Prediction API
-
-Selain turnover, HR Intelligence API melayani seluruh model HR yang sudah dilatih.
-Setiap use case punya endpoint prediksi tunggal dan batch dengan skema sendiri.
-
-| Use case | Endpoint tunggal | Endpoint batch | Algoritma |
-| -------- | ---------------- | -------------- | --------- |
-| `turnover` | `POST /predict` | `POST /predict/batch` | Soft Voting (ensemble) |
-| `absensi` | `POST /predict/absensi` | `POST /predict/absensi/batch` | Gradient Boosting |
-| `kinerja` | `POST /predict/kinerja` | `POST /predict/kinerja/batch` | XGBoost (ordinal) |
-| `payroll` | `POST /predict/payroll` | `POST /predict/payroll/batch` | IsolationForest |
-| `survival` | `POST /predict/survival` | `POST /predict/survival/batch` | Cox Proportional Hazards |
-
-Endpoint metadata & pemantauan:
-
-```text
-GET /health              -> status + daftar model yang termuat
-GET /model               -> daftar use case yang tersedia
-GET /model/{use_case}/info -> metadata, metrik, dan versi model per use case
-```
-
-Semua endpoint prediksi memerlukan header `X-API-Key`. Endpoint batch dibatasi
-`MAX_BATCH_SIZE` karyawan per request (lihat `app/core/config.py`).
-
-Contoh:
+### Absensi
 
 ```bash
 curl -X POST http://127.0.0.1:8000/predict/absensi \
@@ -826,25 +219,82 @@ curl -X POST http://127.0.0.1:8000/predict/absensi \
   }'
 ```
 
-Bentuk hasil berbeda per use case:
+Skema lengkap tiap use case ada di `app/schemas/`; contoh payload ada di
+`model_config.json_schema_extra` masing-masing skema.
+
+---
+
+## 6. Level risiko turnover
+
+`level_risiko` memakai threshold model (batas `prediksi_keluar`), bukan 0.50
+tetap, agar label risiko konsisten dengan prediksi:
 
 ```text
-absensi   -> probabilitas_absen_tinggi, prediksi_absen_tinggi, level_risiko
-kinerja   -> kategori_prediksi, probabilitas{Rendah,Sedang,Tinggi}, skor_ordinal
-payroll   -> skor_anomali, is_anomali, level
-survival  -> risiko_relatif, level_risiko, median_survival_bulan
+Rendah  : probabilitas < threshold/2
+Sedang  : threshold/2 <= probabilitas < threshold
+Tinggi  : probabilitas >= threshold
 ```
 
-### Integrasi di `hr_application`
+Untuk default `v2_mitigated` (threshold 0.31): `< 0.155` Rendah,
+`0.155 – < 0.31` Sedang, `>= 0.31` Tinggi. Lihat
+`app/services/risk_service.py`.
 
-`hr_application` memakai service `HrIntelligenceService` yang endpoint-nya
-diatur di `config/hr_intelligence.php` pada key `use_cases`. Tersedia:
+---
+
+## 7. Keamanan
+
+- **API key** dikirim lewat header `X-API-Key` dan dibandingkan dengan
+  `HR_API_KEY`. Bila `HR_API_KEY` kosong, API mengembalikan 500 (fail closed).
+- **Rate limit** in-memory per API key (`RATE_LIMIT_PER_MINUTE`). Batas ini
+  per-proses: bila dijalankan dengan banyak worker, limit efektifnya berlipat.
+  Untuk deployment multi-instance, gunakan rate limiter berbasis Redis.
+- **CORS** hanya aktif bila `CORS_ALLOW_ORIGINS` diisi. `hr_dashboard` di dev
+  memakai proxy Vite sehingga tidak butuh CORS; konsumen browser lain perlu
+  mengisi variabel ini.
+- **Docs interaktif** (`/docs`, `/redoc`, `/openapi.json`) nonaktif secara
+  default agar tidak membuka skema tanpa kunci. Aktifkan dengan
+  `ENABLE_DOCS=true` (mis. di lokal).
+
+---
+
+## 8. Struktur
 
 ```text
-HrIntelligence::predictUseCase($useCase, $employee)
-HrIntelligence::predictUseCaseBatch($useCase, $employees)
-HrIntelligence::useCaseInfo($useCase)
-HrIntelligence::useCases()
+hr_intelligence_api/
+├── app/
+│   ├── api/routes/        # health, model, predict
+│   ├── core/              # config, auth, middleware, exceptions, logging
+│   ├── features/          # kontrak fitur (features.py)
+│   ├── schemas/           # skema Pydantic per use case
+│   └── services/          # model_service, prediction_service, risk_service
+├── tests/                 # 41 test (pytest)
+└── requirements.txt       # -r ../requirements/base.txt + lifelines
+```
+
+---
+
+## 9. Test
+
+```bash
+cd hr_intelligence_api
+python -m pytest tests/ -q
+```
+
+---
+
+## 10. Integrasi di `hr_application`
+
+`hr_application` memakai `HrIntelligenceService`; endpoint tiap use case diatur
+di `config/hr_intelligence.php` (key `use_cases`). Env yang dipakai:
+`HR_INTELLIGENCE_BASE_URL` dan `HR_INTELLIGENCE_API_KEY` (bukan
+`HR_INTELLIGENCE_API_URL`).
+
+```php
+use App\Facades\HrIntelligence;
+
+HrIntelligence::predictUseCase('absensi', $employeeData);
+HrIntelligence::predictUseCaseBatch('payroll', $employeeList);
+HrIntelligence::useCaseInfo('survival');
 ```
 
 Batch dijalankan lewat `RunUseCaseBatchPredictionJob` dan dijadwalkan di
@@ -859,8 +309,4 @@ php artisan hr-intelligence:predict payroll --sync
 
 ## License
 
-Private / Proprietary.
-
-Hak penggunaan, distribusi, modifikasi, dan akses terhadap source code mengikuti kebijakan pemilik proyek.
-
-© 2026 All Rights Reserved.
+Private / Proprietary. © 2026 All Rights Reserved.

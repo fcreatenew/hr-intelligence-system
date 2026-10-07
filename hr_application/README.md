@@ -1,11 +1,12 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# HR Application (HRIS)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplikasi **HRIS (Human Resource Information System)** berbasis **Laravel / PHP**.
+Ini aplikasi bisnis yang dipakai staf HR sehari-hari, sekaligus **konsumen**
+layanan ML: `hr_intelligence_api` (prediksi) dan `payroll_intelligence`
+(skor anomali payroll).
+
+Status modul ada di [`../ROADMAP.md`](../ROADMAP.md); katalog use case ML di
+[`../USE_CASES.md`](../USE_CASES.md).
 
 ## Cara Menjalankan
 
@@ -13,14 +14,24 @@
 cd hr_application
 composer install
 cp .env.example .env && php artisan key:generate
-php artisan migrate --seed      # membuat akun demo + 3 karyawan contoh
+php artisan migrate --seed      # akun demo + karyawan, hari libur, absensi contoh
 php artisan serve --port=8080   # 8000 dipakai hr_intelligence_api
+```
+
+Jalankan **scheduler** dan **queue worker** agar prediksi batch terjadwal
+benar-benar tereksekusi (bukan hanya terdaftar):
+
+```bash
+php artisan schedule:work
+php artisan queue:work --tries=3
 ```
 
 Akun demo dari seeder: `test@example.com` / `password` (peran `admin`).
 
 > Port default Laravel adalah 8000, sama dengan `hr_intelligence_api`. Jalankan
 > aplikasi ini di port lain (mis. `8080`) agar keduanya bisa hidup bersamaan.
+
+Peran pengguna (`App\Support\UserRoles`): `admin` dan `hr-manager`.
 
 ## Modul HRIS
 
@@ -33,14 +44,15 @@ CRUD karyawan lengkap dengan halaman web (Blade):
 | `GET /employees` | Daftar + pencarian (nama/NIK/email) + filter departemen & status + paginasi |
 | `GET /employees/create` | Form tambah karyawan |
 | `POST /employees` | Simpan karyawan baru |
-| `GET /employees/{id}` | Detail karyawan + riwayat prediksi ML |
+| `GET /employees/{id}` | Detail karyawan + 20 prediksi ML terakhir + linimasa riwayat |
 | `GET /employees/{id}/edit` | Form ubah |
-| `PUT /employees/{id}` | Simpan perubahan |
+| `PUT /employees/{id}` | Simpan perubahan (mencatat riwayat) |
+| `POST /employees/{id}/terminate` | Catat pemutusan hubungan kerja (tanggal + alasan) |
 | `DELETE /employees/{id}` | Hapus (khusus `admin`) |
 
 Hak akses diatur `App\Policies\EmployeePolicy`:
 
-* `admin` dan `hr-manager` — lihat, tambah, ubah
+* `admin` dan `hr-manager` — lihat, tambah, ubah, terminasi
 * hanya `admin` — hapus (destruktif, memutus riwayat)
 
 Validasi memakai `StoreEmployeeRequest` / `UpdateEmployeeRequest`: NIK & email
@@ -50,10 +62,31 @@ Catatan penting: **kolom ML yang dikosongkan dibiarkan `null`**, bukan diisi 0.
 Nilai default ditentukan mapper saat prediksi dijalankan, sehingga angka nol
 tidak salah ditafsirkan sebagai data nyata.
 
-### Autentikasi
+### Employee History (Linimasa)
 
-Halaman login/logout sederhana (`Auth\LoginController`). Tamu yang membuka
-route terlindungi diarahkan ke `/login`.
+Perubahan penting karyawan dicatat sebagai *event* terstruktur di
+`employee_histories` (`App\Models\EmployeeHistory`): mutasi departemen,
+perubahan jabatan, perubahan gaji, perubahan status, dan terminasi. Berbeda
+dengan `AuditLog` yang mencatat setiap perubahan atribut secara generik, tabel
+ini menyajikan riwayat yang sudah diberi makna sehingga dapat dibaca sebagai
+linimasa per karyawan di halaman detail.
+
+### Autentikasi & Profil
+
+| Route | Fungsi |
+|---|---|
+| `GET /login`, `POST /login` | Masuk (rate limit `throttle:login`, 5/menit per email+IP) |
+| `POST /logout` | Keluar |
+| `GET/POST /forgot-password` | Minta tautan reset kata sandi |
+| `GET /reset-password/{token}`, `POST /reset-password` | Atur ulang kata sandi |
+| `GET/PUT /profile` | Ubah profil sendiri |
+
+Tamu yang membuka route terlindungi diarahkan ke `/login`.
+
+### Manajemen Pengguna
+
+CRUD pengguna + kirim ulang tautan reset (khusus `admin`) lewat
+`UserController` (`/users`). Nilai peran dibatasi `UserRoles::ALL`.
 
 ### Attendance (Absensi)
 
@@ -68,8 +101,12 @@ Pencatatan kehadiran harian dengan rekap per periode.
 | `PUT /attendances/{id}` | Simpan perubahan |
 | `DELETE /attendances/{id}` | Hapus (khusus `admin`) |
 | `GET /attendances/recap` | Rekap per karyawan: hadir, terlambat, tidak hadir, cuti |
+| `GET /attendances/import/template` | Unduh template CSV impor |
+| `POST /attendances/import` | Impor massal dari CSV (mesin absensi/fingerprint) |
 
-Status: `hadir`, `terlambat`, `izin`, `sakit`, `cuti`, `alpha`.
+Status: `hadir`, `terlambat`, `izin`, `sakit`, `cuti`, `alpha`. Impor massal
+memakai `AttendanceImportService`/`AttendanceImportParser`, mendukung
+*update* baris yang sudah ada, dan melaporkan baris yang dilewati.
 
 ### Leave (Cuti)
 
@@ -85,6 +122,10 @@ Pengajuan cuti dengan alur persetujuan dan saldo per karyawan.
 | `POST /leave-requests/{id}/reject` | Tolak |
 | `DELETE /leave-requests/{id}` | Hapus (khusus `admin`) |
 | `GET /leave-requests/balances` | Saldo cuti semua karyawan |
+| `GET /leave-requests/calendar` | Kalender cuti tim (grid bulanan, tumpang tindih terlihat) |
+
+Jenis cuti (`LeaveRequest::TYPES`): `tahunan`, `sakit`, `melahirkan`,
+`menikah`, `duka`, `lainnya`.
 
 Persetujuan menulis tiga hal dalam satu transaksi: status pengajuan, saldo
 cuti, dan catatan absensi harian bertipe `cuti`. Bila saldo tidak mencukupi,
@@ -107,18 +148,21 @@ payroll tidak lagi ditulis langsung ke tabel `employees`.
 | `POST /payroll-periods/{id}/calculate` | Hitung ulang seluruh baris |
 | `POST /payroll-periods/{id}/finalize` | Finalisasi (khusus `admin`, membekukan angka) |
 | `GET /payroll-periods/{id}/export` | Ekspor komponen payroll ke CSV |
+| `GET /payroll-periods/{id}/items/{item}/slip` | Slip gaji per karyawan |
 | `DELETE /payroll-periods/{id}` | Hapus periode (khusus `admin`, bukan periode final) |
 
 Rumus perhitungan (`App\Services\PayrollCalculationService`):
 
 ```
-lembur_jam  = total menit lembur absensi periode ÷ 60 (dibulatkan ke bawah)
+lembur_jam   = total menit lembur absensi periode ÷ 60 (dibulatkan ke bawah)
 biaya_lembur = lembur_jam × tarif_lembur
-potongan    = (hari alpha × gaji_pokok ÷ 22) + potongan tetap karyawan
-total_gaji  = gaji_pokok + tunjangan + biaya_lembur − potongan
+potongan     = (hari alpha × gaji_pokok ÷ hari_kerja_per_bulan) + potongan tetap
+total_gaji   = gaji_pokok + tunjangan + biaya_lembur − potongan
 ```
 
-Rumus `total_gaji` sengaja identik dengan `payroll_intelligence` dan fitur model
+`hari_kerja_per_bulan` (default 22) dan `tarif_lembur` diatur lewat env
+`PAYROLL_WORKING_DAYS_PER_MONTH` dan `PAYROLL_DEFAULT_OVERTIME_RATE`. Rumus
+`total_gaji` sengaja identik dengan `payroll_intelligence` dan fitur model
 anomali payroll di HR Intelligence API, sehingga angka HRIS dan model memakai
 definisi yang sama. Cuti disetujui tidak dipotong; hanya `alpha` yang dipotong.
 
@@ -128,18 +172,163 @@ Intelligence** (opsional). Isi `PAYROLL_INTELLIGENCE_BASE_URL` (mis.
 perhitungan tetap berjalan tanpa skor — payroll tidak boleh gagal karena
 layanan analitik.
 
+### Reporting
+
+| Route | Fungsi |
+|---|---|
+| `GET /reports` | Laporan headcount, turnover, dan biaya per departemen |
+| `GET /reports/export` | Ekspor rekap ke CSV (streaming, hemat memori) |
+| `GET /reports/export-pdf` | Ekspor rekap ke PDF (tanpa dependensi composer) |
+
+Rasio turnover dihitung dari karyawan yang keluar dalam rentang periode
+(memakai `termination_date` bila ada) dibagi total karyawan per departemen.
+
+### Training & Development
+
+Katalog pelatihan beserta pendaftaran karyawan dan hasilnya.
+
+| Route | Fungsi |
+|---|---|
+| `GET /trainings` | Daftar pelatihan (filter status & kategori) |
+| `GET /trainings/create` | Form pelatihan baru |
+| `POST /trainings` | Simpan pelatihan |
+| `GET /trainings/{training}` | Detail pelatihan + peserta |
+| `PUT /trainings/{training}` | Perbarui pelatihan |
+| `DELETE /trainings/{training}` | Hapus pelatihan (admin) |
+| `POST /trainings/{training}/participants` | Daftarkan satu/beberapa karyawan |
+| `PUT /participants/{participant}` | Catat hasil (status, skor, sertifikat) |
+| `DELETE /participants/{participant}` | Hapus partisipan |
+
+Status pelatihan: `draft` → `berjalan` → `selesai` (atau `dibatalkan`). Kuota
+ditegakkan saat pendaftaran; karyawan yang sudah terdaftar dilewati agar
+pendaftaran massal tetap jalan. Satu karyawan hanya boleh terdaftar sekali per
+pelatihan (dijaga unique index).
+
+**Integrasi ML:** setiap kali hasil partisipan disimpan atau partisipan dihapus,
+`App\Services\TrainingService` menghitung ulang `jumlah_training_setahun`
+karyawan dari partisipasi **berjalan/selesai** pada tahun berjalan. Kolom itu
+kini tidak lagi diisi manual di form karyawan.
+
+### Recruitment / ATS
+
+Lowongan kerja dan kandidat beserta tahap seleksinya.
+
+| Route | Fungsi |
+|---|---|
+| `GET /job-openings` | Daftar lowongan (filter status & departemen) |
+| `GET /job-openings/create` | Form lowongan baru |
+| `POST /job-openings` | Simpan lowongan |
+| `GET /job-openings/{jobOpening}` | Detail lowongan + daftar kandidat |
+| `PUT /job-openings/{jobOpening}` | Perbarui lowongan |
+| `DELETE /job-openings/{jobOpening}` | Hapus lowongan (admin) |
+| `POST /job-openings/{jobOpening}/candidates` | Tambah kandidat |
+| `GET /candidates/{candidate}/edit` | Form ubah kandidat |
+| `PUT /candidates/{candidate}` | Perbarui kandidat |
+| `DELETE /candidates/{candidate}` | Hapus kandidat (admin) |
+| `POST /candidates/{candidate}/hire` | Terima kandidat |
+
+Status lowongan: `draft` → `dibuka` → `ditutup` (atau `dibatalkan`). Tahap
+kandidat: `melamar` → `screening` → `interview` → `offer` → `diterima`
+(atau `ditolak`/`mengundurkan_diri`).
+
+**Integrasi ML:** `POST /candidates/{candidate}/hire` memanggil
+`App\Services\RecruitmentService`, yang membuat record `employees` dari data
+kandidat (departemen/jabatan dari lowongan, `status_kerja` dipetakan dari
+`employment_type`). Dengan begitu karyawan baru langsung mengalir ke fitur
+model turnover/kinerja tanpa entri ulang. Kandidat yang sudah `diterima`
+dilewati agar tidak membuat karyawan ganda.
+
+### Performance Management
+
+Sasaran kinerja (goal/OKR) dan siklus review per periode.
+
+| Route | Fungsi |
+|---|---|
+| `GET /performance-goals` | Daftar sasaran (filter periode/karyawan/status) |
+| `POST /performance-goals` | Simpan sasaran |
+| `PUT /performance-goals/{goal}` | Perbarui sasaran |
+| `DELETE /performance-goals/{goal}` | Hapus sasaran (admin) |
+| `GET /performance-reviews` | Daftar review (filter periode/kategori) |
+| `POST /performance-reviews` | Simpan review |
+| `PUT /performance-reviews/{review}` | Perbarui review |
+| `DELETE /performance-reviews/{review}` | Hapus review (admin) |
+
+Status sasaran: `draft` → `berjalan` → `selesai` (atau `dibatalkan`).
+**Kategori review (A–D) diturunkan dari rating 1–5 di server**, bukan diisi
+manual, agar konsisten. Satu karyawan hanya boleh punya satu review per
+periode (dijaga unique index dan divalidasi di form request).
+
+### Compensation & Benefits
+
+Komponen kompensasi di luar gaji pokok: tunjangan, potongan, BPJS, THR, bonus,
+dan PPh21.
+
+| Route | Fungsi |
+|---|---|
+| `GET /compensation-components` | Daftar komponen (filter tipe/karyawan) |
+| `POST /compensation-components` | Simpan komponen |
+| `PUT /compensation-components/{component}` | Perbarui komponen |
+| `DELETE /compensation-components/{component}` | Hapus komponen (admin) |
+
+Komponen berulang (`recurring`) dan rentang berlaku (`effective_date`–`end_date`)
+memudahkan menyambung ke analitik payroll. Tipe potongan/PPh21 ditandai lewat
+`isDeduction()`.
+
+### Compliance & Statutory Reporting
+
+Draft laporan BPJS/PPh21 per periode, dihitung dari data payroll.
+
+| Route | Fungsi |
+|---|---|
+| `GET /statutory-reports` | Daftar laporan + form buat laporan |
+| `POST /statutory-reports` | Buat/segarkan laporan |
+| `GET /statutory-reports/{report}` | Detail laporan |
+| `POST /statutory-reports/{report}/finalize` | Tandai final |
+| `DELETE /statutory-reports/{report}` | Hapus laporan (admin) |
+
+`App\Services\StatutoryReportService` menjumlahkan dasar perhitungan
+(gaji pokok + tunjangan) dari baris `payroll_items` periode terkait, lalu
+menerapkan tarif dari `config/statutory.php` (dapat diatur lewat env). Laporan
+bersifat **estimasi** — wajib ditinjau sebelum pelaporan resmi. Membuat
+laporan untuk tipe & periode yang sama akan menyegarkan draft, bukan
+menduplikasi (dijaga unique index).
+
+### Document Management
+
+Metadata dokumen karyawan (kontrak, sertifikat, identitas) beserta masa
+berlakunya.
+
+| Route | Fungsi |
+|---|---|
+| `GET /employee-documents` | Daftar dokumen (filter kategori/status/karyawan) |
+| `POST /employee-documents` | Simpan dokumen |
+| `PUT /employee-documents/{document}` | Perbarui dokumen |
+| `DELETE /employee-documents/{document}` | Hapus dokumen (admin) |
+
+Hanya **metadata** yang disimpan (`file_path` berupa tautan/berkas opsional);
+jangan menaruh dokumen pribadi asli di repo. `expiresSoon()` menandai dokumen
+yang kedaluwarsa ≤ 30 hari lagi agar mudah ditindaklanjuti.
+
+### Audit Trail
+
+Semua perubahan pada karyawan, absensi, cuti, dan payroll tercatat otomatis di
+`audit_logs` (event, nilai lama/baru, IP, user agent) lewat observer. Halaman
+`GET /admin/audit-logs` menampilkan jejak tersebut (khusus `admin`).
+
 ### Fitur ML dihitung dari data, bukan diisi manual
 
-`riwayat_absen_90hari` dan `hari_absen_setahun` sebelumnya adalah kolom yang
-diisi manual di form karyawan. Sekarang keduanya dihitung dari tabel
-`attendances` oleh `App\Services\AttendanceMetricsService`, sehingga tidak bisa
-basi atau salah isi. Form karyawan hanya menampilkan nilainya sebagai keterangan.
+`riwayat_absen_90hari`, `hari_absen_setahun`, dan `jumlah_training_setahun`
+sebelumnya adalah kolom yang diisi manual di form karyawan. Sekarang
+`riwayat_absen_90hari`/`hari_absen_setahun` dihitung dari tabel `attendances`
+oleh `App\Services\AttendanceMetricsService`, dan `jumlah_training_setahun`
+dihitung dari tabel `training_participants` oleh `App\Services\TrainingService`.
+Form karyawan hanya menampilkan nilainya sebagai keterangan.
 
 Definisinya: jumlah hari **izin + sakit + alpha** dalam 90 hari (atau 365 hari)
 terakhir. **Cuti tidak dihitung** karena sudah direncanakan dan disetujui —
 memasukkannya akan membuat karyawan yang berlibur tampak seperti sering absen.
 
-### Integrasi HR Intelligence
+## Integrasi HR Intelligence
 
 Aplikasi ini adalah konsumen dari **HR Intelligence API** (FastAPI). Selain
 turnover, tersedia prediksi absensi, kinerja, anomali payroll, dan survival
@@ -150,6 +339,9 @@ Konfigurasi (`.env`):
 ```env
 HR_INTELLIGENCE_BASE_URL=http://localhost:8000
 HR_INTELLIGENCE_API_KEY=
+HR_INTELLIGENCE_TIMEOUT=10
+HR_INTELLIGENCE_RETRY_TIMES=3
+HR_INTELLIGENCE_RETENTION_DAYS=365
 ```
 
 Endpoint tiap use case diatur di `config/hr_intelligence.php` (`use_cases`).
@@ -162,17 +354,31 @@ HrIntelligence::predictUseCaseBatch('payroll', $employeeList);
 HrIntelligence::useCaseInfo('survival');
 ```
 
-Prediksi batch berjalan lewat `RunUseCaseBatchPredictionJob`, dijadwalkan di
-`routes/console.php`, dan bisa dijalankan manual:
+Prediksi batch berjalan lewat `RunUseCaseBatchPredictionJob` (turnover:
+`RunTurnoverBatchPredictionJob`), dijadwalkan di `routes/console.php`, dan bisa
+dijalankan manual:
 
 ```bash
 php artisan hr-intelligence:predict absensi
 php artisan hr-intelligence:predict payroll --sync
+php artisan hr-intelligence:predict-turnover
 ```
 
-Hasil prediksi disimpan di tabel `hr_intelligence_predictions` dan dapat diakses
-lewat route admin `admin/hr-intelligence/{useCase}/predictions`, atau per
-karyawan di halaman detail karyawan.
+Jadwal batch (lihat `routes/console.php`):
+
+| Use case | Jadwal |
+|---|---|
+| Turnover | Bulanan, tanggal 1 pukul 02:00 |
+| Absensi | Mingguan, Senin pukul 03:00 |
+| Payroll | Bulanan, tanggal 1 pukul 04:00 |
+| Kinerja | Kuartalan |
+| Survival | Bulanan, tanggal 1 pukul 05:00 |
+
+Hasil prediksi disimpan di tabel `hr_intelligence_predictions` dan dapat
+diakses lewat halaman admin `/admin/hr-intelligence` (dengan rate limit
+`throttle:admin-api`, 30/menit per pengguna), atau per karyawan di halaman
+detail karyawan. Prediksi lama dibersihkan sesuai
+`HR_INTELLIGENCE_RETENTION_DAYS`.
 
 ## Test
 
@@ -180,57 +386,32 @@ karyawan di halaman detail karyawan.
 php artisan test
 ```
 
-## Modul Berikutnya
+## Modul Proses Bisnis HR
 
-Urutan pengembangan modul HRIS selanjutnya ada di
-[`../ROADMAP.md`](../ROADMAP.md) (Attendance, Leave, Payroll, Reporting).
+HRIS inti (Employee, Employee History, Attendance, Leave, Payroll, Reporting,
+Audit Trail, Manajemen Pengguna) sudah berjalan. Modul **proses bisnis HR**
+melengkapi siklus karyawan end-to-end — semuanya bersifat aditif di atas
+fondasi yang ada (route + policy + migrasi + test), mengikuti konvensi modul
+saat ini.
 
-## About Laravel
+| # | Modul | Isi utama | Menyambung ke ML | Status |
+|---|---|---|---|---|
+| 1 | **Recruitment / ATS** | Lowongan, kandidat, tahap seleksi, terima kandidat | Person-job fit (`USE_CASES.md` #9) | ✅ (interview/offer lanjutan belum) |
+| 2 | **Onboarding / Offboarding** | Checklist onboarding, aset, exit interview | Turnover & survival (#1, #2) | 🔶 sebagian (`terminate` sudah ada) |
+| 3 | **Performance Management** | Goal/OKR, siklus review, kategori A–D | Prediksi kinerja & HiPo (#4, #5) | ✅ |
+| 4 | **Training & Development** | Katalog pelatihan, enrollment, sertifikasi | Job/training recommendation (#10) | 🔶 sebagian (rekomendasi belum) |
+| 5 | **Compensation & Benefits** | Tunjangan, BPJS, PPh21, THR | Payroll anomaly & forecasting (#6, #7) | ✅ |
+| 6 | **Time & Attendance lanjutan** | Shift, persetujuan lembur, akrual cuti otomatis | Absensi (#3) | 🔶 sebagian (impor & rekap sudah ada) |
+| 7 | **Employee Self-Service** | Portal peran `employee`: ajukan cuti, lihat slip | — | ⬜ rencana |
+| 8 | **Document Management** | Kontrak, retensi dokumen | — | ✅ (e-sign belum) |
+| 9 | **Compliance & Statutory Reporting** | Laporan BPJS/PPh21 (estimasi) | — | ✅ |
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Urutan fase, kriteria selesai, dan utang teknis (backup & retensi, drift alert,
+retraining terjadwal, validasi pada data nyata) ada di
+[`../ROADMAP.md`](../ROADMAP.md) (Fase 5–7).
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Lisensi
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
-```
-
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Aplikasi ini bagian dari **HR Intelligence System**. Lihat
+[`../README.md`](../README.md) dan [`../LICENSE`](../LICENSE) untuk keterangan
+lisensi proyek.

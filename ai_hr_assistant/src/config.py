@@ -48,6 +48,7 @@ RATE_LIMIT_PER_MINUTE = _int("ASSISTANT_RATE_LIMIT_PER_MINUTE", 60)
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "mock").strip().lower()
 LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
 LLM_TEMPERATURE = _float("LLM_TEMPERATURE", 0.2)
+HF_TOKEN = os.getenv("HF_TOKEN", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "")
 

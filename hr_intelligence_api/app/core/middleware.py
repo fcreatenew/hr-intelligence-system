@@ -3,6 +3,9 @@ import time
 import uuid
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.core.config import CORS_ALLOW_ORIGINS
 
 
 logger = logging.getLogger("hr_intelligence.api")
@@ -32,3 +35,12 @@ async def log_requests(request: Request, call_next):
 
 def register_middlewares(app: FastAPI):
     app.middleware("http")(log_requests)
+
+    # CORS hanya dipasang bila origin diizinkan secara eksplisit.
+    if CORS_ALLOW_ORIGINS:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=CORS_ALLOW_ORIGINS,
+            allow_methods=["GET", "POST"],
+            allow_headers=["X-API-Key", "Content-Type"],
+        )

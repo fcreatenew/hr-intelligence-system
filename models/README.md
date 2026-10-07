@@ -27,11 +27,11 @@ models/
 │   ├── turnover_model.joblib
 │   └── model_metadata.json
 │
-├── v2/                        # turnover — Soft Voting ensemble (default API)
+├── v2/                        # turnover — Soft Voting ensemble
 │   ├── turnover_model.joblib
 │   └── model_metadata.json
 │
-├── v2_mitigated/              # turnover v2 + reweighting (lebih adil)
+├── v2_mitigated/              # turnover v2 + reweighting (default API, lebih adil)
 │   ├── turnover_model.joblib
 │   └── model_metadata.json
 │
@@ -41,14 +41,18 @@ models/
 ├── survival_attrition/v1/     # survival — Cox Proportional Hazards
 │
 ├── fairness_report.json       # audit bias turnover v1 vs v2
+├── fairness_baseline.json     # baseline gate regresi fairness (MLOps CI)
 ├── mitigation_report.json     # hasil mitigasi bias
 ├── significance_report.json   # uji DeLong/bootstrap v1 vs v2
+├── active_version.json        # pin versi aktif semua use case (promote/retrain)
 └── README.md
 ```
 
 Semua artifact di atas **dilayani oleh `hr_intelligence_api`**: turnover
-(v1/v2/v2_mitigated), absensi, kinerja, anomali payroll, dan survival. Pilih versi
-turnover lewat env `MODEL_VERSION` (default `v2`).
+(v1/v2/v2_mitigated), absensi, kinerja, anomali payroll, dan survival. Versi
+aktif dipin lewat MLOps (`models/active_version.json`, lihat `mlops/README.md`)
+dan dibaca API saat startup. Turnover masih menghormati env `MODEL_VERSION`
+(default `v2_mitigated`) sebagai override darurat; use case lain mengikuti pin.
 
 ---
 
@@ -260,7 +264,8 @@ ROC-AUC 95% confidence interval pada holdout test:
 Threshold model:
 
 ```text
-0,33
+0,33   (v1 dan v2)
+0,31   (v2_mitigated — default API)
 ```
 
 Threshold dipilih berdasarkan prediksi out-of-fold pada data training.
@@ -527,9 +532,9 @@ models/<MODEL_VERSION>/
 
 API tidak mengubah model artifact.
 
-Versi model yang dilayani dipilih lewat env `MODEL_VERSION` (default **`v2`**).
-Untuk rollback, set `MODEL_VERSION=v1` tanpa mengubah kode. Bisa juga
-meng-override path langsung lewat `MODEL_PATH` / `METADATA_PATH`.
+Versi model yang dilayani dipilih lewat env `MODEL_VERSION`
+(default **`v2_mitigated`**). Untuk rollback, set `MODEL_VERSION=v1` tanpa
+mengubah kode.
 
 ---
 
@@ -685,15 +690,15 @@ Model turnover:
 ```text
 v1: tersedia
 v2: tersedia
+v2_mitigated: tersedia (default API)
 Algorithm v1: Logistic Regression
 Algorithm v2: Soft Voting (ensemble Logistic Regression + Random Forest)
 Artifact: tersedia
 Metadata: tersedia
 API integration: tersedia
-Model versioning: struktur awal
-Monitoring: belum tersedia
-Automated retraining: belum tersedia
-Model registry: belum tersedia
+Model versioning: tersedia (models/<versi>/ + models/active_version.json)
+Monitoring: tersedia (mlops: metrik Prometheus + drift PSI)
+Automated retraining: tersedia (mlops/src/lifecycle/retraining.py)
+Model registry: tersedia (mlops/src/registry/model_registry.py)
+Rollback: tersedia (python -m src.cli rollback)
 ```
-
-Fitur seperti model registry, automated retraining, monitoring, drift detection, dan rollback otomatis akan dikembangkan pada fase MLOps.
