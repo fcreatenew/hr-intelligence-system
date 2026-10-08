@@ -27,6 +27,8 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
+from functools import lru_cache
 from pathlib import Path
 
 from app.core.config import (
@@ -47,6 +49,47 @@ def source() -> str:
     return os.getenv("HR_MODEL_SOURCE", "hub").strip().lower()
 
 
+def _candidate_cache_dirs() -> list[Path]:
+    """Kandidat direktori cache Hub, sesuai prioritas."""
+    candidates: list[Path] = []
+
+    hub_cache = os.getenv("HF_HUB_CACHE")
+    if hub_cache:
+        candidates.append(Path(hub_cache))
+
+    hf_home = os.getenv("HF_HOME")
+    if hf_home:
+        candidates.append(Path(hf_home) / "hub")
+
+    # Fallback yang hampir selalu writable.
+    candidates.append(Path(tempfile.gettempdir()) / "hf-cache" / "hub")
+    candidates.append(Path.home() / ".cache" / "huggingface" / "hub")
+
+    return candidates
+
+
+@lru_cache(maxsize=1)
+def cache_dir() -> Path | None:
+    """Direktori cache pertama yang benar-benar dapat ditulis.
+
+    HF_HOME/HF_HUB_CACHE sering diarahkan ke mount read-only (mis. ``/data``),
+    yang membuat unduhan gagal dengan ``OSError: [Errno 30] Read-only file
+    system``. Fungsi ini memilih kandidat writable pertama sehingga runtime
+    tetap dapat mengambil artifact.
+    """
+    for candidate in _candidate_cache_dirs():
+        try:
+            candidate.mkdir(parents=True, exist_ok=True)
+            probe = candidate / ".write_probe"
+            probe.touch()
+            probe.unlink()
+            return candidate
+        except OSError:
+            continue
+
+    return None
+
+
 def _hub_filename(relative_path: str) -> str:
     return f"{HUB_ROOT}/{relative_path.lstrip('/')}"
 
@@ -58,12 +101,18 @@ def _hub_kwargs() -> dict:
             "untuk mengambil artifact model."
         )
 
-    return {
+    kwargs = {
         "repo_id": HF_MODEL_REPO,
         "repo_type": HF_MODEL_REPO_TYPE,
         "revision": HF_MODEL_REVISION,
         "token": HF_MODEL_TOKEN,
     }
+
+    resolved = cache_dir()
+    if resolved is not None:
+        kwargs["cache_dir"] = str(resolved)
+
+    return kwargs
 
 
 def fetch(relative_path: str) -> Path:

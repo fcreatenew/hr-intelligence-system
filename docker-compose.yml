@@ -26,10 +26,11 @@ services:
       HR_MODEL_SOURCE: ${HR_MODEL_SOURCE:-hub}
       # Token read repo privat; kosongkan untuk repo publik.
       HF_TOKEN: ${HF_TOKEN:-}
-      # Cache unduhan agar tidak mengunduh ulang tiap restart.
-      HF_HOME: /data/hf-cache
+      # Cache unduhan agar tidak mengunduh ulang tiap restart. Gunakan volume
+      # writable (JANGAN /data, yang bisa di-mount read-only).
+      HF_HOME: ${HF_HOME:-/cache/huggingface}
     volumes:
-      - hf-cache:/data/hf-cache
+      - hf-cache:/cache/huggingface
     ports:
       - "8000:8000"
 
