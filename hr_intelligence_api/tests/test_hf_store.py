@@ -5,6 +5,7 @@ pembentukan nama berkas dan pemilihan sumber tetap diuji nyata.
 """
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -137,3 +138,32 @@ def test_hub_kwargs_omits_cache_dir_when_none(monkeypatch):
     monkeypatch.setattr(hf_store, "cache_dir", lambda: None)
 
     assert "cache_dir" not in hf_store._hub_kwargs()
+
+
+def test_config_cache_env_redirects_xet_cache(monkeypatch, tmp_path):
+    """HF_XET_CACHE harus ikut dialihkan, bukan hanya cache_dir.
+
+    Backend ``hf_xet`` memakai ``HF_XET_CACHE`` yang diturunkan saat import dan
+    tak terpengaruh argumen ``cache_dir=``; bila ``HF_HOME`` read-only,
+    unduhan gagal ``OSError: [Errno 30]``.
+    """
+    readonly = tmp_path / "readonly"
+    readonly.mkdir()
+    readonly.chmod(0o500)
+
+    writable = tmp_path / "writable" / "hub"
+    writable.mkdir(parents=True)
+
+    monkeypatch.setattr(
+        hf_store, "_candidate_cache_dirs", lambda: [readonly, writable]
+    )
+
+    try:
+        resolved = hf_store._configure_cache_env()
+
+        assert resolved == writable
+        assert os.environ["HF_HUB_CACHE"] == str(writable)
+        assert os.environ["HF_XET_CACHE"] == str(writable.parent / "xet")
+        assert os.environ["HF_HOME"] == str(writable.parent)
+    finally:
+        readonly.chmod(0o700)

@@ -27,7 +27,8 @@ services:
       # Token read repo privat; kosongkan untuk repo publik.
       HF_TOKEN: ${HF_TOKEN:-}
       # Cache unduhan agar tidak mengunduh ulang tiap restart. Gunakan volume
-      # writable (JANGAN /data, yang bisa di-mount read-only).
+      # writable (JANGAN /data, yang bisa di-mount read-only). HF_XET_CACHE
+      # diturunkan dari HF_HOME; kode memaksa keduanya ke cache writable.
       HF_HOME: ${HF_HOME:-/cache/huggingface}
     volumes:
       - hf-cache:/cache/huggingface
