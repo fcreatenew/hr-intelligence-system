@@ -1,0 +1,47 @@
+# Blueprint Render GRATIS untuk HR Intelligence API.
+#
+# Cara pakai: Render Dashboard -> New + -> Blueprint -> pilih repo ini.
+# Render membaca file ini dan membuat satu web service gratis.
+#
+# Model TIDAK lagi dibundel di image: artifact diunduh dari Hugging Face Hub
+# saat runtime (lihat app/core/hf_store.py). Karena itu cukup mengisi
+# HF_TOKEN + HR_MODEL_REPO sebagai secret.
+#
+# Catatan free plan:
+#   * Service tidur setelah ~15 menit idle; request pertama (cold start)
+#     ~30-50 detik sekaligus mengunduh artifact ke cache.
+#   * Cache Hugging Face TIDAK persisten di free plan (tanpa disk), jadi tiap
+#     container baru mengunduh ulang. Untuk produksi pakai plan ber-disk.
+#
+# Deploy pertama memicu health check `/health` yang memuat kelima model;
+# cold start bisa lebih lama dari default Render. Bila gagal, naikkan
+# `healthCheckTimeout` atau set `HR_MODEL_SOURCE=local` untuk demo cepat.
+
+services:
+  - type: web
+    name: hr-intelligence-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./hr_intelligence_api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Sumber artifact: unduh dari Hub.
+      - key: HR_MODEL_SOURCE
+        value: hub
+      - key: HR_MODEL_REPO
+        sync: false            # isi: <user>/hr-intelligence-models
+      - key: HF_TOKEN
+        sync: false            # token read repo privat (kosongkan bila publik)
+      - key: MODEL_VERSION
+        value: v2_mitigated
+      # API key wajib; Render membuat nilai acak.
+      - key: HR_API_KEY
+        generateValue: true
+      # CPU-only: batasi thread BLAS/OpenMP agar tidak oversubscription.
+      - key: HR_NUM_THREADS
+        value: "1"
+      - key: LOG_LEVEL
+        value: INFO
