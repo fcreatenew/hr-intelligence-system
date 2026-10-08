@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
+from functools import lru_cache
 from pathlib import Path
 
 from src.config import MODELS_DIR
@@ -49,13 +51,52 @@ def source() -> str:
     return os.getenv("HR_MODEL_SOURCE", "local").strip().lower()
 
 
+def _candidate_cache_dirs() -> list[Path]:
+    candidates: list[Path] = []
+
+    hub_cache = os.getenv("HF_HUB_CACHE")
+    if hub_cache:
+        candidates.append(Path(hub_cache))
+
+    hf_home = os.getenv("HF_HOME")
+    if hf_home:
+        candidates.append(Path(hf_home) / "hub")
+
+    candidates.append(Path(tempfile.gettempdir()) / "hf-cache" / "hub")
+    candidates.append(Path.home() / ".cache" / "huggingface" / "hub")
+
+    return candidates
+
+
+@lru_cache(maxsize=1)
+def cache_dir() -> Path | None:
+    """Direktori cache Hub pertama yang dapat ditulis (hindari mount read-only)."""
+    for candidate in _candidate_cache_dirs():
+        try:
+            candidate.mkdir(parents=True, exist_ok=True)
+            probe = candidate / ".write_probe"
+            probe.touch()
+            probe.unlink()
+            return candidate
+        except OSError:
+            continue
+
+    return None
+
+
 def _kwargs() -> dict:
-    return {
+    kwargs = {
         "repo_id": repo_id(),
         "repo_type": repo_type(),
         "revision": revision(),
         "token": token(),
     }
+
+    resolved = cache_dir()
+    if resolved is not None:
+        kwargs["cache_dir"] = str(resolved)
+
+    return kwargs
 
 
 def fetch(relative_path: str) -> Path:

@@ -5,6 +5,7 @@ pembentukan nama berkas dan pemilihan sumber tetap diuji nyata.
 """
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -50,15 +51,16 @@ def test_hub_source_downloads_with_prefixed_path(monkeypatch):
     path = hf_store.fetch("v2_mitigated/turnover_model.joblib")
 
     assert str(path) == "/cache/models/v2_mitigated/turnover_model.joblib"
-    assert calls == [
-        {
-            "filename": "models/v2_mitigated/turnover_model.joblib",
-            "repo_id": "user/repo",
-            "repo_type": "model",
-            "revision": "main",
-            "token": "tok",
-        }
-    ]
+    assert len(calls) == 1
+
+    call = calls[0]
+    assert call["filename"] == "models/v2_mitigated/turnover_model.joblib"
+    assert call["repo_id"] == "user/repo"
+    assert call["repo_type"] == "model"
+    assert call["revision"] == "main"
+    assert call["token"] == "tok"
+    # cache_dir menunjuk direktori writable (fallback cache).
+    assert Path(call["cache_dir"]).is_dir()
 
 
 def test_hub_directory_download_uses_allow_patterns(monkeypatch, tmp_path):
@@ -90,3 +92,47 @@ def test_hub_requires_repo_id(monkeypatch):
 
     with pytest.raises(RuntimeError):
         hf_store.fetch("v1/turnover_model.joblib")
+
+
+def test_cache_dir_falls_back_when_hf_home_readonly(monkeypatch, tmp_path):
+    """HF_HOME di mount read-only tidak boleh menggagalkan unduhan.
+
+    Regresi untuk `OSError: [Errno 30] Read-only file system: '/data'`.
+    """
+    readonly = tmp_path / "readonly"
+    readonly.mkdir()
+    readonly.chmod(0o500)  # tidak bisa membuat file di dalamnya
+
+    fallback = tmp_path / "fallback"
+    fallback.mkdir()
+
+    monkeypatch.setenv("HF_HOME", str(readonly))
+    monkeypatch.delenv("HF_HUB_CACHE", raising=False)
+    monkeypatch.setattr(
+        hf_store, "_candidate_cache_dirs", lambda: [readonly, fallback]
+    )
+    hf_store.cache_dir.cache_clear()
+
+    try:
+        assert hf_store.cache_dir() == fallback
+    finally:
+        hf_store.cache_dir.cache_clear()
+        readonly.chmod(0o700)
+
+
+def test_hub_kwargs_include_writable_cache_dir(monkeypatch, tmp_path):
+    monkeypatch.setenv("HR_MODEL_SOURCE", "hub")
+    monkeypatch.setattr(hf_store, "HF_MODEL_REPO", "user/repo")
+
+    cache = tmp_path / "cache"
+    monkeypatch.setattr(hf_store, "cache_dir", lambda: cache)
+
+    assert hf_store._hub_kwargs()["cache_dir"] == str(cache)
+
+
+def test_hub_kwargs_omits_cache_dir_when_none(monkeypatch):
+    monkeypatch.setenv("HR_MODEL_SOURCE", "hub")
+    monkeypatch.setattr(hf_store, "HF_MODEL_REPO", "user/repo")
+    monkeypatch.setattr(hf_store, "cache_dir", lambda: None)
+
+    assert "cache_dir" not in hf_store._hub_kwargs()
