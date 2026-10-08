@@ -4,6 +4,7 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from src import hf_store
 from src.config import (
     DEFAULT_MODEL_LOCATIONS,
     MODELS_DIR,
@@ -22,11 +23,19 @@ MODEL_LOCATIONS: dict[str, str] = dict(DEFAULT_MODEL_LOCATIONS)
 def resolve_version(use_case: str, models_dir: Path = MODELS_DIR) -> str:
     """Path artifact aktif untuk sebuah use case.
 
-    Urutan: pin `active_version.json` → default dari `MODEL_LOCATIONS`.
-    Semua use case memakai mekanisme yang sama, sehingga promote/rollback
-    berlaku seragam.
+    Urutan: pin `active_version.json` lokal → pin di Hub (bila sumber Hub
+    aktif) → default dari `MODEL_LOCATIONS`. Semua use case memakai mekanisme
+    yang sama, sehingga promote/rollback berlaku seragam.
     """
     pinned = read_pinned_version(models_dir, use_case)
+
+    if not pinned and hf_store.is_hub_enabled():
+        try:
+            data = hf_store.read_json("active_version.json")
+            value = data.get(use_case) if isinstance(data, dict) else None
+            pinned = value if isinstance(value, str) and value else None
+        except Exception:  # noqa: BLE001 - pin Hub opsional
+            pinned = None
 
     if pinned:
         return pinned
@@ -157,7 +166,11 @@ class ModelRegistry:
         path = self._models_dir / relative
 
         if not path.exists():
-            raise FileNotFoundError(f"Model tidak ditemukan: {path}")
+            # Fallback Hub: artifact tidak ada di lokal dan sumber Hub aktif.
+            if hf_store.is_hub_enabled():
+                path = hf_store.fetch_directory(relative)
+            else:
+                raise FileNotFoundError(f"Model tidak ditemukan: {path}")
 
         meta = _read_metadata(path)
 

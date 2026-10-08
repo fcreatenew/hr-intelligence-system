@@ -48,7 +48,12 @@ Konfigurasi lewat environment:
 | Variabel | Default | Arti |
 | --- | --- | --- |
 | `HR_API_KEY` | (kosong) | API key wajib; bila kosong semua request gagal 500 |
-| `MODEL_VERSION` | `v2_mitigated` | Versi artifact turnover di `models/<versi>/` |
+| `MODEL_VERSION` | `v2_mitigated` | Versi artifact turnover di repo Hub |
+| `HR_MODEL_REPO` | `fcreatenew/hr-intelligence-models` | Repo Hugging Face sumber artifact |
+| `HR_MODEL_REVISION` | `main` | Revisi/branch artifact di Hub |
+| `HR_MODEL_REPO_TYPE` | `model` | Jenis repo Hub (`model`/`dataset`/`space`) |
+| `HF_TOKEN` | (kosong) | Token Hub (perlu untuk repo privat) |
+| `HR_MODEL_SOURCE` | `hub` | `hub` = unduh dari Hub; `local` = baca `models/` lokal (test/dev) |
 | `RATE_LIMIT_PER_MINUTE` | `120` | Batas request per menit per API key |
 | `MAX_BATCH_SIZE` | `5000` | Batas karyawan per request batch |
 | `HR_NUM_THREADS` | (kosong) | Batas thread BLAS/OpenMP (mis. `1`); kosong = default library |
@@ -56,6 +61,11 @@ Konfigurasi lewat environment:
 | `LOG_LEVEL` | `INFO` | Level logging |
 | `ENABLE_DOCS` | `false` | Aktifkan `/docs`, `/redoc`, `/openapi.json` |
 | `CORS_ALLOW_ORIGINS` | (kosong) | Origin browser yang diizinkan, dipisah koma |
+
+> **Artifact model tidak dibaca dari disk lokal.** Saat startup API mengunduh
+> model + metadata dari Hugging Face Hub lewat `app/core/hf_store.py`, lalu
+> menyimpannya di cache `HF_HOME`. Set `HR_MODEL_SOURCE=local` hanya bila ingin
+> membaca folder `models/` di repo (pengembangan/test tanpa jaringan).
 
 ---
 
@@ -103,6 +113,10 @@ Artifact turnover punya tiga versi: `v1`, `v2`, dan `v2_mitigated`
 ```bash
 MODEL_VERSION=v1 uvicorn app.main:app   # rollback ke v1
 ```
+
+Artifact di atas disimpan di repo Hugging Face (`HR_MODEL_REPO`), bukan di
+disk. Metadata tiap model diambil dari `models/<versi>/model_metadata.json`
+di repo Hub yang sama.
 
 ### Kegunaan pada data asli
 

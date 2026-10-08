@@ -103,13 +103,36 @@ Dependensi ML lengkap: `numpy pandas scikit-learn scipy joblib matplotlib seabor
 xgboost lightgbm catboost shap lifelines nbformat nbclient`.
 
 Versi model yang dilayani API diatur lewat env `MODEL_VERSION` (default
-`v2_mitigated`, versi turnover paling adil):
+`v2_mitigated`, versi turnover paling adil). **Artifact tidak lagi dibaca dari
+disk lokal**: runtime mengunduhnya dari Hugging Face Hub (lihat bagian
+"Sumber artifact model" di bawah).
 
 ```bash
 cd hr_intelligence_api && MODEL_VERSION=v1 python -m uvicorn app.main:app
 ```
 
-**Perangkat = CPU-only.** Kelima model (scikit-learn & lifelines) tidak punya
+## Sumber artifact model (Hugging Face Hub)
+
+Model **tidak lagi** diambil dari folder `models/` lokal saat runtime. Kelima
+model (turnover, absensi, kinerja, payroll, survival) diunduh dari satu repo
+Hub dengan struktur `models/<versi>/�` dan di-cache di `HF_HOME`.
+
+- Env: `HR_MODEL_REPO` (default `fcreatenew/hr-intelligence-models`),
+  `HR_MODEL_REVISION` (default `main`), `HR_MODEL_REPO_TYPE` (default `model`),
+  token `HF_TOKEN`, dan `HR_MODEL_SOURCE` (`hub` default; `local` untuk
+  pengembangan/test offline).
+- Kode pengambil: `hr_intelligence_api/app/core/hf_store.py` (satu-satunya
+  pintu baca artifact) dan `mlops/src/hf_store.py` (fallback registry MLOps).
+- Unggah model: `python scripts/upload_models_to_hf.py --repo-id <user>/<repo>
+  [--create]`. Script mengunggah folder `models/` + `active_version.json`.
+- Repo Hub menyimpan `models/active_version.json` sebagai pin versi; MLOps
+  `promote`/`rollback` menulisnya agar API menunjuk versi yang sama.
+- Test tetap hermetic lewat `HR_MODEL_SOURCE=local` (di-set di
+  `hr_intelligence_api/tests/conftest.py`), sehingga tidak butuh jaringan.
+
+## Perangkat CPU-only
+
+Kelima model (scikit-learn & lifelines) tidak punya
 backend GPU dan tidak membutuhkan GPU. Jangan menambah `torch`/`tensorflow`/
 `--gpus` tanpa use case model besar yang jelas. Batasi thread BLAS/OpenMP lewat
 `HR_NUM_THREADS` (mis. `1`) agar tidak oversubscription antar worker; jalankan
@@ -159,7 +182,9 @@ melaporkan `compute_device` dan `thread_limit`. Detail & alasan ada di
 ## Titik penting (jangan diubah tanpa alasan)
 
 - `hr_intelligence_api/app/core/config.py` — `MODEL_VERSION` (default `v2_mitigated`) & path artifact.
-  Artifact berada di **root** repo (`models/`), bukan di dalam folder API.
+  Artifact model dibaca dari **Hugging Face Hub** (`hf_store.py`), bukan folder
+  lokal; hanya `HR_MODEL_SOURCE=local` yang membaca `models/` di root repo
+  (test/dev offline).
 - `hr_intelligence_api/app/services/model_service.py` — `model_version` properti (bukan nama algoritma).
 - `hr_intelligence_api/app/core/exceptions.py` — handler 422 harus tetap JSON-serializable.
 - `models/v2/model_metadata.json` — `versi_model` dipakai API untuk laporan versi.

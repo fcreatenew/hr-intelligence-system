@@ -2,6 +2,13 @@
 
 Folder ini berisi hasil training Machine Learning yang digunakan oleh sistem HR Intelligence.
 
+> **Sejak integrasi Hugging Face Hub, folder ini bukan lagi sumber runtime.**
+> Model di folder ini diunggah ke satu repo Hub
+> (`python scripts/upload_models_to_hf.py --repo-id <user>/<repo>`) dan
+> `hr_intelligence_api` mengunduhnya dari sana saat startup
+> (`HR_MODEL_REPO`, `HR_MODEL_SOURCE=hub`). Folder ini tetap menjadi sumber
+> kebenaran untuk training, test hermetic (`HR_MODEL_SOURCE=local`), dan MLOps.
+
 Model artifact dihasilkan oleh proses training pada:
 
 ```text

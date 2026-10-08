@@ -16,21 +16,41 @@ REPO_ROOT = BASE_DIR.parent
 MODELS_DIR = REPO_ROOT / "models"
 DATA_DIR = REPO_ROOT / "data"
 
-# Pin versi aktif yang ditulis MLOps (`models/active_version.json`).
+# Pin versi aktif yang ditulis MLOps (`active_version.json`).
 ACTIVE_VERSION_FILE = "active_version.json"
 DEFAULT_MODEL_VERSION = "v2_mitigated"
 
 
+# ---------------------------------------------------------------------------
+# Sumber artifact model: Hugging Face Hub.
+#
+# Runtime **tidak** lagi membaca artifact dari disk lokal. Kelima model
+# (turnover, absensi, kinerja, payroll, survival) diunduh dari satu repo Hub,
+# lalu di-cache di HF_HOME. Nama repo default harus disesuaikan lewat env
+# sebelum deploy (lihat HR_MODEL_REPO).
+# ---------------------------------------------------------------------------
+HF_MODEL_REPO = os.getenv("HR_MODEL_REPO", "fcreatenew/hr-intelligence-models")
+HF_MODEL_REPO_TYPE = os.getenv("HR_MODEL_REPO_TYPE", "model").strip().lower()
+HF_MODEL_REVISION = os.getenv("HR_MODEL_REVISION", "main")
+HF_MODEL_TOKEN = (
+    os.getenv("HF_TOKEN")
+    or os.getenv("HUGGINGFACE_HUB_TOKEN")
+    or os.getenv("HR_MODEL_TOKEN")
+    or None
+)
+
+
 def _read_pinned_version(use_case: str = "turnover") -> str | None:
-    """Versi aktif dari pin MLOps, atau `None` bila belum ada pin."""
-    path = MODELS_DIR / ACTIVE_VERSION_FILE
+    """Versi aktif dari pin MLOps di Hub, atau `None` bila belum ada pin.
 
-    if not path.exists():
-        return None
-
+    Fail-soft: error apa pun (repo/token tidak ada, jaringan) diperlakukan
+    sebagai "belum ada pin" agar startup tetap memakai default.
+    """
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
+        from app.core import hf_store
+
+        data = hf_store.read_json(ACTIVE_VERSION_FILE)
+    except Exception:  # noqa: BLE001 - pin opsional, jangan gagalkan startup
         return None
 
     if not isinstance(data, dict):
@@ -43,9 +63,9 @@ def _read_pinned_version(use_case: str = "turnover") -> str | None:
 
 # Versi model turnover aktif. Urutan prioritas:
 #   1. env MODEL_VERSION (override manual, mis. saat rollback darurat);
-#   2. pin `models/active_version.json` yang ditulis MLOps (promote/retraining);
+#   2. pin `active_version.json` di Hub yang ditulis MLOps (promote/retraining);
 #   3. default `v2_mitigated` (versi paling adil).
-# Artifact disimpan per versi di models/<MODEL_VERSION>/.
+# Path artifact di Hub: models/<MODEL_VERSION>/.
 MODEL_VERSION = (
     os.getenv("MODEL_VERSION")
     or _read_pinned_version("turnover")
@@ -125,16 +145,23 @@ USE_CASE_REGISTRY: dict[str, dict] = {
 }
 
 
-def use_case_dir(use_case: str) -> Path:
-    """Folder artifact untuk sebuah use case."""
-    return MODELS_DIR / USE_CASE_REGISTRY[use_case]["model_dir"]
+def use_case_dir(use_case: str) -> str:
+    """Folder artifact (relatif ke root ``models/`` di Hub) sebuah use case."""
+    return USE_CASE_REGISTRY[use_case]["model_dir"]
 
 
-def use_case_paths(use_case: str) -> tuple[Path, Path]:
-    """(model_path, metadata_path) untuk sebuah use case."""
+def use_case_paths(use_case: str) -> tuple[str, str]:
+    """(model_path, metadata_path) relatif ke root ``models/`` di Hub.
+
+    Mengembalikan path relatif (mis. ``v2_mitigated/turnover_model.joblib``)
+    agar dapat diselesaikan ke Hub ataupun ke folder lokal oleh ``hf_store``.
+    """
     cfg = USE_CASE_REGISTRY[use_case]
     directory = use_case_dir(use_case)
-    return directory / cfg["model_file"], directory / cfg["metadata_file"]
+    return (
+        f"{directory}/{cfg['model_file']}",
+        f"{directory}/{cfg['metadata_file']}",
+    )
 
 
 API_KEY = os.getenv(

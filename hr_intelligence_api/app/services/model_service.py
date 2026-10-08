@@ -7,6 +7,7 @@ from pathlib import Path
 
 import joblib
 
+from app.core import hf_store
 from app.core.config import MODEL_VERSION, use_case_paths
 from app.features.features import RAW_COLUMNS_REQUIRED
 
@@ -22,8 +23,21 @@ class UnknownUseCaseError(KeyError):
     ...
 
 
+def _resolve(ref: str | Path) -> Path:
+    """Path lokal artifact: ``Path`` dipakai apa adanya, ``str`` diambil dari Hub."""
+    if isinstance(ref, Path):
+        return ref
+
+    return hf_store.fetch(ref)
+
+
 class ModelService:
     """Memuat satu artifact model + metadata untuk sebuah use case.
+
+    Artifact diambil dari Hugging Face Hub lewat ``hf_store`` (default). Path
+    yang diberikan adalah path **relatif** ke root ``models/`` di Hub
+    (mis. ``v2_mitigated/turnover_model.joblib``). Untuk test hermetic, ``Path``
+    lokal masih diterima.
 
     Turnover mempertahankan validasi skema fitur lama (kolom mentah harus sama
     dengan features.py). Use case lain tidak punya kontrak kolom mentah yang
@@ -33,8 +47,8 @@ class ModelService:
     def __init__(
         self,
         use_case: str = "turnover",
-        model_path: Path | None = None,
-        metadata_path: Path | None = None,
+        model_path: str | Path | None = None,
+        metadata_path: str | Path | None = None,
         expected_raw_columns: list[str] | None = None,
     ):
         self.use_case = use_case
@@ -44,32 +58,42 @@ class ModelService:
             model_path = model_path or default_model
             metadata_path = metadata_path or default_metadata
 
-        self._model_path = model_path
-        self._metadata_path = metadata_path
+        self._model_ref = model_path
+        self._metadata_ref = metadata_path
         self._expected_raw_columns = expected_raw_columns
 
         self._model = None
         self._metadata: dict = {}
+        self._resolved_model_path: Path | None = None
 
         self._lock = threading.Lock()
 
     def load(self) -> None:
 
         with self._lock:
-            if not self._model_path.exists():
+            try:
+                model_path = _resolve(self._model_ref)
+                metadata_path = _resolve(self._metadata_ref)
+            except Exception as exc:  # noqa: BLE001 - beri pesan konteks jelas
                 raise FileNotFoundError(
-                    f"Model tidak ditemukan di {self._model_path}"
+                    f"Gagal mengambil artifact '{self.use_case}' dari "
+                    f"Hugging Face Hub ({hf_store.HF_MODEL_REPO}): {exc}"
+                ) from exc
+
+            if not model_path.exists():
+                raise FileNotFoundError(
+                    f"Model tidak ditemukan di {model_path}"
                 )
 
-            if not self._metadata_path.exists():
+            if not metadata_path.exists():
                 raise FileNotFoundError(
-                    f"Metadata tidak ditemukan di {self._metadata_path}"
+                    f"Metadata tidak ditemukan di {metadata_path}"
                 )
 
-            model = joblib.load(self._model_path)
+            model = joblib.load(model_path)
 
             metadata = json.loads(
-                self._metadata_path.read_text(
+                metadata_path.read_text(
                     encoding="utf-8"
                 )
             )
@@ -78,11 +102,13 @@ class ModelService:
 
             self._model = model
             self._metadata = metadata
+            self._resolved_model_path = model_path
 
             logger.info(
-                "Model '%s' dimuat: %s "
+                "Model '%s' dimuat dari %s: %s "
                 "(dilatih %s, threshold=%s)",
                 self.use_case,
+                hf_store.source(),
                 self._metadata.get("model"),
                 self._metadata.get("dibuat_pada")
                 or self._metadata.get("dilatih_pada"),
