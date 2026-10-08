@@ -65,26 +65,55 @@ def _candidate_cache_dirs() -> list[Path]:
     if hf_home:
         candidates.append(Path(hf_home) / "hub")
 
-    candidates.append(Path(tempfile.gettempdir()) / "hf-cache" / "hub")
     candidates.append(Path.home() / ".cache" / "huggingface" / "hub")
+    candidates.append(Path(tempfile.gettempdir()) / "hf-cache" / "hub")
 
     return candidates
+
+
+def _writable(path: Path) -> bool:
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+        probe = path / ".write_probe"
+        probe.touch()
+        probe.unlink()
+        return True
+    except OSError:
+        return False
+
+
+def _resolve_cache() -> Path | None:
+    for candidate in _candidate_cache_dirs():
+        if _writable(candidate):
+            return candidate
+    return None
+
+
+def _configure_cache_env() -> Path | None:
+    """Arahkan cache Hub (termasuk ``HF_XET_CACHE``) ke direktori writable.
+
+    Harus dijalankan **sebelum** ``huggingface_hub`` di-import: konstanta cache
+    diturunkan dari environment saat import, dan backend ``hf_xet`` memakai
+    ``HF_XET_CACHE`` yang tak terpengaruh argumen ``cache_dir=``.
+    """
+    resolved = _resolve_cache()
+    if resolved is None:
+        return None
+
+    home = resolved.parent
+    os.environ["HF_HOME"] = str(home)
+    os.environ["HF_HUB_CACHE"] = str(resolved)
+    os.environ["HF_XET_CACHE"] = str(home / "xet")
+    return resolved
+
+
+_configure_cache_env()
 
 
 @lru_cache(maxsize=1)
 def cache_dir() -> Path | None:
     """Direktori cache Hub pertama yang dapat ditulis (hindari mount read-only)."""
-    for candidate in _candidate_cache_dirs():
-        try:
-            candidate.mkdir(parents=True, exist_ok=True)
-            probe = candidate / ".write_probe"
-            probe.touch()
-            probe.unlink()
-            return candidate
-        except OSError:
-            continue
-
-    return None
+    return _resolve_cache()
 
 
 def _kwargs() -> dict:

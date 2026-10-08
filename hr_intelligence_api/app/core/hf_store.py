@@ -64,11 +64,56 @@ def _candidate_cache_dirs() -> list[Path]:
     if hf_home:
         candidates.append(Path(hf_home) / "hub")
 
-    # Fallback yang hampir selalu writable.
-    candidates.append(Path(tempfile.gettempdir()) / "hf-cache" / "hub")
+    # Fallback yang hampir selalu writable; cache home (persisten) lebih dulu.
     candidates.append(Path.home() / ".cache" / "huggingface" / "hub")
+    candidates.append(Path(tempfile.gettempdir()) / "hf-cache" / "hub")
 
     return candidates
+
+
+def _writable(path: Path) -> bool:
+    """True bila ``path`` dapat dibuat dan ditulisi."""
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+        probe = path / ".write_probe"
+        probe.touch()
+        probe.unlink()
+        return True
+    except OSError:
+        return False
+
+
+def _resolve_cache() -> Path | None:
+    """Kandidat cache writable pertama, atau ``None``."""
+    for candidate in _candidate_cache_dirs():
+        if _writable(candidate):
+            return candidate
+    return None
+
+
+def _configure_cache_env() -> Path | None:
+    """Arahkan cache Hub ke direktori yang writable lewat environment.
+
+    Wajib dijalankan **sebelum** ``huggingface_hub`` di-import: modul
+    ``huggingface_hub.constants`` menurunkan ``HF_HOME``/``HF_HUB_CACHE``/
+    ``HF_XET_CACHE`` saat import. Backend unduhan ``hf_xet`` memakai
+    ``HF_XET_CACHE`` yang **terpisah** dan tidak terpengaruh argumen
+    ``cache_dir=``, sehingga bila ``HF_HOME`` menunjuk mount read-only
+    (mis. ``/data``) unduhan gagal dengan ``OSError: [Errno 30]``.
+    """
+    resolved = _resolve_cache()
+    if resolved is None:
+        return None
+
+    home = resolved.parent
+    os.environ["HF_HOME"] = str(home)
+    os.environ["HF_HUB_CACHE"] = str(resolved)
+    os.environ["HF_XET_CACHE"] = str(home / "xet")
+    return resolved
+
+
+# Jalankan saat import (nanti dari fungsi huggingface_hub mana pun).
+_configure_cache_env()
 
 
 @lru_cache(maxsize=1)
@@ -80,17 +125,7 @@ def cache_dir() -> Path | None:
     system``. Fungsi ini memilih kandidat writable pertama sehingga runtime
     tetap dapat mengambil artifact.
     """
-    for candidate in _candidate_cache_dirs():
-        try:
-            candidate.mkdir(parents=True, exist_ok=True)
-            probe = candidate / ".write_probe"
-            probe.touch()
-            probe.unlink()
-            return candidate
-        except OSError:
-            continue
-
-    return None
+    return _resolve_cache()
 
 
 def _hub_filename(relative_path: str) -> str:
