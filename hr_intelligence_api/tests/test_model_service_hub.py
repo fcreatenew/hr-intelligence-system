@@ -20,7 +20,7 @@ def test_model_service_loads_artifact_from_hub(monkeypatch):
 
     def fake_download(filename, **_kwargs):
         calls.append(filename)
-        return str(MODELS_DIR / filename[len("models/"):])
+        return str(MODELS_DIR / filename)
 
     import huggingface_hub
 
@@ -35,5 +35,5 @@ def test_model_service_loads_artifact_from_hub(monkeypatch):
 
     assert service.is_loaded
     assert service.model_version == "v2_mitigated"
-    assert "models/v2_mitigated/turnover_model.joblib" in calls
-    assert "models/v2_mitigated/model_metadata.json" in calls
+    assert "v2_mitigated/turnover_model.joblib" in calls
+    assert "v2_mitigated/model_metadata.json" in calls

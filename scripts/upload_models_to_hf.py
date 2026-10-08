@@ -2,18 +2,18 @@
 """Unggah artifact model HR Intelligence ke Hugging Face Hub.
 
 Script ini menyalin seluruh isi folder ``models/`` (model + metadata + pin
-versi aktif) ke satu repo Hub, dengan struktur yang sama seperti yang dibaca
-``hr_intelligence_api`` lewat ``app/core/hf_store.py``:
+versi aktif) ke satu repo Hub, dengan struktur **langsung di root repo**
+(tanpa folder ``models/``) — sama seperti yang dibaca ``hr_intelligence_api``
+lewat ``app/core/hf_store.py``:
 
     <repo>/
-    └── models/
-        ├── active_version.json
-        ├── v1/…
-        ├── v2_mitigated/…
-        ├── absenteeism/v1/…
-        ├── performance/v1/…
-        ├── payroll_anomaly/v1/…
-        └── survival_attrition/v1/…
+    ├── active_version.json
+    ├── v1/…
+    ├── v2_mitigated/…
+    ├── absenteeism/v1/…
+    ├── performance/v1/…
+    ├── payroll_anomaly/v1/…
+    └── survival_attrition/v1/…
 
 Contoh pemakaian:
 
@@ -39,9 +39,9 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MODELS_DIR = REPO_ROOT / "models"
 
-# Folder di dalam repo Hub tempat artifact diletakkan (harus sama dengan
-# HUB_ROOT di hr_intelligence_api/app/core/hf_store.py).
-# HUB_ROOT = "models"
+# Artifact diletakkan langsung di root repo Hub (tanpa folder ``models/``),
+# harus sama dengan layout yang dibaca hr_intelligence_api/app/core/hf_store.py
+# (lihat HUB_ROOT = "" di sana).
 
 # Direktori model per use case. Hanya folder ini yang diunggah (plus berkas
 # pendukung di root models/) agar ``.gitkeep``/README tidak ikut.
