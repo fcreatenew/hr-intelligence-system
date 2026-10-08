@@ -41,7 +41,7 @@ MODELS_DIR = REPO_ROOT / "models"
 
 # Folder di dalam repo Hub tempat artifact diletakkan (harus sama dengan
 # HUB_ROOT di hr_intelligence_api/app/core/hf_store.py).
-HUB_ROOT = "models"
+# HUB_ROOT = "models"
 
 # Direktori model per use case. Hanya folder ini yang diunggah (plus berkas
 # pendukung di root models/) agar ``.gitkeep``/README tidak ikut.
@@ -83,12 +83,12 @@ def _collect_files() -> list[tuple[Path, str]]:
         for path in sorted(directory.rglob("*")):
             if path.is_file():
                 inside = path.relative_to(MODELS_DIR).as_posix()
-                files.append((path, f"{HUB_ROOT}/{inside}"))
+                files.append((path, f"{inside}"))
 
     for name in ROOT_FILES:
         path = MODELS_DIR / name
         if path.is_file():
-            files.append((path, f"{HUB_ROOT}/{name}"))
+            files.append((path, f"{name}"))
 
     return files
 
@@ -192,7 +192,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print(
         f"\nSelesai. {len(files)} berkas diunggah ke "
-        f"{args.repo_id} (root: {HUB_ROOT}/)."
+        f"{args.repo_id} (root: )."
     )
     return 0
 
