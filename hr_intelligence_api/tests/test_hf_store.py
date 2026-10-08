@@ -33,7 +33,7 @@ def test_local_source_reads_pinned_json(monkeypatch, tmp_path):
     assert hf_store.read_json("active_version.json") == {"turnover": "v2"}
 
 
-def test_hub_source_downloads_with_prefixed_path(monkeypatch):
+def test_hub_source_downloads_without_prefix(monkeypatch):
     monkeypatch.setenv("HR_MODEL_SOURCE", "hub")
     monkeypatch.setattr(hf_store, "HF_MODEL_REPO", "user/repo")
     monkeypatch.setattr(hf_store, "HF_MODEL_TOKEN", "tok")
@@ -42,7 +42,7 @@ def test_hub_source_downloads_with_prefixed_path(monkeypatch):
 
     def fake_download(filename, **kwargs):
         calls.append({"filename": filename, **kwargs})
-        return "/cache/models/v2_mitigated/turnover_model.joblib"
+        return "/cache/v2_mitigated/turnover_model.joblib"
 
     import huggingface_hub
 
@@ -50,11 +50,12 @@ def test_hub_source_downloads_with_prefixed_path(monkeypatch):
 
     path = hf_store.fetch("v2_mitigated/turnover_model.joblib")
 
-    assert str(path) == "/cache/models/v2_mitigated/turnover_model.joblib"
+    assert str(path) == "/cache/v2_mitigated/turnover_model.joblib"
     assert len(calls) == 1
 
     call = calls[0]
-    assert call["filename"] == "models/v2_mitigated/turnover_model.joblib"
+    # Tanpa prefix `models/` — artifact berada di root repo Hub.
+    assert call["filename"] == "v2_mitigated/turnover_model.joblib"
     assert call["repo_id"] == "user/repo"
     assert call["repo_type"] == "model"
     assert call["revision"] == "main"
@@ -77,12 +78,12 @@ def test_hub_directory_download_uses_allow_patterns(monkeypatch, tmp_path):
 
     monkeypatch.setattr(huggingface_hub, "snapshot_download", fake_snapshot)
 
-    (tmp_path / "models" / "performance" / "v1").mkdir(parents=True)
+    (tmp_path / "performance" / "v1").mkdir(parents=True)
 
     result = hf_store.fetch_directory("performance/v1")
 
-    assert result == tmp_path / "models" / "performance" / "v1"
-    assert calls[0]["allow_patterns"] == ["models/performance/v1/*"]
+    assert result == tmp_path / "performance" / "v1"
+    assert calls[0]["allow_patterns"] == ["performance/v1/*"]
     assert calls[0]["repo_id"] == "user/repo"
 
 

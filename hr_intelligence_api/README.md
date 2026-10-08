@@ -115,8 +115,9 @@ MODEL_VERSION=v1 uvicorn app.main:app   # rollback ke v1
 ```
 
 Artifact di atas disimpan di repo Hugging Face (`HR_MODEL_REPO`), bukan di
-disk. Metadata tiap model diambil dari `models/<versi>/model_metadata.json`
-di repo Hub yang sama.
+disk. Artifact berada **langsung di root repo** (tanpa folder `models/`);
+metadata tiap model diambil dari `<versi>/model_metadata.json` di repo Hub
+yang sama.
 
 ### Kegunaan pada data asli
 

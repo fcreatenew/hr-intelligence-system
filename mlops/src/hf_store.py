@@ -5,10 +5,11 @@ Registry MLOps secara default masih bekerja pada folder ``models/`` lokal
 di-set ``hub``, artifact yang **tidak ada** di lokal akan diunduh dari Hub
 sehingga registry, validasi, dan audit fairness tetap jalan tanpa salinan lokal.
 
-Struktur repo Hub sama dengan yang dipakai ``hr_intelligence_api``::
+Struktur repo Hub sama dengan yang dipakai ``hr_intelligence_api``, yaitu
+artifact berada **langsung di root repo** (tanpa folder ``models/``)::
 
-    models/<versi>/…            # turnover: v1, v2, v2_mitigated
-    models/<use-case>/<versi>/… # absensi, kinerja, payroll, survival
+    <versi>/…                   # turnover: v1, v2, v2_mitigated
+    <use-case>/<versi>/…        # absensi, kinerja, payroll, survival
 """
 
 from __future__ import annotations
@@ -22,7 +23,9 @@ from pathlib import Path
 from src.config import MODELS_DIR
 
 
-HUB_ROOT = "models"
+# Artifact berada langsung di root repo Hub (tanpa folder ``models/``),
+# sinkron dengan scripts/upload_models_to_hf.py.
+HUB_ROOT = ""
 
 
 def repo_id() -> str:
@@ -99,15 +102,19 @@ def _kwargs() -> dict:
     return kwargs
 
 
+def _hub_filename(relative_path: str) -> str:
+    """Nama berkas di repo Hub (relatif ke root repo, tanpa prefix)."""
+    relative_path = relative_path.lstrip("/")
+    return f"{HUB_ROOT}/{relative_path}" if HUB_ROOT else relative_path
+
+
 def fetch(relative_path: str) -> Path:
     """Unduh satu berkas artifact dari Hub dan kembalikan path cache-nya."""
     from huggingface_hub import hf_hub_download
 
-    relative_path = relative_path.lstrip("/")
-
     return Path(
         hf_hub_download(
-            filename=f"{HUB_ROOT}/{relative_path}",
+            filename=_hub_filename(relative_path),
             **_kwargs(),
         )
     )
@@ -124,11 +131,11 @@ def fetch_directory(relative_dir: str) -> Path:
     relative_dir = relative_dir.strip("/")
 
     local_root = snapshot_download(
-        allow_patterns=[f"{HUB_ROOT}/{relative_dir}/*"],
+        allow_patterns=[f"{_hub_filename(relative_dir)}/*"],
         **_kwargs(),
     )
 
-    return Path(local_root) / HUB_ROOT / relative_dir
+    return Path(local_root) / _hub_filename(relative_dir)
 
 
 def is_hub_enabled() -> bool:

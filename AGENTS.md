@@ -125,7 +125,7 @@ Hub dengan struktur `models/<versi>/…` dan di-cache di `HF_HOME`.
   pintu baca artifact) dan `mlops/src/hf_store.py` (fallback registry MLOps).
 - Unggah model: `python scripts/upload_models_to_hf.py --repo-id <user>/<repo>
   [--create]`. Script mengunggah folder `models/` + `active_version.json`.
-- Repo Hub menyimpan `models/active_version.json` sebagai pin versi; MLOps
+- Repo Hub menyimpan `active_version.json` di root repo sebagai pin versi; MLOps
   `promote`/`rollback` menulisnya agar API menunjuk versi yang sama.
 - Test tetap hermetic lewat `HR_MODEL_SOURCE=local` (di-set di
   `hr_intelligence_api/tests/conftest.py`), sehingga tidak butuh jaringan.

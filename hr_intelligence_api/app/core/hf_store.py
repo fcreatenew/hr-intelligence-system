@@ -1,16 +1,18 @@
 """Pengambilan artifact model dari Hugging Face Hub.
 
 Runtime API tidak lagi membaca artifact dari disk lokal. Semua artifact
-(model + metadata) berada di satu repo Hub dengan struktur:
+(model + metadata) berada di satu repo Hub, **langsung di root repo**
+(tanpa folder ``models/``), dengan struktur:
 
-    models/
-    ├── active_version.json          # pin versi aktif (ditulis MLOps)
-    ├── v1/turnover_model.joblib
-    ├── v2_mitigated/turnover_model.joblib
-    ├── absenteeism/v1/absenteeism_model.joblib
-    ├── performance/v1/performance_model.joblib
-    ├── payroll_anomaly/v1/payroll_anomaly_model.joblib
-    └── survival_attrition/v1/cox_model.pkl
+    active_version.json          # pin versi aktif (ditulis MLOps)
+    v1/turnover_model.joblib
+    v2_mitigated/turnover_model.joblib
+    absenteeism/v1/absenteeism_model.joblib
+    performance/v1/performance_model.joblib
+    payroll_anomaly/v1/payroll_anomaly_model.joblib
+    survival_attrition/v1/cox_model.pkl
+
+Struktur ini identik dengan yang diunggah `scripts/upload_models_to_hf.py`.
 
 `HR_MODEL_SOURCE` memilih sumber:
 
@@ -40,8 +42,9 @@ from app.core.config import (
 )
 
 
-# Folder di dalam repo Hub yang menampung seluruh artifact.
-HUB_ROOT = "models"
+# Artifact diletakkan langsung di root repo Hub (tanpa folder ``models/``),
+# sesuai scripts/upload_models_to_hf.py yang mengunggah ke ``<versi>/…``.
+HUB_ROOT = ""
 
 
 def source() -> str:
@@ -91,7 +94,8 @@ def cache_dir() -> Path | None:
 
 
 def _hub_filename(relative_path: str) -> str:
-    return f"{HUB_ROOT}/{relative_path.lstrip('/')}"
+    """Nama berkas di repo Hub (relatif ke root repo, tanpa prefix)."""
+    return f"{HUB_ROOT}/{relative_path.lstrip('/')}" if HUB_ROOT else relative_path.lstrip("/")
 
 
 def _hub_kwargs() -> dict:
@@ -120,8 +124,8 @@ def fetch(relative_path: str) -> Path:
 
     Di mode ``hub`` artifact diunduh (atau diambil dari cache) dan path cache
     dikembalikan. Di mode ``local`` path relatif diselesaikan terhadap
-    ``models/``. ``relative_path`` selalu relatif ke root ``models/`` di Hub,
-    mis. ``"v2_mitigated/turnover_model.joblib"``.
+    ``models/``. ``relative_path`` selalu relatif ke **root repo Hub**
+    (tanpa prefix ``models/``), mis. ``"v2_mitigated/turnover_model.joblib"``.
     """
     relative_path = relative_path.lstrip("/")
 
@@ -173,4 +177,4 @@ def fetch_directory(relative_dir: str) -> Path:
         **_hub_kwargs(),
     )
 
-    return Path(local_root) / HUB_ROOT / relative_dir
+    return Path(local_root) / _hub_filename(relative_dir)
