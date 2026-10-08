@@ -29,6 +29,12 @@ joblib==1.6.0
 httpx==0.28.1
 python-dotenv==1.2.4
 
+# --- Sumber artifact model (Hugging Face Hub) ------------------------------
+# Artifact model tidak lagi dibaca dari disk lokal saat runtime; API/MLOps
+# mengunduhnya dari Hub. Pin dibuat serendah mungkin yang masih menyediakan
+# `hf_hub_download` + `snapshot_download` yang dipakai `hf_store.py`.
+huggingface_hub>=0.34.0
+
 # --- Testing ---------------------------------------------------------------
 # CI memasang pytest terpisah; pin di sini agar dev & CI sama.
 pytest>=8.0

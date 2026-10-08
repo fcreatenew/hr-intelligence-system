@@ -20,11 +20,18 @@ services:
       HR_API_KEY: ${HR_API_KEY:-}
       # Default v2_mitigated = versi turnover paling adil (sesuai kode).
       MODEL_VERSION: ${MODEL_VERSION:-v2_mitigated}
+      # Artifact model diambil dari Hugging Face Hub (bukan volume lokal).
+      HR_MODEL_REPO: ${HR_MODEL_REPO:-fcreatenew/hr-intelligence-models}
+      HR_MODEL_REVISION: ${HR_MODEL_REVISION:-main}
+      HR_MODEL_SOURCE: ${HR_MODEL_SOURCE:-hub}
+      # Token read repo privat; kosongkan untuk repo publik.
+      HF_TOKEN: ${HF_TOKEN:-}
+      # Cache unduhan agar tidak mengunduh ulang tiap restart.
+      HF_HOME: /data/hf-cache
+    volumes:
+      - hf-cache:/data/hf-cache
     ports:
       - "8000:8000"
-    volumes:
-      - ./models:/models:ro
-      - ./data:/data:ro
 
   payroll-api:
     build:
@@ -77,3 +84,7 @@ services:
       - "8100:8100"
     depends_on:
       - hr-api
+
+volumes:
+  # Cache artifact model yang diunduh dari Hugging Face Hub.
+  hf-cache:
