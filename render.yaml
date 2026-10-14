@@ -1,0 +1,186 @@
+# Blueprint Render untuk HR Intelligence System — paket demo GRATIS.
+#
+# Cara pakai: Render Dashboard -> New + -> Blueprint -> pilih repo ini.
+# Render membaca file ini, membuat seluruh service di bawah, lalu meminta
+# nilai untuk env var yang bertanda `sync: false` (secret).
+#
+# PENTING: kelima service gratis punya URL publik masing-masing dan TIDAK
+# saling terhubung lewat jaringan privat seperti di docker-compose.yml.
+# Karena itu URL antar-service diambil dari RENDER_EXTERNAL_URL milik service
+# lain lewat `fromService`. Dashboard memakai nginx sebagai reverse proxy,
+# jadi browser cukup mengakses satu origin (tidak perlu CORS).
+#
+# Dokumen lengkap: deploy/DEPLOY.md
+
+services:
+  # ---------------------------------------------------------------------
+  # API model ML (FastAPI). Wajib: hr_intelligence_api/Dockerfile menyalin
+  # folder models/ dari root repo.
+  # ---------------------------------------------------------------------
+  - type: web
+    name: hr-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./hr_intelligence_api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: MODEL_VERSION
+        value: v2_mitigated
+      - key: HR_API_KEY
+        generateValue: true
+      # URL dashboard (diisi otomatis dari service `dashboard`).
+      - key: CORS_ALLOW_ORIGINS
+        fromService:
+          name: dashboard
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: HR_NUM_THREADS
+        value: "1"
+
+  # ---------------------------------------------------------------------
+  # Payroll Intelligence (FastAPI). Butuh data/hr_payroll.csv.
+  # ---------------------------------------------------------------------
+  - type: web
+    name: payroll-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./payroll_intelligence/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: HR_NUM_THREADS
+        value: "1"
+
+  # ---------------------------------------------------------------------
+  # AI HR Assistant (FastAPI). Demo offline: LLM_PROVIDER=mock.
+  # Ganti ke `hf`/`openai` bila ingin jawaban LLM sungguhan.
+  # ---------------------------------------------------------------------
+  - type: web
+    name: hr-assistant
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./ai_hr_assistant/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: LLM_PROVIDER
+        value: mock
+      - key: EMBEDDING_BACKEND
+        value: lsa
+      - key: ASSISTANT_API_KEY
+        generateValue: true
+      # API assistant memanggil hr-api untuk tool prediksi.
+      - key: HR_INTELLIGENCE_BASE_URL
+        fromService:
+          name: hr-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: HR_INTELLIGENCE_API_KEY
+        fromService:
+          name: hr-api
+          type: web
+          envVarKey: HR_API_KEY
+      - key: HR_NUM_THREADS
+        value: "1"
+
+  # ---------------------------------------------------------------------
+  # HRIS Laravel (SQLite). Catatan: SQLite ephemeral — data reset tiap
+  # redeploy/restart. Cukup untuk demo; untuk persistensi pakai Postgres.
+  # ---------------------------------------------------------------------
+  - type: web
+    name: hr-app
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./hr_application/Dockerfile
+    dockerContext: ./hr_application
+    healthCheckPath: /up
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      # WAJIB diisi manual: hasil `php artisan key:generate --show`
+      # (format base64:...). Jangan pakai generateValue — Laravel butuh 32 byte.
+      - key: APP_KEY
+        sync: false
+      - key: DB_CONNECTION
+        value: sqlite
+      - key: HR_INTELLIGENCE_BASE_URL
+        fromService:
+          name: hr-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: HR_INTELLIGENCE_API_KEY
+        fromService:
+          name: hr-api
+          type: web
+          envVarKey: HR_API_KEY
+      - key: PAYROLL_INTELLIGENCE_BASE_URL
+        fromService:
+          name: payroll-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+
+  # ---------------------------------------------------------------------
+  # Dashboard React (nginx + reverse proxy). Mode `live` + proxy sehingga
+  # browser hanya butuh satu origin; tidak perlu CORS.
+  # ---------------------------------------------------------------------
+  - type: web
+    name: dashboard
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./hr_dashboard/Dockerfile
+    dockerContext: ./hr_dashboard
+    autoDeploy: true
+    envVars:
+      - key: VITE_DATA_MODE
+        value: live
+      - key: HR_API_UPSTREAM
+        fromService:
+          name: hr-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: PAYROLL_API_UPSTREAM
+        fromService:
+          name: payroll-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+
+# -----------------------------------------------------------------------
+# Alternatif: frontend sebagai STATIC SITE (tanpa Docker, tanpa nginx).
+# Static site tidak bisa memakai nginx reverse proxy, sehingga dashboard
+# harus memanggil URL API secara langsung dan API harus mengizinkan CORS.
+# Aktifkan blok ini HANYA jika ingin menghapus service `dashboard` di atas.
+# -----------------------------------------------------------------------
+#  - type: web
+#    name: dashboard-static
+#    runtime: static
+#    buildCommand: cd hr_dashboard && npm ci && npm run build
+#    staticPublishPath: ./hr_dashboard/dist
+#    envVars:
+#      - key: VITE_DATA_MODE
+#        value: live
+#      - key: VITE_HR_API_BASE
+#        fromService:
+#          name: hr-api
+#          type: web
+#          envVarKey: RENDER_EXTERNAL_URL
+#      - key: VITE_PAYROLL_API_BASE
+#        fromService:
+#          name: payroll-api
+#          type: web
+#          envVarKey: RENDER_EXTERNAL_URL
+#    routes:
+#      - type: rewrite
+#        source: /*
+#        destination: /index.html
