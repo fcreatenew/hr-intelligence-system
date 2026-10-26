@@ -18,6 +18,15 @@ Project ini menjadi tempat untuk menggabungkan:
 
 Detail tahapan pengembangan tersedia di [`ROADMAP.md`](./ROADMAP.md).
 
+## Model AI dan Machine Learning
+
+Model artifact yang digunakan atau dievaluasi untuk proyek ini dapat ditelusuri di [HR Intelligence Models — Hugging Face](https://huggingface.co/fcreatenew/hr-intelligence-models/tree/main).
+
+Gunakan halaman tersebut untuk memeriksa model yang tersedia, model card, cara penggunaan, batasan, dan lisensi masing-masing model. Jika model digunakan untuk inference atau integrasi, pastikan lisensi model dan bobotnya mengizinkan tujuan penggunaan Anda; lisensi repository software tidak otomatis menggantikan lisensi model AI atau dataset.
+
+Model lokal yang disertakan dalam repository ini tetap didokumentasikan pada [`models/README.md`](./models/README.md). Untuk komponen AI Assistant, lihat [`ai_hr_assistant/README.md`](./ai_hr_assistant/README.md).
+
+
 Panduan fitur dan cara menjalankan seluruh komponen tersedia di:
 
 * [`PANDUAN_PENGGUNAAN.md`](./PANDUAN_PENGGUNAAN.md) — versi Markdown
