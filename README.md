@@ -555,3 +555,17 @@ MIT mengizinkan penggunaan, modifikasi, dan distribusi, termasuk dalam produk ko
 Jika tujuan proyek berubah menjadi mewajibkan distribusi turunan di bawah lisensi copyleft dan menyediakan source code untuk versi yang dimodifikasi yang digunakan melalui jaringan, maintainer dapat mempertimbangkan migrasi ke **GNU AGPL-3.0-only**. Perubahan lisensi perlu dilakukan secara konsisten dan hanya untuk kode yang hak lisensinya dapat diberikan oleh pemiliknya. Mengganti lisensi tidak otomatis mencabut hak MIT yang sudah diberikan untuk salinan/versi terdahulu.
 
 Baca [LICENSE](./LICENSE) untuk lisensi yang berlaku pada versi repository ini.
+
+### Opsi lisensi untuk tujuan proyek
+
+| Lisensi | Cocok untuk | Catatan |
+|---|---|---|
+| **GNU AGPL-3.0-only** | Pilihan utama jika ingin copyleft kuat, termasuk untuk versi modifikasi yang disediakan lewat jaringan | Mengizinkan penggunaan komersial; tidak otomatis membuat semua sistem yang hanya berkomunikasi melalui API harus open source. Memuat ketentuan paten. |
+| **GNU GPL-3.0-only** | Ingin turunan yang didistribusikan tetap di bawah GPL | Tidak memiliki ketentuan jaringan khusus seperti AGPL. Memuat ketentuan paten. |
+| **Apache-2.0** | Adopsi luas dan ketentuan lisensi paten yang jelas | Permisif; turunan closed-source diperbolehkan. |
+| **MPL-2.0** | Kompromi antara permissive dan copyleft | Perubahan pada file berlisensi MPL tetap tunduk pada MPL; bagian lain bisa memakai lisensi berbeda. |
+| **MIT** | Kesederhanaan dan penggunaan seluas mungkin | Sangat permisif; tidak mewajibkan turunan tetap open source. |
+
+**Rekomendasi:** AGPL-3.0-only paling mendekati tujuan berbagi perbaikan untuk aplikasi yang juga disediakan sebagai layanan jaringan. GPL-3.0-only adalah alternatif jika fokusnya distribusi, sedangkan Apache-2.0 cocok bila adopsi perusahaan dan paten lebih diprioritaskan daripada copyleft. <Cite refs={["turn453165search0","turn453165search3","turn453165search5"]} />
+
+Sebelum migrasi dari MIT, periksa hak atas kode dan kontribusi, serta lisensi dependency, dataset, model AI, dan bobot model secara terpisah. Lisensi open source pada umumnya mengizinkan penggunaan komersial; jika ingin melarang penggunaan komersial, itu biasanya memerlukan lisensi khusus yang bukan lisensi open source yang disetujui OSI. Mengganti lisensi juga tidak otomatis mencabut hak MIT yang sudah diberikan untuk versi terdahulu.
