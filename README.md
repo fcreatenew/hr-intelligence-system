@@ -572,12 +572,22 @@ Model tidak berhenti sebagai notebook, tetapi dikembangkan menjadi bagian dari s
 
 ## Lisensi
 
-**Rancangan migrasi pada branch review ini:** kode sumber proyek, termasuk `ai_hr_assistant/`, ditujukan untuk GNU AGPL-3.0-only. File [LICENSE](./LICENSE) pada branch ini berisi teks lisensi lengkap.
+### Kode sumber
 
-Dokumentasi buatan proyek (panduan, tutorial, diagram, dan materi penjelasan) ditujukan untuk **CC BY 4.0**, sesuai cakupan di [DOCUMENTATION_LICENSE.md](./DOCUMENTATION_LICENSE.md). Kode sumber dan contoh kode yang menjadi bagian dari implementasi perangkat lunak tetap mengikuti AGPL kecuali dinyatakan lain.
+Kode sumber proyek ini dilisensikan di bawah **GNU Affero General Public License v3.0 only (AGPL-3.0-only)**. Lihat teks lengkap pada [`LICENSE`](./LICENSE). Cakupan ini mencakup komponen kode proyek, termasuk `ai_hr_assistant/`, kecuali jika suatu file atau komponen secara jelas menyatakan lisensi berbeda.
 
-Model AI, bobot model, dataset, dan dependensi pihak ketiga **tidak otomatis mengikuti lisensi kode utama**. Periksa lisensi masing-masing komponen dan [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) jika tersedia. Model/dataset yang saat ini diterbitkan ke Hugging Face memiliki deklarasi lisensi masing-masing; skrip unggah menggunakan file lisensi khusus untuk artefak tersebut.
+AGPL-3.0-only mengizinkan penggunaan, modifikasi, dan distribusi, termasuk penggunaan komersial. Jika Anda mendistribusikan versi yang dimodifikasi atau menyediakan versi tercakup melalui jaringan, ketentuan AGPL tertentu mengharuskan pengguna memperoleh source code yang sesuai. Baca teks lisensi untuk memahami kewajiban lengkapnya.
 
-AGPL mengizinkan penggunaan komersial, tetapi mewajibkan source code dari versi tercakup yang dimodifikasi ditawarkan kepada pengguna yang berinteraksi dengannya melalui jaringan sesuai ketentuannya. Lisensi ini memiliki ketentuan paten. Lisensi ini tidak otomatis mewajibkan aplikasi terpisah yang hanya berkomunikasi melalui API menjadi open source.
+### Dokumentasi
 
-**Status migrasi:** perubahan ini berada pada branch review dan belum boleh digabungkan sebelum checklist hak cipta, kontribusi, kode pihak ketiga, model, dan dataset ditinjau. Hak MIT yang telah diberikan untuk versi terdahulu tidak otomatis dicabut.
+Dokumentasi yang dibuat khusus untuk proyek ini—seperti panduan, tutorial, diagram, dan materi penjelasan—menggunakan **Creative Commons Attribution 4.0 International (CC BY 4.0)** sesuai cakupan di [`DOCUMENTATION_LICENSE.md`](./DOCUMENTATION_LICENSE.md). Materi pihak ketiga dan potongan kode perangkat lunak tidak otomatis tercakup oleh lisensi dokumentasi.
+
+### Model, dataset, dan komponen pihak ketiga
+
+Lisensi kode utama **tidak otomatis berlaku** untuk model AI, bobot model, tokenizer, dataset, dependency, maupun aset pihak ketiga. Periksa lisensi dan pemberitahuan yang menyertai masing-masing artefak sebelum menggunakan, memodifikasi, atau mendistribusikannya. Lihat [`models/README.md`](./models/README.md), [koleksi model di Hugging Face](https://huggingface.co/fcreatenew/hr-intelligence-models/tree/main), dan [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).
+
+### Versi terdahulu dan atribusi
+
+Perubahan lisensi pada versi saat ini tidak mencabut izin MIT yang telah diberikan kepada penerima salinan atau versi terdahulu. Pemberitahuan hak cipta dan lisensi yang berlaku pada komponen pihak ketiga harus tetap dipertahankan.
+
+Jika Anda menemukan file yang tampak memiliki pemberitahuan lisensi atau kepemilikan yang bertentangan, mohon buka issue sebelum menggunakannya kembali atau mendistribusikannya.
