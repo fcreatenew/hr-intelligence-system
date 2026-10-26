@@ -539,8 +539,10 @@ Model tidak berhenti sebagai notebook, tetapi dikembangkan menjadi bagian dari s
 
 ## License
 
-Private / Proprietary.
+Saat ini repository ini menggunakan **MIT License**. Anda dapat melihat ketentuan lengkapnya pada file [LICENSE](./LICENSE).
 
-Hak penggunaan, distribusi, modifikasi, dan akses terhadap source code mengikuti kebijakan pemilik proyek.
+MIT mengizinkan penggunaan, modifikasi, dan distribusi, termasuk dalam produk komersial, dengan tetap mempertahankan pemberitahuan hak cipta dan lisensi. Lisensi ini **tidak mewajibkan semua karya turunan menjadi open source**.
 
-© 2026 All Rights Reserved.
+Jika tujuan proyek berubah menjadi mewajibkan distribusi turunan di bawah lisensi copyleft dan menyediakan source code untuk versi yang dimodifikasi yang digunakan melalui jaringan, maintainer dapat mempertimbangkan migrasi ke **GNU AGPL-3.0-only**. Perubahan lisensi perlu dilakukan secara konsisten dan hanya untuk kode yang hak lisensinya dapat diberikan oleh pemiliknya. Mengganti lisensi tidak otomatis mencabut hak MIT yang sudah diberikan untuk salinan/versi terdahulu.
+
+Baca [LICENSE](./LICENSE) untuk lisensi yang berlaku pada versi repository ini.
