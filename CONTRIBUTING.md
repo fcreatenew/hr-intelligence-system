@@ -28,6 +28,8 @@ Untuk laporan kerentanan, ikuti [SECURITY.md](./SECURITY.md), bukan membuat issu
 
 ## Pull Request dan lisensi
 
-Dengan mengirimkan kontribusi, Anda menyatakan bahwa Anda berhak mengirimkan kontribusi tersebut dan bahwa kontribusi tidak melanggar hak pihak ketiga. Kontribusi akan didistribusikan berdasarkan lisensi proyek yang dinyatakan pada file LICENSE. Periksa lisensi aktif sebelum mengirimkan PR.
+Pada branch migrasi ini, target lisensi kode sumber adalah **GNU AGPL-3.0-only**; dokumentasi buatan proyek mengikuti **CC BY 4.0** sesuai [DOCUMENTATION_LICENSE.md](./DOCUMENTATION_LICENSE.md). Model AI, bobot, dataset, dan dependency pihak ketiga tetap mengikuti lisensi masing-masing.
 
-Kami berusaha menjaga proses review tetap ramah, transparan, dan konstruktif. Terima kasih sudah membantu proyek ini berkembang!
+Dengan mengirimkan kontribusi, Anda menyatakan bahwa Anda berhak mengirimkannya dan bahwa kontribusi tidak melanggar hak pihak ketiga. Kontribusi yang diterima akan didistribusikan berdasarkan lisensi yang berlaku pada bagian terkait. Kontributor tetap memegang hak cipta atas kontribusinya. Periksa file LICENSE dan cakupan lisensi sebelum mengirimkan PR.
+
+Branch ini adalah rancangan migrasi. Jangan gabungkan sebelum checklist hak cipta dan kontribusi selesai ditinjau.
