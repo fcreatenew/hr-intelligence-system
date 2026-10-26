@@ -1,5 +1,12 @@
 # Model Artifacts
 
+## Model Hub di Hugging Face
+
+Koleksi model untuk proyek ini juga dapat diperiksa di [fcreatenew/hr-intelligence-models](https://huggingface.co/fcreatenew/hr-intelligence-models/tree/main).
+
+Sebelum memakai model dari Hub, periksa model card, task yang didukung, versi, preprocessing yang diharapkan, metrik evaluasi, batasan, serta lisensi spesifik model/bobotnya. Jangan mengasumsikan lisensi model sama dengan lisensi source code repository ini. Untuk sistem HR, validasi performa, bias/fairness, privasi, dan kesesuaian penggunaan sebelum dipakai pada keputusan yang memengaruhi karyawan.
+
+
 Folder ini berisi hasil training Machine Learning yang digunakan oleh sistem HR Intelligence.
 
 Model artifact dihasilkan oleh proses training pada:
