@@ -1,0 +1,8 @@
+cff-version: 1.2.0
+message: "If you use HR Intelligence System in research or software, please cite the repository and the specific release or commit you used."
+title: "HR Intelligence System"
+type: software
+repository-code: "https://github.com/fcreatenew/hr-intelligence-system"
+abstract: >-
+  A modular project exploring HR applications, analytics, machine learning,
+  AI assistant components, and MLOps workflows.

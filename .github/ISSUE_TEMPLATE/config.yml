@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Contribution guide
+    url: https://github.com/fcreatenew/hr-intelligence-system/blob/main/CONTRIBUTING.md
+    about: Read how to propose changes, test, and submit a pull request.
+  - name: Security policy
+    url: https://github.com/fcreatenew/hr-intelligence-system/blob/main/SECURITY.md
+    about: Report potential vulnerabilities privately; do not post exploitable details in public issues.

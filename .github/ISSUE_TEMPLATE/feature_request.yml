@@ -1,0 +1,44 @@
+name: Feature request
+description: Suggest an improvement or capability
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share the problem and intended outcome. For major changes, please discuss the approach before opening a pull request.
+  - type: input
+    id: component
+    attributes:
+      label: Related component
+      placeholder: hr_dashboard
+    validations:
+      required: false
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: What user or engineering problem does this address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Describe the desired behavior. Alternatives are welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact and considerations
+      description: Consider privacy, security, fairness, accessibility, maintenance, and backward compatibility.
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and the roadmap.
+          required: true
