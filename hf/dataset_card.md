@@ -76,3 +76,6 @@ python scripts/generate_attrition_survival_data.py
 ## Lisensi
 
 MIT.
+
+
+> Lisensi `mit` pada metadata kartu ini berlaku untuk dataset yang diterbitkan melalui koleksi ini, bukan untuk source code HR Intelligence System. Teks lisensi dataset ada pada file `LICENSE` yang diunggah dari `hf/dataset/LICENSE`.
