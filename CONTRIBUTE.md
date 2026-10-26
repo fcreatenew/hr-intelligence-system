@@ -859,9 +859,11 @@ ke dalam Issue atau Pull Request.
 
 # 29. License
 
-Contribution terhadap project ini mengikuti license yang digunakan oleh repository.
+Repository saat ini menggunakan **MIT License**. Baca file [LICENSE](./LICENSE) sebelum berkontribusi.
 
-Pastikan memahami license sebelum melakukan contribution.
+Dengan mengirimkan kontribusi, Anda menyatakan bahwa Anda memiliki hak untuk mengirimkan perubahan tersebut dan tidak sengaja memasukkan kode, dokumentasi, atau dataset yang melanggar hak pihak lain. Kontributor tetap memegang hak cipta atas kontribusinya, tetapi kontribusi yang diterima dapat didistribusikan oleh proyek sesuai lisensi proyek yang berlaku dan hak yang diberikan oleh kontributor.
+
+Maintainer dapat mempertimbangkan perubahan lisensi untuk versi mendatang. Perubahan lisensi tidak otomatis membatalkan lisensi yang sudah diberikan kepada penerima versi terdahulu.
 
 ---
 
