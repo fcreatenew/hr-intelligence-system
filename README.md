@@ -546,26 +546,14 @@ Model tidak berhenti sebagai notebook, tetapi dikembangkan menjadi bagian dari s
 
 ---
 
-## License
+## Lisensi
 
-Saat ini repository ini menggunakan **MIT License**. Anda dapat melihat ketentuan lengkapnya pada file [LICENSE](./LICENSE).
+**Rancangan migrasi pada branch review ini:** kode sumber proyek, termasuk `ai_hr_assistant/`, ditujukan untuk GNU AGPL-3.0-only. File [LICENSE](./LICENSE) pada branch ini berisi teks lisensi lengkap.
 
-MIT mengizinkan penggunaan, modifikasi, dan distribusi, termasuk dalam produk komersial, dengan tetap mempertahankan pemberitahuan hak cipta dan lisensi. Lisensi ini **tidak mewajibkan semua karya turunan menjadi open source**.
+Dokumentasi buatan proyek (panduan, tutorial, diagram, dan materi penjelasan) ditujukan untuk **CC BY 4.0**, sesuai cakupan di [DOCUMENTATION_LICENSE.md](./DOCUMENTATION_LICENSE.md). Kode sumber dan contoh kode yang menjadi bagian dari implementasi perangkat lunak tetap mengikuti AGPL kecuali dinyatakan lain.
 
-Jika tujuan proyek berubah menjadi mewajibkan distribusi turunan di bawah lisensi copyleft dan menyediakan source code untuk versi yang dimodifikasi yang digunakan melalui jaringan, maintainer dapat mempertimbangkan migrasi ke **GNU AGPL-3.0-only**. Perubahan lisensi perlu dilakukan secara konsisten dan hanya untuk kode yang hak lisensinya dapat diberikan oleh pemiliknya. Mengganti lisensi tidak otomatis mencabut hak MIT yang sudah diberikan untuk salinan/versi terdahulu.
+Model AI, bobot model, dataset, dan dependensi pihak ketiga **tidak otomatis mengikuti lisensi kode utama**. Periksa lisensi masing-masing komponen dan [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) jika tersedia. Model/dataset yang saat ini diterbitkan ke Hugging Face memiliki deklarasi lisensi masing-masing; skrip unggah menggunakan file lisensi khusus untuk artefak tersebut.
 
-Baca [LICENSE](./LICENSE) untuk lisensi yang berlaku pada versi repository ini.
+AGPL mengizinkan penggunaan komersial, tetapi mewajibkan source code dari versi tercakup yang dimodifikasi ditawarkan kepada pengguna yang berinteraksi dengannya melalui jaringan sesuai ketentuannya. Lisensi ini memiliki ketentuan paten. Lisensi ini tidak otomatis mewajibkan aplikasi terpisah yang hanya berkomunikasi melalui API menjadi open source.
 
-### Opsi lisensi untuk tujuan proyek
-
-| Lisensi | Cocok untuk | Catatan |
-|---|---|---|
-| **GNU AGPL-3.0-only** | Pilihan utama jika ingin copyleft kuat, termasuk untuk versi modifikasi yang disediakan lewat jaringan | Mengizinkan penggunaan komersial; tidak otomatis membuat semua sistem yang hanya berkomunikasi melalui API harus open source. Memuat ketentuan paten. |
-| **GNU GPL-3.0-only** | Ingin turunan yang didistribusikan tetap di bawah GPL | Tidak memiliki ketentuan jaringan khusus seperti AGPL. Memuat ketentuan paten. |
-| **Apache-2.0** | Adopsi luas dan ketentuan lisensi paten yang jelas | Permisif; turunan closed-source diperbolehkan. |
-| **MPL-2.0** | Kompromi antara permissive dan copyleft | Perubahan pada file berlisensi MPL tetap tunduk pada MPL; bagian lain bisa memakai lisensi berbeda. |
-| **MIT** | Kesederhanaan dan penggunaan seluas mungkin | Sangat permisif; tidak mewajibkan turunan tetap open source. |
-
-**Rekomendasi:** AGPL-3.0-only paling mendekati tujuan berbagi perbaikan untuk aplikasi yang juga disediakan sebagai layanan jaringan. GPL-3.0-only adalah alternatif jika fokusnya distribusi, sedangkan Apache-2.0 cocok bila adopsi perusahaan dan paten lebih diprioritaskan daripada copyleft. <Cite refs={["turn453165search0","turn453165search3","turn453165search5"]} />
-
-Sebelum migrasi dari MIT, periksa hak atas kode dan kontribusi, serta lisensi dependency, dataset, model AI, dan bobot model secara terpisah. Lisensi open source pada umumnya mengizinkan penggunaan komersial; jika ingin melarang penggunaan komersial, itu biasanya memerlukan lisensi khusus yang bukan lisensi open source yang disetujui OSI. Mengganti lisensi juga tidak otomatis mencabut hak MIT yang sudah diberikan untuk versi terdahulu.
+**Status migrasi:** perubahan ini berada pada branch review dan belum boleh digabungkan sebelum checklist hak cipta, kontribusi, kode pihak ketiga, model, dan dataset ditinjau. Hak MIT yang telah diberikan untuk versi terdahulu tidak otomatis dicabut.

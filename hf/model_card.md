@@ -94,3 +94,6 @@ Notebook training dan generator data ada di repo source code:
 ## Lisensi
 
 MIT. Data sintetis/anonim; tidak memuat data pribadi asli.
+
+
+> Lisensi `mit` pada metadata kartu ini berlaku untuk artefak model yang diterbitkan melalui koleksi ini, bukan untuk source code HR Intelligence System. Teks lisensi artefak ada pada file `LICENSE` yang diunggah dari `hf/model/LICENSE`.

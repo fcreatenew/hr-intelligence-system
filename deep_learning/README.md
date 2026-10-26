@@ -282,6 +282,6 @@ jupyter notebook
 
 **Deep Learning**
 
-© 2026 All Rights Reserved.
+Kode sumber ditujukan untuk GNU AGPL-3.0-only; dokumentasi buatan proyek mengikuti CC BY 4.0. Lihat lisensi di root repository.
 
 </div>

@@ -277,10 +277,6 @@ jupyter notebook
 
 ---
 
-## License
+## Lisensi
 
-Private / Proprietary.
-
-Hak penggunaan, distribusi, modifikasi, dan akses terhadap source code mengikuti kebijakan pemilik proyek.
-
-© 2026 All Rights Reserved.
+Kode sumber `payroll_intelligence/` ditujukan untuk GNU AGPL-3.0-only pada rancangan migrasi ini. Lihat [LICENSE di root repository](../LICENSE). Dokumentasi buatan proyek mengikuti CC BY 4.0 sesuai [DOCUMENTATION_LICENSE.md](../DOCUMENTATION_LICENSE.md). Dependency, model, dataset, dan materi pihak ketiga tetap mengikuti lisensi masing-masing.
