@@ -859,11 +859,11 @@ ke dalam Issue atau Pull Request.
 
 # 29. License
 
-Repository saat ini menggunakan **MIT License**. Baca file [LICENSE](./LICENSE) sebelum berkontribusi.
+Pada branch migrasi ini, target lisensi kode sumber proyek adalah **GNU AGPL-3.0-only**. Dokumentasi buatan proyek mengikuti **CC BY 4.0** sesuai [DOCUMENTATION_LICENSE.md](./DOCUMENTATION_LICENSE.md). Model, bobot, dataset, dan dependency pihak ketiga mengikuti lisensi masing-masing.
 
-Dengan mengirimkan kontribusi, Anda menyatakan bahwa Anda memiliki hak untuk mengirimkan perubahan tersebut dan tidak sengaja memasukkan kode, dokumentasi, atau dataset yang melanggar hak pihak lain. Kontributor tetap memegang hak cipta atas kontribusinya, tetapi kontribusi yang diterima dapat didistribusikan oleh proyek sesuai lisensi proyek yang berlaku dan hak yang diberikan oleh kontributor.
+Dengan mengirimkan kontribusi ke versi yang memakai AGPL, kontributor menyatakan berhak mengirimkan kontribusi tersebut dan setuju bahwa kontribusi yang diterima didistribusikan di bawah AGPL-3.0-only. Kontributor tetap memegang hak cipta atas kontribusinya. Jangan mengirim kode atau materi pihak ketiga tanpa hak/izin yang sesuai.
 
-Maintainer dapat mempertimbangkan perubahan lisensi untuk versi mendatang. Perubahan lisensi tidak otomatis membatalkan lisensi yang sudah diberikan kepada penerima versi terdahulu.
+Perubahan ini tidak mencabut izin MIT yang sudah diberikan kepada penerima versi terdahulu. Sebelum branch migrasi digabungkan, maintainer harus menyelesaikan [LICENSE_MIGRATION_CHECKLIST.md](./LICENSE_MIGRATION_CHECKLIST.md), terutama pemeriksaan hak kontribusi dan komponen yang sebelumnya dinyatakan proprietary.
 
 ---
 
