@@ -72,7 +72,7 @@ def _stage_model(dest: Path) -> None:
             shutil.copy2(source, turnover_dir / report)
 
     shutil.copy2(REPO_ROOT / "hf" / "model_card.md", dest / "README.md")
-    shutil.copy2(REPO_ROOT / "LICENSE", dest / "LICENSE")
+    shutil.copy2(REPO_ROOT / "hf" / "model" / "LICENSE", dest / "LICENSE")
 
 
 def _stage_dataset(dest: Path) -> None:
@@ -84,7 +84,7 @@ def _stage_dataset(dest: Path) -> None:
             shutil.copy2(source, dest / filename)
 
     shutil.copy2(REPO_ROOT / "hf" / "dataset_card.md", dest / "README.md")
-    shutil.copy2(REPO_ROOT / "LICENSE", dest / "LICENSE")
+    shutil.copy2(REPO_ROOT / "hf" / "dataset" / "LICENSE", dest / "LICENSE")
 
 
 def _stage_space(dest: Path) -> None:
