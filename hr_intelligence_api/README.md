@@ -307,6 +307,6 @@ php artisan hr-intelligence:predict payroll --sync
 
 ---
 
-## License
+## Lisensi
 
-Private / Proprietary. © 2026 All Rights Reserved.
+Kode sumber `hr_intelligence_api/` ditujukan untuk GNU AGPL-3.0-only pada rancangan migrasi ini. Lihat [LICENSE di root repository](../LICENSE). Dokumentasi buatan proyek mengikuti CC BY 4.0 sesuai [DOCUMENTATION_LICENSE.md](../DOCUMENTATION_LICENSE.md). Dependency, model, dataset, dan materi pihak ketiga tetap mengikuti lisensi masing-masing.
