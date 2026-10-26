@@ -1,5 +1,10 @@
 # AI HR Assistant
 
+## Model AI dari Hugging Face
+
+Anda dapat meninjau koleksi model terkait proyek ini di [HR Intelligence Models — Hugging Face](https://huggingface.co/fcreatenew/hr-intelligence-models/tree/main). Periksa model card dan lisensi setiap model sebelum mengintegrasikannya. Ketersediaan model pada Hub tidak dengan sendirinya menjamin model dapat digunakan untuk semua tujuan atau bahwa bobotnya memakai lisensi yang sama dengan kode aplikasi.
+
+
 Project untuk membangun **AI Assistant khusus Human Resources (HR)** menggunakan Large Language Model (LLM), Retrieval-Augmented Generation (RAG), embeddings, dan AI tools.
 
 Project ini bertujuan membuat interface berbasis AI yang dapat membantu pengguna berinteraksi dengan knowledge dan layanan HR menggunakan bahasa natural.
