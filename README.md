@@ -1,20 +1,44 @@
 # HR Intelligence System
 
-Sistem **AI/ML untuk kebutuhan Human Resources (HR)** yang dikembangkan secara modular.
+<p align="center">
+  <strong>Modular HRIS, analytics, machine learning, and AI tooling in one engineering workspace.</strong>
+</p>
 
-Project dimulai dari **Employee Turnover Prediction**, kemudian dikembangkan menjadi sistem HR Intelligence yang mencakup:
+<p align="center">
+  <a href="https://github.com/fcreatenew/hr-intelligence-system/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/fcreatenew/hr-intelligence-system/actions/workflows/ci.yml/badge.svg?branch=main"></a>
+  <a href="https://www.python.org/"><img alt="Python 3.14" src="https://img.shields.io/badge/Python-3.14-3776AB?logo=python&logoColor=white"></a>
+  <a href="https://nodejs.org/"><img alt="Node.js 24" src="https://img.shields.io/badge/Node.js-24-339933?logo=nodedotjs&logoColor=white"></a>
+  <a href="https://www.php.net/"><img alt="PHP 8.4" src="https://img.shields.io/badge/PHP-8.4-777BB4?logo=php&logoColor=white"></a>
+</p>
 
-* HR Application
-* HR Dashboard
-* Machine Learning
-* Payroll Intelligence
-* Deep Learning
-* AI HR Assistant
-* MLOps
+**HR Intelligence System** is a modular engineering project exploring how HR workflows, analytics, machine learning, and AI services can work together—from data validation and model evaluation to APIs, applications, dashboards, and MLOps.
 
-Project ini menjadi tempat untuk menggabungkan:
+The project began with **employee turnover prediction** and is evolving into a broader platform that includes:
 
-**Software Engineering + Data Science + Machine Learning + AI + MLOps**
+- **HR application** — HRIS workflows and employee operations
+- **HR dashboard** — analytics and visualization
+- **HR Intelligence API** — model inference and service integration
+- **Payroll intelligence** — payroll analytics and anomaly detection
+- **Machine learning & deep learning** — reproducible experiments and model evaluation
+- **AI HR Assistant** — LLM/RAG-oriented assistant components
+- **MLOps** — model validation, versioning, and workflow tooling
+
+> **Project status:** actively evolving. Capabilities, maturity, and deployment requirements vary by component. Review the component README and tests before using it in production.
+
+## Quick links
+
+| Goal | Start here |
+|---|---|
+| Understand the architecture and scope | [Architecture and components](#arsitektur) |
+| Run the stack locally | [Docker Compose](#menjalankan-dengan-docker) |
+| Set up a specific component | [Component guides](#cara-mulai) |
+| Review model results and limitations | [Model results](./MODEL_RESULTS.md) |
+| Explore future work | [Roadmap](./ROADMAP.md) |
+| Contribute code or documentation | [CONTRIBUTING.md](./CONTRIBUTING.md) and [CONTRIBUTE.md](./CONTRIBUTE.md) |
+| Report a security issue | [SECURITY.md](./SECURITY.md) |
+| Review the current license proposal | [License migration checklist](./LICENSE_MIGRATION_CHECKLIST.md) |
+
+**Privacy first:** use synthetic or properly authorized data for development and demos. Never commit real employee records, credentials, secrets, or confidential HR information.
 
 Detail tahapan pengembangan tersedia di [`ROADMAP.md`](./ROADMAP.md).
 
