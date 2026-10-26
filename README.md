@@ -1,7 +1,7 @@
 # HR Intelligence System
 
 <p align="center">
-  <strong>Modular HRIS, analytics, machine learning, and AI tooling in one engineering workspace.</strong>
+  <strong>A modular platform for HR workflows, analytics, machine learning, and AI services.</strong>
 </p>
 
 <p align="center">
@@ -11,583 +11,353 @@
   <a href="https://www.php.net/"><img alt="PHP 8.4" src="https://img.shields.io/badge/PHP-8.4-777BB4?logo=php&logoColor=white"></a>
 </p>
 
-**HR Intelligence System** is a modular engineering project exploring how HR workflows, analytics, machine learning, and AI services can work together—from data validation and model evaluation to APIs, applications, dashboards, and MLOps.
+**HR Intelligence System** is a modular engineering project exploring how human resources workflows, analytics, machine learning, and AI services can work together—from data validation and model evaluation to APIs, applications, dashboards, and MLOps.
 
-The project began with **employee turnover prediction** and is evolving into a broader platform that includes:
+The project began with **employee turnover prediction** and is expanding into a broader platform:
 
 - **HR application** — HRIS workflows and employee operations
-- **HR dashboard** — analytics and visualization
+- **HR dashboard** — workforce analytics and visualization
 - **HR Intelligence API** — model inference and service integration
 - **Payroll intelligence** — payroll analytics and anomaly detection
-- **Machine learning & deep learning** — reproducible experiments and model evaluation
-- **AI HR Assistant** — LLM/RAG-oriented assistant components
+- **Machine learning and deep learning** — reproducible experiments and model evaluation
+- **AI HR Assistant** — LLM- and RAG-based assistant components
 - **MLOps** — model validation, versioning, and workflow tooling
 
-> **Project status:** actively evolving. Capabilities, maturity, and deployment requirements vary by component. Review the component README and tests before using it in production.
+> **Project status:** Actively evolving. Capabilities, maturity, and deployment requirements vary by component. Review each component's documentation and tests before using it in production.
 
-## Quick links
+## Quick Links
 
 | Goal | Start here |
 |---|---|
-| Understand the architecture and scope | [Architecture and components](#arsitektur) |
-| Run the stack locally | [Docker Compose](#menjalankan-dengan-docker) |
-| Set up a specific component | [Component guides](#cara-mulai) |
-| Review model results and limitations | [Model results](./MODEL_RESULTS.md) |
-| Explore future work | [Roadmap](./ROADMAP.md) |
+| Understand the architecture and scope | [Architecture](#architecture) |
+| Run the stack locally | [Docker Compose](#run-with-docker) |
+| Set up a specific component | [Component Guides](#components) |
+| Review model results and limitations | [Model Results](./MODEL_RESULTS.md) |
+| Explore planned work | [Roadmap](./ROADMAP.md) |
 | Contribute code or documentation | [CONTRIBUTING.md](./CONTRIBUTING.md) and [CONTRIBUTE.md](./CONTRIBUTE.md) |
-| Report a security issue | [SECURITY.md](./SECURITY.md) |
-| Review the current license proposal | [License migration checklist](./LICENSE_MIGRATION_CHECKLIST.md) |
+| Report a security issue | [Security Policy](./SECURITY.md) |
+| Review the license migration checklist | [License Migration Checklist](./LICENSE_MIGRATION_CHECKLIST.md) |
 
-**Privacy first:** use synthetic or properly authorized data for development and demos. Never commit real employee records, credentials, secrets, or confidential HR information.
+**Privacy first:** Use synthetic or properly authorized data for development and demonstrations. Never commit real employee records, credentials, secrets, or confidential HR information.
 
-Detail tahapan pengembangan tersedia di [`ROADMAP.md`](./ROADMAP.md).
+## AI and Machine Learning Models
 
-## Model AI dan Machine Learning
+Model artifacts used or evaluated by this project are available in the [HR Intelligence Models collection on Hugging Face](https://huggingface.co/fcreatenew/hr-intelligence-models/tree/main).
 
-Model artifact yang digunakan atau dievaluasi untuk proyek ini dapat ditelusuri di [HR Intelligence Models — Hugging Face](https://huggingface.co/fcreatenew/hr-intelligence-models/tree/main).
+Review each model's files, model card, usage instructions, limitations, and license before use. Ensure that the model and its weights permit your intended use. The software repository license does not automatically apply to AI models or datasets.
 
-Gunakan halaman tersebut untuk memeriksa model yang tersedia, model card, cara penggunaan, batasan, dan lisensi masing-masing model. Jika model digunakan untuk inference atau integrasi, pastikan lisensi model dan bobotnya mengizinkan tujuan penggunaan Anda; lisensi repository software tidak otomatis menggantikan lisensi model AI atau dataset.
+Models included in this repository are documented in [models/README.md](./models/README.md). For the AI assistant, see [ai_hr_assistant/README.md](./ai_hr_assistant/README.md).
 
-Model lokal yang disertakan dalam repository ini tetap didokumentasikan pada [`models/README.md`](./models/README.md). Untuk komponen AI Assistant, lihat [`ai_hr_assistant/README.md`](./ai_hr_assistant/README.md).
+The user guide is available in both formats:
+- [PANDUAN_PENGGUNAAN.md](./PANDUAN_PENGGUNAAN.md) — Markdown guide
+- [PANDUAN_PENGGUNAAN.pdf](./PANDUAN_PENGGUNAAN.pdf) — PDF guide (15 pages)
 
-
-Panduan fitur dan cara menjalankan seluruh komponen tersedia di:
-
-* [`PANDUAN_PENGGUNAAN.md`](./PANDUAN_PENGGUNAAN.md) — versi Markdown
-* [`PANDUAN_PENGGUNAAN.pdf`](./PANDUAN_PENGGUNAAN.pdf) — versi PDF (15 halaman)
+The files retain their existing names for compatibility; the main README is written in English.
 
 ---
 
-# Arsitektur
+## Architecture
 
-Project menggunakan pendekatan **modular / multi-project architecture**.
+The repository follows a **modular, multi-project architecture**. Each component has its own source code, dependencies, tests, and documentation.
 
-Setiap komponen memiliki source code, dependency, testing, dan dokumentasi masing-masing.
+- **hr_application** — Laravel-based HRIS
+- **hr_dashboard** — React analytics dashboard
+- **hr_intelligence_api** — FastAPI service for ML inference
+- **payroll_intelligence** — payroll analytics and anomaly detection
+- **deep_learning** — neural network experiments
+- **ai_hr_assistant** — LLM and RAG assistant
+- **mlops** — model lifecycle and validation tooling
 
-```text
-                     HR INTELLIGENCE SYSTEM
-                              │
-       ┌──────────────────────┼──────────────────────┐
-       │                      │                      │
-       ▼                      ▼                      ▼
-┌───────────────┐      ┌───────────────┐      ┌────────────────┐
-│hr_application │      │ hr_dashboard  │      │ai_hr_assistant │
-│   Laravel     │      │  Analytics    │      │   LLM / RAG    │
-└───────┬───────┘      └───────┬───────┘      └───────┬────────┘
-        │                      │                       │
-        └──────────────────────┼───────────────────────┘
-                               │
-                               ▼
-                    ┌─────────────────────┐
-                    │hr_intelligence_api │
-                    │    FastAPI + ML     │
-                    └──────────┬──────────┘
-                               │
-                               ▼
-                         ┌────────────┐
-                         │ ML Models  │
-                         └────────────┘
+### Design Principles
 
-          ┌──────────────────────┐
-          │ payroll_intelligence │
-          └──────────────────────┘
-
-          ┌──────────────────────┐
-          │   deep_learning      │
-          └──────────────────────┘
-
-          ┌──────────────────────┐
-          │       mlops          │
-          └──────────────────────┘
-```
-
-### Prinsip
-
-* Setiap project memiliki tanggung jawab yang jelas.
-* Komponen dapat dikembangkan secara independen.
-* Integrasi antar service menggunakan kontrak yang jelas.
-* Model ML menggunakan versioning.
-* Dokumentasi teknis berada di masing-masing project.
-* Credential dan secret tidak disimpan di repository.
+- Give each project a clearly defined responsibility.
+- Allow components to be developed independently.
+- Integrate services through explicit contracts.
+- Version machine learning models.
+- Keep technical documentation with each component.
+- Never store credentials or secrets in the repository.
 
 ---
 
-# Komponen
+## Components
 
-## `hr_application/`
+### hr_application/
 
-Aplikasi HRIS (Human Resource Information System) berbasis **Laravel / PHP**.
-Aplikasi bisnis untuk staf HR sekaligus konsumen layanan ML
-(`hr_intelligence_api` dan `payroll_intelligence`).
+A Laravel/PHP-based Human Resource Information System (HRIS) for HR staff and employee operations. It also consumes services from the HR Intelligence API and Payroll Intelligence.
 
-> **Status: HRIS inti sudah berjalan.** Siklus karyawan inti — Employee
-> Management, Employee History, Attendance, Leave, Payroll, Reporting, Audit
-> Trail, dan Manajemen Pengguna — sudah dapat dipakai staf HR.
+**Status:** Core HRIS workflows are implemented, including employee management, employee history, attendance, leave, payroll, reporting, audit trails, and user management.
 
-Sudah berjalan:
+Implemented capabilities include:
+- Integration with the ML API across all five use cases
+- Employee record-to-model input mapping through EmployeeFeatureMapper
+- Scheduled batch predictions (monthly, weekly, and quarterly)
+- Prediction storage and history
+- Authentication, profiles, password resets, and admin / hr-manager roles
+- **Employee Management:** CRUD operations, search, filtering, pagination, and termination
+- **Employee History:** timelines for transfers, positions, salaries, and status
+- **Attendance:** daily records, period summaries, and CSV imports from attendance systems
+- **Leave:** requests, approvals, leave balances, and team calendars
+- **Payroll:** pay periods, attendance-based calculations, finalization, payslips, and exports
+- **Reporting:** headcount, turnover, and departmental costs, with CSV export
+- **Audit Trail** and **User Management**
+- Attendance-related model features derived from attendance records rather than entered manually
 
-* Integrasi dengan ML API (semua 5 use case)
-* Pemetaan record karyawan → input model (`EmployeeFeatureMapper`)
-* Prediksi batch terjadwal (bulanan/mingguan/kuartalan)
-* Penyimpanan & penelusuran hasil prediksi
-* Autentikasi, profil, reset kata sandi, peran `admin` & `hr-manager`
-* **Employee Management** — CRUD, pencarian, filter, paginasi, terminasi
-* **Employee History** — linimasa mutasi/jabatan/gaji/status
-* **Attendance** — pencatatan harian, rekap periode, impor CSV mesin absensi
-* **Leave** — pengajuan, persetujuan, saldo cuti, kalender tim
-* **Payroll** — periode, perhitungan dari absensi, finalisasi, slip, ekspor
-* **Reporting** — headcount, turnover, biaya per departemen + ekspor CSV
-* **Audit Trail** & **Manajemen Pengguna**
-* Fitur absensi model dihitung dari data absensi, bukan diisi manual
+Planned HR process modules:
 
-Rencana modul proses bisnis HR (melengkapi siklus karyawan end-to-end):
-
-| # | Modul | Menyambung ke ML |
+| # | Module | Potential ML integration |
 |---|---|---|
-| 1 | Recruitment / ATS | Resume screening & person-job fit |
-| 2 | Onboarding / Offboarding | Turnover & survival |
-| 3 | Performance Management | Prediksi kinerja & HiPo |
-| 4 | Training & Development | Rekomendasi pelatihan |
-| 5 | Compensation & Benefits | Anomali & forecasting payroll |
-| 6 | Time & Attendance lanjutan | Prediksi absensi |
+| 1 | Recruitment / Applicant Tracking System | Resume screening and person-job fit |
+| 2 | Onboarding / Offboarding | Turnover and survival analysis |
+| 3 | Performance Management | Performance prediction and high-potential identification |
+| 4 | Training and Development | Training recommendations |
+| 5 | Compensation and Benefits | Payroll anomaly detection and forecasting |
+| 6 | Advanced Time and Attendance | Absence prediction |
 | 7 | Employee Self-Service | — |
 | 8 | Document Management | — |
-| 9 | Compliance & Statutory Reporting | — |
+| 9 | Compliance and Statutory Reporting | — |
 
-Detail tiap modul, rumus payroll, dan jadwal prediksi ada di
-[`hr_application/README.md`](./hr_application/README.md); urutan fase & kriteria
-selesai di [`ROADMAP.md`](./ROADMAP.md).
+For module details, payroll formulas, and prediction schedules, see [hr_application/README.md](./hr_application/README.md). Development phases and completion criteria are tracked in [ROADMAP.md](./ROADMAP.md).
 
-**Teknologi:** Laravel / PHP
+**Technology:** Laravel, PHP
 
-Dokumentasi:
+### hr_intelligence_api/
 
-[`hr_application/README.md`](./hr_application/README.md)
+A service for machine learning inference and model access through an API.
 
----
+Capabilities include:
+- Predictions for turnover, absenteeism, performance, payroll anomalies, and survival analysis
+- Batch prediction
+- Model information for each use case
+- Health checks
+- API authentication
 
-## `hr_intelligence_api/`
+**Technology:** Python, FastAPI, scikit-learn
 
-Service untuk menjalankan **Machine Learning inference** dan menyediakan akses model melalui API.
+Documentation: [hr_intelligence_api/README.md](./hr_intelligence_api/README.md)
 
-Contoh fungsi:
+### hr_dashboard/
 
-* Multi-model prediction: turnover, absensi, kinerja, payroll anomaly, survival
-* Batch Prediction
-* Model Information per use case
-* Health Check
-* API Authentication
+A React and Vite application for HR data visualization and analysis.
 
-**Teknologi:** Python / FastAPI / scikit-learn
+Pages include Overview, Workforce, Turnover, Attendance, Payroll, HR KPIs, and Models. The dashboard can read from the HR Intelligence API and Payroll Intelligence API. It runs in **demo mode** by default using local sample data; set the environment variable VITE_DATA_MODE=live to use live APIs.
 
-Dokumentasi:
+**Technology:** React, Vite, Recharts
 
-[`hr_intelligence_api/README.md`](./hr_intelligence_api/README.md)
+Run locally from the component directory with npm install followed by npm run dev.
 
----
+Documentation: [hr_dashboard/README.md](./hr_dashboard/README.md)
 
-## `hr_dashboard/`
+### payroll_intelligence/
 
-Aplikasi **React + Vite** untuk visualisasi dan analisis data HR.
+A project for payroll analytics and intelligence:
+- Payroll data ingestion and transformation
+- Salary component calculations
+- Payroll analytics by summary, department, period, and overtime
+- Payroll anomaly detection using Isolation Forest
+- Payroll forecasting using Holt and seasonal methods
+- REST API and command-line interface
 
-Halaman: Ringkasan, Workforce, Turnover, Attendance, Payroll, HR KPI & Model.
-Membaca dari HR Intelligence API dan Payroll Intelligence API. Default berjalan
-dalam **mode demo** (data contoh lokal) agar tidak pernah kosong; set
-`VITE_DATA_MODE=live` untuk memakai API sungguhan.
+**Technology:** Python, FastAPI, scikit-learn, statsmodels
 
-**Teknologi:** React / Vite / Recharts
+Run tests from the component directory with python -m pytest tests/ -q. Start the API with uvicorn src.api:app --port 8300.
 
-```bash
-cd hr_dashboard && npm install && npm run dev
-```
+Documentation: [payroll_intelligence/README.md](./payroll_intelligence/README.md)
 
-Dokumentasi:
+### deep_learning/
 
-[`hr_dashboard/README.md`](./hr_dashboard/README.md)
+Neural network experiments using a pure NumPy multilayer perceptron (MLP) for HR use cases, evaluated against classical baselines.
 
----
+- MLP with backpropagation and early stopping, without PyTorch or TensorFlow
+- Turnover feature contract aligned with the HR Intelligence API
+- Logistic Regression and majority-class baselines for comparison
+- JSON experiment records, CLI, and API
 
-## `payroll_intelligence/`
+**Technology:** Python, NumPy, FastAPI
 
-Project untuk **analitik dan intelligence terkait payroll**.
+Run tests from the component directory with python -m pytest tests/ -q. Compare models with python -m src.cli compare.
 
-* Ingestion & transformasi data payroll
-* Perhitungan komponen gaji
-* Payroll Analytics (ringkasan, per departemen, per periode, lembur)
-* Payroll Anomaly Detection (IsolationForest)
-* Payroll Forecasting (Holt / seasonal)
-* REST API + CLI
+Documentation: [deep_learning/README.md](./deep_learning/README.md)
 
-**Teknologi:** Python / FastAPI / scikit-learn / statsmodels
+### ai_hr_assistant/
 
-```bash
-cd payroll_intelligence && python -m pytest tests/ -q
-cd payroll_intelligence && uvicorn src.api:app --port 8300
-```
+An AI assistant for HR use cases built around large language models (LLMs).
 
-Dokumentasi:
+Focus areas include LLMs, Retrieval-Augmented Generation (RAG), knowledge bases, embeddings, vector search, and AI tools.
 
-[`payroll_intelligence/README.md`](./payroll_intelligence/README.md)
+The assistant can answer questions about policies and procedures using a knowledge base with retrieval and citations. It can also call the five existing ML use cases—turnover, absenteeism, performance, payroll anomalies, and survival—through the HR Intelligence API.
 
----
+**Technology:** Python, FastAPI, LLMs, RAG
 
-## `deep_learning/`
+Documentation: [ai_hr_assistant/README.md](./ai_hr_assistant/README.md)
 
-Eksperimen **neural network** (MLP murni NumPy) untuk kasus HR, dibandingkan
-dengan baseline klasik.
+### mlops/
 
-* MLP + backpropagation + early stopping (tanpa PyTorch/TensorFlow)
-* Kontrak fitur turnover identik dengan `hr_intelligence_api`
-* Baseline Logistic Regression & majority class sebagai pembanding
-* Pencatatan eksperimen (JSON) + CLI + API
+Tools for managing the machine learning lifecycle:
+- Model registry, using model metadata as the source of truth
+- Model validation as a deployment-readiness gate
+- Population Stability Index (PSI) drift detection and Prometheus-format metrics
+- REST API and validation CLI
+- Docker Compose, GitHub Actions CI workflows, alert rules, and monitoring checklists
 
-**Teknologi:** Python / NumPy / FastAPI
+**Technology:** Python, FastAPI, Docker, CI/CD
 
-```bash
-cd deep_learning && python -m pytest tests/ -q
-cd deep_learning && python -m src.cli compare
-```
+Run tests from the component directory with python -m pytest tests/ -q. Run python -m src.cli to validate all models as a CI gate.
 
-Dokumentasi:
-
-[`deep_learning/README.md`](./deep_learning/README.md)
+Documentation: [mlops/README.md](./mlops/README.md)
 
 ---
 
-## `ai_hr_assistant/`
+## Repository Structure
 
-Project untuk membangun **AI Assistant khusus HR** menggunakan LLM.
+The following tree highlights the main files and directories. Individual components may contain additional files.
 
-Fokus:
+- **data/** — sample and synthetic HR datasets
+- **requirements/base.txt** — shared Python dependency definitions
+- **scripts/** — dataset generation, guide generation, and verification utilities
+- **notebooks/** — model training, evaluation, fairness, and significance experiments
+- **models/** — versioned model artifacts and evaluation reports
+- **hr_intelligence_api/** — ML inference API
+- **hr_application/** — Laravel HRIS
+- **hr_dashboard/** — React dashboard
+- **payroll_intelligence/** — payroll analytics service
+- **deep_learning/** — neural network experiments
+- **ai_hr_assistant/** — HR assistant and knowledge resources
+- **mlops/** — model validation, monitoring, and CI tooling
 
-* LLM
-* RAG
-* Knowledge Base
-* Embeddings
-* Vector Search
-* AI Tools
-
-Assistant dapat menjawab pertanyaan kebijakan/prosedur dari knowledge base
-(retrieval + sitasi) dan memanggil kelima model ML yang sudah ada (turnover,
-absensi, kinerja, payroll, survival) lewat HR Intelligence API.
-
-**Teknologi:** Python / FastAPI / LLM / RAG
-
-Dokumentasi:
-
-[`ai_hr_assistant/README.md`](./ai_hr_assistant/README.md)
+The shared Python dependency source of truth is requirements/base.txt. The root .python-version file specifies Python 3.14 for Python modules.
 
 ---
 
-## `mlops/`
+## Current Machine Learning Models
 
-Project untuk mengelola **Machine Learning lifecycle**.
+The HR Intelligence API exposes **five machine learning use cases**. They are available through the API and can be called by the HR application and AI assistant.
 
-* Model Registry (metadata `models/` sebagai sumber kebenaran)
-* Model Validation (gate kelayakan deploy)
-* Drift Detection (PSI) & Metrics Collector (format Prometheus)
-* REST API + CLI validasi
-* Docker Compose, workflow CI GitHub Actions, aturan alert, checklist monitoring
+| # | Use case | Endpoint | Model | Version | Primary metric |
+|---|---|---|---|---|---|
+| 1 | Turnover | POST /predict | Soft Voting ensemble (Logistic Regression + Random Forest) | v2_mitigated | ROC-AUC 0.6993 |
+| 2 | Absenteeism | POST /predict/absensi | Logistic Regression | v1 | ROC-AUC 0.8287 |
+| 3 | Performance | POST /predict/kinerja | Ordinal Logistic Regression | v1 | Macro-F1 0.6357 |
+| 4 | Payroll anomaly | POST /predict/payroll | Isolation Forest | v1 | PR-AUC 0.8709 |
+| 5 | Survival analysis | POST /predict/survival | Cox Proportional Hazards | v1 | C-index 0.8144 |
 
-**Teknologi:** Python / FastAPI / Docker / CI/CD
+Three turnover artifacts are available: v1, v2, and v2_mitigated. The reweighted v2_mitigated model is the default API model.
 
-```bash
-cd mlops && python -m pytest tests/ -q
-cd mlops && python -m src.cli          # validasi semua model (gate CI)
-```
+A deep learning turnover model (NumPy MLP) is also available in deep_learning/ for comparison. On the current dataset, the classical baseline performs better.
 
-Dokumentasi:
+For feature engineering, evaluation, metadata, fairness audits, and significance tests, see:
+- [models/README.md](./models/README.md)
+- [MODEL_RESULTS.md](./MODEL_RESULTS.md)
 
-[`mlops/README.md`](./mlops/README.md)
+## Additional HR Machine Learning Use Cases
 
----
+Machine learning can support HR use cases beyond turnover prediction. Other use cases, including recruitment, natural language processing, high-potential identification, and workforce segmentation, are described with data and references in [USE_CASES.md](./USE_CASES.md).
 
-# Struktur Repository
-
-```text
-hr-intelligence-system/
-│
-├── README.md
-├── ROADMAP.md
-├── CONTRIBUTE.md
-├── USE_CASES.md
-├── MODEL_RESULTS.md
-├── PANDUAN_PENGGUNAAN.md
-├── PANDUAN_PENGGUNAAN.pdf
-├── .python-version                   # Python 3.14 (runtime seluruh modul Python)
-│
-├── data/
-│   ├── README.md
-│   ├── hr_turnover.csv
-│   ├── hr_absenteeism.csv          # sintetis
-│   ├── hr_performance.csv          # sintetis
-│   ├── hr_payroll.csv              # sintetis
-│   └── hr_attrition_survival.csv   # sintetis
-│
-├── requirements/
-│   ├── base.txt                     # sumber tunggal versi dependensi Python
-│   └── README.md
-│
-├── scripts/
-│   ├── generate_absenteeism_data.py
-│   ├── generate_performance_data.py
-│   ├── generate_payroll_data.py
-│   ├── generate_attrition_survival_data.py
-│   ├── generate_panduan_pdf.py      # PANDUAN_PENGGUNAAN.md -> PDF
-│   └── verify_panduan_examples.py   # uji contoh curl di panduan
-│
-├── notebooks/
-│   ├── README.md
-│   ├── train_model.ipynb
-│   ├── train_model_alternatives.ipynb
-│   ├── 02_absenteeism.ipynb
-│   ├── 03_performance_prediction.ipynb
-│   ├── 04_payroll_anomaly_detection.ipynb
-│   ├── 05_fairness_audit_turnover.ipynb
-│   ├── 06_survival_attrition.ipynb
-│   ├── 07_significance_test.ipynb
-│   └── 08_bias_mitigation_turnover.ipynb
-│
-├── models/
-│   ├── README.md
-│   ├── v1/                    # turnover — Logistic Regression
-│   ├── v2/                    # turnover — Soft Voting
-│   ├── v2_mitigated/          # turnover — v2 + reweighting
-│   ├── absenteeism/v1/        # absensi
-│   ├── performance/v1/        # kinerja
-│   ├── payroll_anomaly/v1/    # anomali payroll
-│   ├── survival_attrition/v1/ # survival
-│   ├── fairness_report.json
-│   ├── mitigation_report.json
-│   └── significance_report.json
-│
-├── hr_intelligence_api/
-│   ├── README.md
-│   ├── app/
-│   ├── tests/
-│   ├── requirements.txt             # -r ../requirements/base.txt
-│   └── .env.example
-│
-├── hr_application/
-│   ├── README.md
-│   ├── app/
-│   ├── config/
-│   ├── database/
-│   ├── routes/
-│   ├── resources/
-│   ├── storage/
-│   ├── tests/
-│   └── ...
-│
-├── hr_dashboard/
-│   ├── README.md
-│   └── src/
-│
-├── payroll_intelligence/
-│   ├── README.md
-│   ├── notebooks/
-│   └── src/
-│
-├── deep_learning/
-│   ├── README.md
-│   ├── src/
-│   ├── experiments/
-│   └── tests/
-│
-├── ai_hr_assistant/
-│   ├── README.md
-│   ├── knowledge/
-│   ├── prompts/
-│   └── src/
-│
-└── mlops/
-    ├── README.md
-    ├── docker/
-    ├── ci/
-    └── monitoring/
-```
+Detailed model comparisons and fairness audit results are available in [MODEL_RESULTS.md](./MODEL_RESULTS.md).
 
 ---
 
-# Model Saat Ini
+## Getting Started
 
-HR Intelligence API melayani **lima use case** Machine Learning. Semuanya sudah
-diekspos lewat API dan dapat dipanggil dari `hr_application` maupun
-`ai_hr_assistant`.
+Clone the repository and enter its directory:
 
-| # | Use case | Endpoint | Model | Versi | Metrik utama |
-|---|----------|----------|-------|-------|--------------|
-| 1 | Turnover | `POST /predict` | Soft Voting (ensemble LR + RF) | v2_mitigated | ROC-AUC 0,6993 |
-| 2 | Absensi | `POST /predict/absensi` | Logistic Regression | v1 | ROC-AUC 0,8287 |
-| 3 | Kinerja | `POST /predict/kinerja` | Logistic Regression (ordinal) | v1 | macro-F1 0,6357 |
-| 4 | Payroll anomaly | `POST /predict/payroll` | Isolation Forest | v1 | PR-AUC 0,8709 |
-| 5 | Survival attrition | `POST /predict/survival` | Cox Proportional Hazards | v1 | C-index 0,8144 |
+    git clone <repository-url>
+    cd hr-intelligence-system
 
-Turnover tersedia dalam tiga artifact: `v1`, `v2`, dan `v2_mitigated`
-(reweighting, paling setara — **default API**).
+Each component has its own environment and setup instructions. Required runtime versions:
+- **Python 3.14** for Python modules, pinned in .python-version and enforced in CI and Dockerfiles
+- **Node.js 24** for hr_dashboard
+- **PHP 8.4** for hr_application
 
-Model turnover juga tersedia dalam versi deep learning (MLP NumPy) sebagai
-pembanding di `deep_learning/`; pada dataset ini baseline klasik masih unggul.
+See section 3 of PANDUAN_PENGGUNAAN.md for component-specific details.
 
-Model artifact:
+Start with the documentation for the component you want to develop:
+- [hr_application/README.md](./hr_application/README.md)
+- [hr_intelligence_api/README.md](./hr_intelligence_api/README.md)
+- [hr_dashboard/README.md](./hr_dashboard/README.md)
+- [payroll_intelligence/README.md](./payroll_intelligence/README.md)
+- [deep_learning/README.md](./deep_learning/README.md)
+- [ai_hr_assistant/README.md](./ai_hr_assistant/README.md)
+- [mlops/README.md](./mlops/README.md)
 
-```text
-models/
-├── v1/                        # turnover — Logistic Regression
-├── v2/                        # turnover — Soft Voting
-├── v2_mitigated/              # turnover — v2 + reweighting
-├── absenteeism/v1/            # absensi
-├── performance/v1/            # kinerja
-├── payroll_anomaly/v1/        # anomali payroll
-└── survival_attrition/v1/     # survival
-```
+## Run with Docker
 
-Detail model, feature engineering, evaluasi, metadata, audit fairness, dan uji
-signifikansi tersedia di:
+Start the core stack with Docker Compose:
 
-* [`models/README.md`](./models/README.md)
-* [`MODEL_RESULTS.md`](./MODEL_RESULTS.md)
+    HR_API_KEY=<secret> docker compose up --build
 
----
-
-# Use Case ML Lain untuk HR
-
-Turnover bukan satu-satunya masalah HR yang bisa didekati dengan Machine Learning.
-Katalog use case lain (rekrutmen, NLP, HiPo, workforce segmentation) beserta data
-& referensinya ada di:
-
-[`USE_CASES.md`](./USE_CASES.md)
-
-Hasil lengkap perbandingan model (v1 vs v2, absensi, audit fairness) ada di:
-
-[`MODEL_RESULTS.md`](./MODEL_RESULTS.md)
-
----
-
-# Cara Mulai
-
-Untuk memulai development:
-
-```bash
-git clone <repository-url>
-cd hr-intelligence-system
-```
-
-Setiap project memiliki environment dan cara menjalankan masing-masing.
-
-**Prasyarat versi:** modul Python memakai **Python 3.14** (dipin di
-`.python-version`, ditegakkan di CI dan Dockerfile), `hr_dashboard` memakai
-Node.js 24, dan `hr_application` memakai PHP 8.4. Detail per komponen ada di
-`PANDUAN_PENGGUNAAN.md` bagian 3.
-
-Mulai dari dokumentasi project yang ingin dikembangkan:
-
-```text
-hr_application/README.md
-hr_intelligence_api/README.md
-hr_dashboard/README.md
-payroll_intelligence/README.md
-deep_learning/README.md
-ai_hr_assistant/README.md
-mlops/README.md
-```
-
-## Menjalankan dengan Docker
-
-Seluruh stack inti dapat dijalankan sekaligus dengan Docker Compose:
-
-```bash
-HR_API_KEY=<secret> docker compose up --build
-```
-
-| Layanan | URL | Isi |
+| Service | URL | Purpose |
 |---|---|---|
-| `hr-api` | http://localhost:8000 | HR Intelligence API (prediksi model) |
-| `payroll-api` | http://localhost:8300 | Payroll Intelligence (analitik & skor anomali) |
-| `hr-app` | http://localhost:8080 | Laravel HRIS (attendance/leave/payroll) |
-| `dashboard` | http://localhost:8081 | React dashboard |
-| `assistant` | http://localhost:8100 | AI HR Assistant |
+| hr-api | http://localhost:8000 | HR Intelligence API and model predictions |
+| payroll-api | http://localhost:8300 | Payroll analytics and anomaly scores |
+| hr-app | http://localhost:8080 | Laravel HRIS for attendance, leave, and payroll |
+| dashboard | http://localhost:8081 | React dashboard |
+| assistant | http://localhost:8100 | AI HR Assistant |
 
-`hr-app` otomatis diarahkan ke `hr-api` dan `payroll-api` di dalam jaringan
-Compose, sehingga prediksi dan skor anomali berjalan tanpa konfigurasi manual.
-`APP_KEY` untuk Laravel diisi lewat environment (`APP_KEY=base64:...`).
+The HR application is configured to reach the HR API and Payroll API through the internal Compose network. Set Laravel's APP_KEY environment variable to a valid value such as APP_KEY=base64:....
 
-Dashboard memakai nginx sebagai reverse proxy. Upstream API dapat diatur lewat
-`HR_API_UPSTREAM` dan `PAYROLL_API_UPSTREAM` (lihat
-`hr_dashboard/nginx.conf.template`); defaultnya sudah cocok untuk Compose.
+The dashboard uses Nginx as a reverse proxy. Configure API upstreams through HR_API_UPSTREAM and PAYROLL_API_UPSTREAM if needed; see hr_dashboard/nginx.conf.template. The defaults are configured for Docker Compose.
 
-## Demo & Deploy Gratis
+## Free Demo and Deployment
 
-Untuk menampilkan demo di layanan gratis (Render, Cloudflare Pages, Koyeb,
-Oracle Cloud, Hugging Face Hub), lihat:
+For deployment options such as Render, Cloudflare Pages, Koyeb, Oracle Cloud, and Hugging Face Hub, see:
+- [deploy/DEPLOY.md](./deploy/DEPLOY.md) — deployment guide and render.yaml
+- [hf/space/](./hf/space) — static showcase for Hugging Face Spaces
+- [scripts/upload_to_hf.py](./scripts/upload_to_hf.py) — upload models and datasets to Hugging Face Hub
 
-* [`deploy/DEPLOY.md`](./deploy/DEPLOY.md) — panduan lengkap + `render.yaml`
-* [`hf/space/`](./hf/space) — halaman showcase untuk Hugging Face Space (statis)
-* [`scripts/upload_to_hf.py`](./scripts/upload_to_hf.py) — unggah model/dataset ke HF Hub
+In brief, models and datasets can be hosted on Hugging Face Hub; the dashboard can run on Cloudflare Pages in demo mode without a backend or on Render; Python APIs and Laravel can run as Render web services; and the full always-on stack can run on Oracle Cloud Always Free using deploy/oracle-cloud/.
 
-Ringkas: model & dataset ke **Hugging Face Hub**, dashboard ke **Cloudflare
-Pages** (mode `demo` tanpa backend) atau Render, API Python & Laravel ke
-**Render** free web service, dan stack penuh always-on via **Oracle Cloud
-Always Free** (`deploy/oracle-cloud/`).
-
-Untuk kontribusi, baca:
-
-[`CONTRIBUTE.md`](./CONTRIBUTE.md)
+For contribution guidelines, see [CONTRIBUTE.md](./CONTRIBUTE.md).
 
 ---
 
-# Project Philosophy
+## Project Philosophy
 
-Project ini tidak hanya bertujuan membuat sebuah model Machine Learning.
+This project is about more than building a single machine learning model. It explores how to build an end-to-end system:
 
-Tujuannya adalah mempelajari bagaimana membangun sistem end-to-end:
+    Data
+     ↓
+    Data Science
+     ↓
+    Machine Learning
+     ↓
+    Model
+     ↓
+    API
+     ↓
+    Application
+     ↓
+    Dashboard
+     ↓
+    AI
+     ↓
+    MLOps
+     ↓
+    Production
 
-```text
-Data
- ↓
-Data Science
- ↓
-Machine Learning
- ↓
-Model
- ↓
-API
- ↓
-Application
- ↓
-Dashboard
- ↓
-AI
- ↓
-MLOps
- ↓
-Production
-```
-
-Model tidak berhenti sebagai notebook, tetapi dikembangkan menjadi bagian dari sistem yang dapat diintegrasikan dengan aplikasi nyata.
+Models should not remain isolated in notebooks; they should be developed into components that can be integrated into practical applications.
 
 > **Build → Learn → Share → Improve**
 
 ---
 
-## Lisensi
+## License
 
-### Kode sumber
+### Source Code
 
-Kode sumber proyek ini dilisensikan di bawah **GNU Affero General Public License v3.0 only (AGPL-3.0-only)**. Lihat teks lengkap pada [`LICENSE`](./LICENSE). Cakupan ini mencakup komponen kode proyek, termasuk `ai_hr_assistant/`, kecuali jika suatu file atau komponen secara jelas menyatakan lisensi berbeda.
+The project's source code is licensed under the **GNU Affero General Public License v3.0 only (AGPL-3.0-only)**. See [LICENSE](./LICENSE) for the full text. This applies to project code, including ai_hr_assistant/, unless a file or component explicitly states a different license.
 
-AGPL-3.0-only mengizinkan penggunaan, modifikasi, dan distribusi, termasuk penggunaan komersial. Jika Anda mendistribusikan versi yang dimodifikasi atau menyediakan versi tercakup melalui jaringan, ketentuan AGPL tertentu mengharuskan pengguna memperoleh source code yang sesuai. Baca teks lisensi untuk memahami kewajiban lengkapnya.
+AGPL-3.0-only permits use, modification, and distribution, including commercial use. Distribution of modified versions or making covered software available over a network may trigger requirements to provide the corresponding source code. Read the license text for the complete terms.
 
-### Dokumentasi
+### Documentation
 
-Dokumentasi yang dibuat khusus untuk proyek ini—seperti panduan, tutorial, diagram, dan materi penjelasan—menggunakan **Creative Commons Attribution 4.0 International (CC BY 4.0)** sesuai cakupan di [`DOCUMENTATION_LICENSE.md`](./DOCUMENTATION_LICENSE.md). Materi pihak ketiga dan potongan kode perangkat lunak tidak otomatis tercakup oleh lisensi dokumentasi.
+Documentation created specifically for this project—such as guides, tutorials, diagrams, and explanatory materials—is licensed under **Creative Commons Attribution 4.0 International (CC BY 4.0)** as described in [DOCUMENTATION_LICENSE.md](./DOCUMENTATION_LICENSE.md). Third-party materials and software code snippets are not automatically covered by the documentation license.
 
-### Model, dataset, dan komponen pihak ketiga
+### Models, Datasets, and Third-Party Components
 
-Lisensi kode utama **tidak otomatis berlaku** untuk model AI, bobot model, tokenizer, dataset, dependency, maupun aset pihak ketiga. Periksa lisensi dan pemberitahuan yang menyertai masing-masing artefak sebelum menggunakan, memodifikasi, atau mendistribusikannya. Lihat [`models/README.md`](./models/README.md), [koleksi model di Hugging Face](https://huggingface.co/fcreatenew/hr-intelligence-models/tree/main), dan [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md).
+The main software license does **not automatically apply** to AI models, model weights, tokenizers, datasets, dependencies, or third-party assets. Check the license and notices accompanying each artifact before using, modifying, or redistributing it. See [models/README.md](./models/README.md), the [Hugging Face model collection](https://huggingface.co/fcreatenew/hr-intelligence-models/tree/main), and [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md).
 
-### Versi terdahulu dan atribusi
+### Previous Versions and Attribution
 
-Perubahan lisensi pada versi saat ini tidak mencabut izin MIT yang telah diberikan kepada penerima salinan atau versi terdahulu. Pemberitahuan hak cipta dan lisensi yang berlaku pada komponen pihak ketiga harus tetap dipertahankan.
+The current license change does not revoke MIT permissions already granted to recipients of earlier versions or copies. Copyright and license notices applicable to third-party components must be preserved.
 
-Jika Anda menemukan file yang tampak memiliki pemberitahuan lisensi atau kepemilikan yang bertentangan, mohon buka issue sebelum menggunakannya kembali atau mendistribusikannya.
+If you find a file with conflicting license or ownership notices, please open an issue before reusing or redistributing it.
