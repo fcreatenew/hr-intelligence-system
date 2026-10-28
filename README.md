@@ -36,7 +36,7 @@ Proyek ini bermula dari **prediksi pergantian karyawan** dan berkembang menjadi 
 | Melihat rencana pengembangan | [Peta Jalan](./ROADMAP.md) |
 | Berkontribusi pada kode atau dokumentasi | [CONTRIBUTING.md](./CONTRIBUTING.md) dan [CONTRIBUTE.md](./CONTRIBUTE.md) |
 | Melaporkan masalah keamanan | [Kebijakan Keamanan](./SECURITY.md) |
-| Meninjau migrasi lisensi | [Daftar Periksa Migrasi Lisensi](./LICENSE_MIGRATION_CHECKLIST.md) |
+| Meninjau status lisensi | [Daftar Periksa Migrasi Lisensi](./LICENSE_MIGRATION_CHECKLIST.md) dan [Matriks Lisensi Komponen](./LICENSES/COMPONENT_LICENSE_MATRIX.md) |
 
 **Utamakan privasi:** Gunakan data sintetis atau data yang penggunaannya telah mendapat izin yang sesuai untuk pengembangan dan demonstrasi. Jangan pernah memasukkan data karyawan asli, kredensial, rahasia, atau informasi SDM yang bersifat rahasia ke dalam repositori.
 
