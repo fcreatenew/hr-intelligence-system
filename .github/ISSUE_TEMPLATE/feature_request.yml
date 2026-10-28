@@ -6,12 +6,12 @@ body:
   - type: markdown
     attributes:
       value: |
-        Share the problem and intended outcome. For major changes, please discuss the approach before opening a pull request.
+        Describe the problem and expected outcome. Do not include real employee data, credentials, tokens, or confidential information.
   - type: input
     id: component
     attributes:
       label: Related component
-      placeholder: hr_dashboard
+      placeholder: hr_application
     validations:
       required: false
   - type: textarea
@@ -24,8 +24,18 @@ body:
   - type: textarea
     id: proposal
     attributes:
-      label: Proposed solution
-      description: Describe the desired behavior. Alternatives are welcome.
+      label: Proposed behavior
+      description: Describe the expected user-visible behavior and alternatives.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: List observable outcomes that can be verified by a maintainer.
+      placeholder: |
+        - [ ] Given ..., when ..., then ...
+        - [ ] Tests cover success and failure cases.
     validations:
       required: true
   - type: textarea
@@ -41,4 +51,6 @@ body:
       label: Before submitting
       options:
         - label: I searched existing issues and the roadmap.
+          required: true
+        - label: I removed personal, confidential, and secret information.
           required: true
