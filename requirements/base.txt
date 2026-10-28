@@ -20,7 +20,7 @@ pydantic==2.13.5
 
 # --- Komputasi data & ML ---------------------------------------------------
 numpy==2.5.3
-pandas==2.3.3
+pandas==3.1.0
 scikit-learn==1.9.1
 scipy==1.18.1
 joblib==1.6.0
