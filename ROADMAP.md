@@ -4,14 +4,9 @@ Dokumen ini adalah peta pengembangan yang **aktif dipelihara**. Setiap kali sebu
 fase selesai atau berubah, dokumen ini ikut diperbarui — termasuk saat ada
 pekerjaan yang dibatalkan.
 
-> **Catatan kejujuran.** Roadmap ini sebelumnya dirujuk dari `README.md` tetapi
-> filenya belum pernah ada, sehingga pembaca tidak punya gambaran urutan
-> pekerjaan. Dokumen ini dibuat untuk menutup celah itu. Status di sini
-> mencerminkan kondisi kode yang benar-benar ada, bukan rencana.
+> **Aturan status:** fitur hanya boleh ditandai selesai jika implementasi di branch default dan pengujian terkait telah diverifikasi. README, roadmap, dan gap audit harus diperbarui bersama saat status berubah. PR/branch yang belum merge bukan fitur yang tersedia di rilis default.
 
-Selisih antara status di dokumen ini dan kode di `main` dirinci di
-[`GAP_AUDIT.md`](GAP_AUDIT.md) — termasuk pekerjaan yang masih menunggu PR dan
-celah yang belum dimulai.
+Audit kesenjangan dan risiko yang masih perlu ditangani dirinci di [`GAP_AUDIT.md`](GAP_AUDIT.md).
 
 Legenda status:
 
@@ -25,13 +20,12 @@ Legenda status:
 
 # 1. Kondisi Saat Ini
 
-Sistem berjalan sebagai **arsitektur modular**: satu API ML pusat, satu aplikasi
-HRIS (Laravel), satu dashboard, dan empat modul pendukung.
+Sistem dirancang sebagai **arsitektur modular**: satu API ML pusat, satu aplikasi HRIS (Laravel), satu dashboard, dan modul pendukung. Status setiap kemampuan harus dibaca bersama kode, test, dan catatan keterbatasannya.
 
 | Komponen | Peran | Status |
 |---|---|---|
 | `hr_intelligence_api` | Inference ML (5 use case) + auth + batch | ✅ |
-| `hr_application` | HRIS (Laravel) + integrasi ML | 🚧 integrasi ✅, modul HRIS ⬜ |
+| `hr_application` | HRIS (Laravel) + integrasi ML | 🚧 modul operasional tersedia; hardening dan cakupan fitur masih berjalan |
 | `hr_dashboard` | Visualisasi & analitik (React) | ✅ |
 | `ai_hr_assistant` | Asisten HR (LLM + RAG) | ✅ |
 | `payroll_intelligence` | Analitik, anomali, forecast payroll | ✅ |
@@ -141,8 +135,8 @@ yang benar-benar dapat dipakai staf HR.
 - ✅ Halaman Blade (bukan JSON saja) agar dapat dipakai tanpa klien API
 - ✅ Detail karyawan + riwayat prediksi ML per karyawan
 - ✅ Kolom ML kosong tetap `null` (bukan 0) agar tidak menyesatkan model
-- ⬜ Riwayat perubahan (audit trail) karyawan
-- ⬜ Import/export CSV
+- 🟡 Verifikasi histori karyawan dan audit trail terhadap implementasi aktif sebelum menandai selesai
+- 🟡 Verifikasi import/export CSV terhadap implementasi aktif dan pengujian
 
 ## 2.2 Autentikasi ✅
 
@@ -172,7 +166,7 @@ karyawan, dan melihat riwayat perubahannya — tanpa menyentuh database langsung
 - ✅ **Integrasi ML**: `riwayat_absen_90hari` dan `hari_absen_setahun` kini
   dihitung dari tabel `attendances` (`AttendanceMetricsService`), bukan lagi
   diisi manual — kolom manualnya dihapus dari form
-- ⬜ Impor mesin absensi / fingerprint
+- ⬜ Validasi impor CSV terhadap format ekspor mesin absensi/fingerprint yang nyata
 - ⬜ Perhitungan lembur otomatis dari jam masuk/keluar
 
 **Definisi fitur (penting agar konsisten dengan pelatihan model):**
@@ -335,3 +329,13 @@ Daftar ini jujur menyebut hal yang belum beres, agar tidak hilang dari pandangan
 4. **Modul terpisah, kontrak jelas.** Setiap komponen punya test sendiri.
 5. **Dokumentasi mengikuti kode.** Status di dokumen diperbarui bersamaan dengan
    pekerjaan, bukan belakangan.
+
+
+## Backlog fitur dan keandalan yang diprioritaskan
+
+- [ ] Employee Self-Service dengan akses record milik sendiri dan approval workflow yang aman.
+- [ ] Impor absensi idempotent dengan preview, laporan error per baris, serta perhitungan lembur dari aturan shift.
+- [ ] Validasi model pada holdout temporal/group-aware dan dataset berizin; pisahkan hasil sintetis dari data nyata.
+- [ ] Contract tests untuk integrasi Laravel ↔ API ML/payroll/assistant dan penanganan timeout, rate limit, serta error layanan.
+- [ ] Monitoring drift, kalibrasi, dan performa model; alur rollback yang membutuhkan persetujuan manusia.
+- [ ] Fitur operasional tambahan harus mengikuti privacy-by-design, otorisasi server-side, dan audit trail.
