@@ -31,4 +31,4 @@ python-dotenv==1.2.4
 
 # --- Testing ---------------------------------------------------------------
 # CI memasang pytest terpisah; pin di sini agar dev & CI sama.
-pytest>=8.0
+pytest>=9.1.1
