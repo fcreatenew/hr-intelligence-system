@@ -32,7 +32,7 @@ Proyek ini bermula dari **prediksi pergantian karyawan** dan berkembang menjadi 
 | Memahami arsitektur dan cakupan proyek | [Arsitektur](#arsitektur) |
 | Menjalankan layanan secara lokal | [Menjalankan dengan Docker](#menjalankan-dengan-docker) |
 | Menyiapkan komponen tertentu | [Komponen](#komponen) |
-| Meninjau hasil dan keterbatasan model | [Hasil Model](./MODEL_RESULTS.md) |
+| Meninjau hasil dan keterbatasan model | [Hasil Model](./MODEL_RESULTS.md) dan [Model Cards](./models/model_cards/README.md) |
 | Melihat rencana pengembangan | [Peta Jalan](./ROADMAP.md) |
 | Berkontribusi pada kode atau dokumentasi | [CONTRIBUTING.md](./CONTRIBUTING.md) dan [CONTRIBUTE.md](./CONTRIBUTE.md) |
 | Melaporkan masalah keamanan | [Kebijakan Keamanan](./SECURITY.md) |
