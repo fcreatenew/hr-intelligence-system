@@ -19,7 +19,7 @@ uvicorn==0.54.0
 pydantic==2.13.5
 
 # --- Komputasi data & ML ---------------------------------------------------
-numpy==2.5.3
+numpy==2.5.4
 pandas==2.3.3
 scikit-learn==1.9.1
 scipy==1.18.1
