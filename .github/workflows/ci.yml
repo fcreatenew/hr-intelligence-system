@@ -128,3 +128,15 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+
+
+  compose-smoke:
+    name: Docker Compose configuration smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Compose configuration without starting services
+        env:
+          HR_API_KEY: smoke-test-placeholder
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+        run: docker compose config --quiet
